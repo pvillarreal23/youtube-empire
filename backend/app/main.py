@@ -3,7 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db, async_session
 from app.services.agent_loader import load_agents_to_db
-from app.routers import agents, threads
+from app.models import asset as _asset_models  # noqa: F401 — register Asset tables before create_all
+from app.routers import agents, threads, assets
 import os
 
 os.makedirs("data", exist_ok=True)
@@ -31,6 +32,7 @@ app.add_middleware(
 
 app.include_router(agents.router)
 app.include_router(threads.router)
+app.include_router(assets.router)
 
 
 @app.get("/api/health")

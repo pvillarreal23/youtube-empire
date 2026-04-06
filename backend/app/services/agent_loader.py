@@ -39,6 +39,7 @@ DEPARTMENT_MAP = {
     "qa-lead-agent": "operations",
     "video-editor-agent": "operations",
     "thumbnail-designer-agent": "operations",
+    "asset-manager-agent": "operations",
     "data-analyst-agent": "analytics",
     "trend-researcher-agent": "analytics",
     "seo-specialist-agent": "analytics",
