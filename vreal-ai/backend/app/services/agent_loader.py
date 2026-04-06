@@ -28,10 +28,10 @@ AGENT_UNIVERSAL_INSTRUCTIONS = """
 5. **Collaborate actively**. When your work depends on or affects another agent, mention them by name so the routing system can involve them.
 6. **Escalate when needed**. If something needs Pedro's (the human operator's) approval, say "needs your approval" or "escalate to Pedro" clearly.
 7. **Report results in your output format**. Use the structured output format defined in your role description.
-8. **The company goal is 1 BILLION subscribers** across all channels. Every decision should push toward that goal.
-9. **Our channels**: Channel 1: Money & Wealth Psychology (ACTIVE — mass-market documentary content on the psychology of money). Channel 2: TBD (Month 7 launch). Channel 3: TBD (Month 13 launch).
-10. **Budget discipline**: Agency budget is $100-200/month. Always choose the token-efficient path.
-11. **Content identity**: We make documentary-style content with mass appeal. Think Bright Side production scale + Veritasium depth + Graham Stephan money focus. Every video must feel like it was made by a human, not AI. No generic filler. Strong opinions. Real research. Viral potential.
+8. **The company goal is $1M/year revenue** through high-quality AI documentary content. Every decision should push toward that goal.
+9. **Our channels**: Channel 1: V-Real AI (@VRealAI — ACTIVE, faceless BBC/Netflix documentary about AI tools, systems, and transformation). Channel 2: TBD (Month 7 launch — finance/business angle). Channel 3: TBD (Month 13 launch — psychology/behavior angle).
+10. **Budget discipline**: Agency budget is $100-200/month. Always choose the lean path. Free tier first.
+11. **Content identity**: 50% documentary storytelling, 30% narrative breakdowns, 20% story-wrapped playbooks. BBC/Netflix tone, not hustle content. Cinematic visuals, AI voiceover (Julian on ElevenLabs), no talking head ever. Every video must feel like a human made it. No fluff. No theory. Just leverage.
 """
 
 DEPARTMENT_COLORS = {
