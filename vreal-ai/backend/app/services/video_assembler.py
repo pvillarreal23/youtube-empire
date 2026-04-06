@@ -668,14 +668,13 @@ def assemble_video(project: AssemblyProject) -> str:
     Main assembly pipeline. Takes an AssemblyProject and produces a final MP4.
 
     Steps:
-      1. Normalize voice audio to -14 LUFS
+      1. Normalize voice audio to -14 LUFS (two-pass loudnorm)
       2. Prepare each video scene (trim, motion, scale)
       3. Concatenate scenes into continuous video track
-      4. Mix voice + ducked music
+      4. 4-layer audio mix: voice (-14) + music (-28/-35 ducked, faded) + SFX (-20) + ambient (-35)
       5. Apply text overlays
       6. Add intro/outro if provided
-      7. Final loudness normalization to -14 LUFS
-      8. Export final MP4
+      7. Final export at CRF 18
 
     Returns: path to final output file.
     """
