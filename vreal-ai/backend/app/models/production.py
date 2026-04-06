@@ -45,20 +45,20 @@ class ProductionJob(Base):
 
 # Pipeline stage → responsible agent mapping
 PIPELINE_STAGES = {
-    "research": {"agent": "trend-researcher-agent", "make_scenario": "research", "next": "scripted"},
-    "scripted": {"agent": "scriptwriter-agent", "make_scenario": "script_generation", "next": "voiceover"},
-    "voiceover": {"agent": "video-editor-agent", "make_scenario": "voiceover", "next": "thumbnail"},
-    "thumbnail": {"agent": "thumbnail-designer-agent", "make_scenario": "thumbnail", "next": "edited"},
-    "edited": {"agent": "video-editor-agent", "make_scenario": "video_assembly", "next": "seo"},
-    "seo": {"agent": "seo-specialist-agent", "make_scenario": "seo_optimization", "next": "review"},
-    "review": {"agent": "qa-lead-agent", "make_scenario": None, "next": "approved"},
+    "research": {"agent": "trend-researcher", "make_scenario": "research", "next": "scripted"},
+    "scripted": {"agent": "scriptwriter", "make_scenario": "script_generation", "next": "voiceover"},
+    "voiceover": {"agent": "voice-director", "make_scenario": "voiceover", "next": "thumbnail"},
+    "thumbnail": {"agent": "thumbnail-designer", "make_scenario": "thumbnail", "next": "edited"},
+    "edited": {"agent": "video-editor", "make_scenario": "video_assembly", "next": "seo"},
+    "seo": {"agent": "seo-specialist", "make_scenario": "seo_optimization", "next": "review"},
+    "review": {"agent": "quality-assurance-lead", "make_scenario": None, "next": "approved"},
     "approved": {"agent": "ceo-agent", "make_scenario": "upload_schedule", "next": "published"},
     "published": {"agent": None, "make_scenario": None, "next": None},
 }
 
 # Channel → Channel Manager mapping
 CHANNEL_MANAGERS = {
-    "V-Real AI": "ai-and-tech-channel-manager-agent",
-    "Cash Flow Code": "finance-channel-manager-agent",
-    "Mind Shift": "psychology-channel-manager-agent",
+    "V-Real AI": "ai-and-tech-channel-manager",
+    "Cash Flow Code": "finance-and-business-channel-manager",
+    "Mind Shift": "psychology-and-behavior-channel-manager",
 }

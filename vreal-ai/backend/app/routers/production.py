@@ -16,6 +16,10 @@ from app.models.agent import Agent
 from app.models.scheduler import Escalation
 from app.services.claude_service import generate_agent_response, generate_agent_response_async
 from app.services.pressure_test import pressure_test
+from app.services.agent_memory import (
+    record_failure_lesson, record_success, record_insight,
+    build_memory_prompt, update_skill_score,
+)
 
 router = APIRouter(prefix="/api/production", tags=["production"])
 
@@ -308,8 +312,12 @@ async def _advance_pipeline(job_id: str):
                         "status": m.status,
                     })
 
+                # Inject agent memory (lessons from past work) into system prompt
+                memory_prompt = await build_memory_prompt(agent_id, stage=job.stage)
+                enhanced_prompt = agent.system_prompt + memory_prompt
+
                 response = await generate_agent_response_async(
-                    system_prompt=agent.system_prompt,
+                    system_prompt=enhanced_prompt,
                     thread_messages=thread_msgs,
                     agent_id=agent_id,
                 )
@@ -350,6 +358,18 @@ async def _advance_pipeline(job_id: str):
                 break
 
             passed, score, feedback = await _quality_gate(job, job.stage, response, db)
+
+            if passed:
+                # Record success in agent memory
+                await record_success(
+                    agent_id=agent_id,
+                    stage=job.stage,
+                    episode_title=job.title,
+                    score=score,
+                    attempts=revision_count + 1,
+                    work_summary=response[:500],
+                )
+                await update_skill_score(agent_id, job.stage, passed_first_try=(revision_count == 0))
 
             if passed and job.stage in PRESSURE_TEST_STAGES:
                 # Passed internal QA — now run multi-model pressure test
@@ -415,9 +435,19 @@ async def _advance_pipeline(job_id: str):
                 print(f"[QUALITY] ✓ {job.stage} for '{job.title}' scored {score}/10 — APPROVED (attempt {revision_count + 1})")
                 break
 
-            # Not 10/10 — loop back
+            # Not 10/10 — loop back and LEARN from the failure
             revision_count += 1
             print(f"[QUALITY] ✗ {job.stage} for '{job.title}' scored {score}/10 — REVISION {revision_count}/{MAX_REVISION_LOOPS}")
+
+            # Record failure in agent memory so they learn
+            await record_failure_lesson(
+                agent_id=agent_id,
+                stage=job.stage,
+                episode_title=job.title,
+                score=score,
+                feedback=feedback[:500],
+                revision_number=revision_count,
+            )
 
             if revision_count >= MAX_REVISION_LOOPS:
                 # Safety valve — escalate to Pedro

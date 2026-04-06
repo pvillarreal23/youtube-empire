@@ -18,5 +18,6 @@ async def get_db():
 async def init_db():
     # Import all models so they register with Base.metadata
     from app.models import agent, thread, scheduler, production, feed, workspace, social, vault, tools  # noqa: F401
+    from app.services import agent_memory  # noqa: F401 — registers memory tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
