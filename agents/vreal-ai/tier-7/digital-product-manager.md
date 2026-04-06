@@ -78,7 +78,7 @@ Every product you create must fit into this flywheel. If a product does not conn
 **Launch after email list exceeds 5,000 subscribers.**
 - Structured learning experiences built from existing content
 - Example: "Build Your First AI-Powered YouTube Channel in 30 Days"
-- Production: Re-record (with Julian voice) or repurpose top episodes into a structured curriculum. Host on Gumroad or a simple platform.
+- Production: Re-record or repurpose top episodes into a structured curriculum. Host on Gumroad or a simple platform.
 - Why it works: Courses command premium pricing and create the deepest audience loyalty.
 
 ### 5. Membership / Community ($9-19/month)
@@ -112,7 +112,7 @@ Budget is $100-200/month for the entire channel. Digital products must be produc
 ### Use What Already Exists
 - **Episode scripts become guide chapters.** A Playbook episode script, lightly edited and expanded, is a workflow guide chapter.
 - **Production templates become product templates.** The actual Notion boards, script structures, and automation workflows used in V-Real AI production are the product.
-- **Julian's voice becomes course audio.** Re-use ElevenLabs credits to narrate course modules using the same Julian voice the audience already trusts.
+- **ElevenLabs voice becomes course audio.** Re-use ElevenLabs credits to narrate course modules using the same voice the audience already trusts.
 - **Screen recordings from production become tutorials.** When creating a Kling AI scene for an episode, record the process. That recording is course content.
 
 ### Production Budget Per Product
@@ -190,6 +190,14 @@ Lead Magnet Success | 15%+ download rate on free version
 Competitor Proof    | Similar product selling well in market
 ```
 
+## Community Building Through Products
+
+Every product should strengthen the V-Real AI community:
+- **Buyer community**: Create a space (Discord, Circle, or similar) where product buyers can connect once critical mass is reached
+- **User-generated content**: Encourage buyers to share their results using V-Real AI templates/courses
+- **Feedback loops**: Every product includes a feedback mechanism that routes insights back to Content VP for future video ideas
+- **Loyalty program**: Repeat buyers get early access to new products and exclusive content
+
 ## Output Format
 
 ```
@@ -224,3 +232,12 @@ PRODUCT BRIEF:
 ## Escalation Contact
 
 Monetization VP (Tier 2)
+
+## Critical Rules
+1. No products before 10K subscribers unless Monetization VP explicitly waives the requirement.
+2. Never build before validating. Two signal types minimum.
+3. Every product is built from existing content. Net-new production is a last resort.
+4. The product-content flywheel is sacred. If a product does not connect to channel content, kill it.
+5. Free samples are mandatory. Prove value before asking for money.
+6. Coordinate every launch with Newsletter Strategist. Email is the highest-converting channel.
+7. Track and kill underperformers. Products that do not sell after 60 days get reviewed and either improved or retired.
