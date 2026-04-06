@@ -32,6 +32,11 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GROK_API_KEY = os.getenv("GROK_API_KEY", "")
 
+# ── Make.com Webhook Fallbacks (bypass 403 blocks) ──────────────
+MAKE_WEBHOOK_PRESSURE_OPENAI = os.getenv("MAKE_WEBHOOK_PRESSURE_OPENAI", "")
+MAKE_WEBHOOK_PRESSURE_GEMINI = os.getenv("MAKE_WEBHOOK_PRESSURE_GEMINI", "")
+MAKE_WEBHOOK_PRESSURE_GROK = os.getenv("MAKE_WEBHOOK_PRESSURE_GROK", "")
+
 # ── Models ───────────────────────────────────────────────────────────────────
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
 OPENAI_MODEL = "gpt-4o"
@@ -147,114 +152,200 @@ async def _call_claude(prompt: str) -> PressureTestResult:
         )
 
 
-async def _call_openai(prompt: str) -> PressureTestResult:
-    """Call ChatGPT API for review."""
-    if not OPENAI_API_KEY:
-        return PressureTestResult(
-            model="chatgpt", score=0, verdict="SKIP",
-            feedback="", raw_response="", error="OPENAI_API_KEY not set — add to .env to enable ChatGPT pressure testing"
-        )
+async def _call_via_make(webhook_url: str, model_name: str, prompt: str) -> PressureTestResult:
+    """Call an external AI model via Make.com webhook (bypasses 403 blocks).
 
+    The Make.com scenario receives the prompt, calls the API from Make's servers,
+    and returns the model's response text.
+    """
     try:
-        async with httpx.AsyncClient(timeout=120) as client:
+        async with httpx.AsyncClient(timeout=180) as client:
             response = await client.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {OPENAI_API_KEY}",
-                    "Content-Type": "application/json",
-                },
+                webhook_url,
                 json={
-                    "model": OPENAI_MODEL,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 2000,
+                    "model": model_name,
+                    "prompt": prompt,
+                    "max_tokens": 4000,
+                    "source": "pressure_test",
                 },
             )
             response.raise_for_status()
             data = response.json()
-            text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+            text = data.get("text", data.get("response", data.get("content", "")))
+            if not text:
+                return PressureTestResult(
+                    model=model_name, score=0, verdict="ERROR",
+                    feedback="", raw_response=str(data),
+                    error="Make.com webhook returned no text"
+                )
             score, verdict, feedback = _parse_review(text)
             return PressureTestResult(
-                model="chatgpt", score=score, verdict=verdict,
+                model=model_name, score=score, verdict=verdict,
                 feedback=feedback, raw_response=text
             )
     except Exception as e:
         return PressureTestResult(
-            model="chatgpt", score=0, verdict="ERROR",
-            feedback="", raw_response="", error=str(e)
+            model=model_name, score=0, verdict="ERROR",
+            feedback="", raw_response="", error=f"Make.com fallback failed: {e}"
         )
+
+
+async def _call_openai(prompt: str) -> PressureTestResult:
+    """Call ChatGPT API for review. Falls back to Make.com if direct call fails."""
+    if not OPENAI_API_KEY and not MAKE_WEBHOOK_PRESSURE_OPENAI:
+        return PressureTestResult(
+            model="chatgpt", score=0, verdict="SKIP",
+            feedback="", raw_response="", error="OPENAI_API_KEY not set and no Make.com fallback configured"
+        )
+
+    # Try direct API first
+    if OPENAI_API_KEY:
+        try:
+            async with httpx.AsyncClient(timeout=120) as client:
+                response = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {OPENAI_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": OPENAI_MODEL,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "max_tokens": 4000,
+                    },
+                )
+                response.raise_for_status()
+                data = response.json()
+                text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                score, verdict, feedback = _parse_review(text)
+                return PressureTestResult(
+                    model="chatgpt", score=score, verdict=verdict,
+                    feedback=feedback, raw_response=text
+                )
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 403 and MAKE_WEBHOOK_PRESSURE_OPENAI:
+                print("[PRESSURE] OpenAI 403 — falling back to Make.com webhook")
+                return await _call_via_make(MAKE_WEBHOOK_PRESSURE_OPENAI, "chatgpt", prompt)
+            return PressureTestResult(
+                model="chatgpt", score=0, verdict="ERROR",
+                feedback="", raw_response="", error=str(e)
+            )
+        except Exception as e:
+            if MAKE_WEBHOOK_PRESSURE_OPENAI:
+                print(f"[PRESSURE] OpenAI error ({e}) — falling back to Make.com webhook")
+                return await _call_via_make(MAKE_WEBHOOK_PRESSURE_OPENAI, "chatgpt", prompt)
+            return PressureTestResult(
+                model="chatgpt", score=0, verdict="ERROR",
+                feedback="", raw_response="", error=str(e)
+            )
+
+    # No API key but Make.com is configured — use it directly
+    return await _call_via_make(MAKE_WEBHOOK_PRESSURE_OPENAI, "chatgpt", prompt)
 
 
 async def _call_gemini(prompt: str) -> PressureTestResult:
-    """Call Google Gemini API for review."""
-    if not GEMINI_API_KEY:
+    """Call Google Gemini API for review. Falls back to Make.com if direct call fails."""
+    if not GEMINI_API_KEY and not MAKE_WEBHOOK_PRESSURE_GEMINI:
         return PressureTestResult(
             model="gemini", score=0, verdict="SKIP",
-            feedback="", raw_response="", error="GEMINI_API_KEY not set — add to .env to enable Gemini pressure testing"
+            feedback="", raw_response="", error="GEMINI_API_KEY not set and no Make.com fallback configured"
         )
 
-    try:
-        async with httpx.AsyncClient(timeout=120) as client:
-            response = await client.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
-                headers={
-                    "Content-Type": "application/json",
-                    "x-goog-api-key": GEMINI_API_KEY,
-                },
-                json={
-                    "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {"maxOutputTokens": 2000},
-                },
-            )
-            response.raise_for_status()
-            data = response.json()
-            text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-            score, verdict, feedback = _parse_review(text)
+    # Try direct API first
+    if GEMINI_API_KEY:
+        try:
+            async with httpx.AsyncClient(timeout=120) as client:
+                response = await client.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
+                    headers={
+                        "Content-Type": "application/json",
+                        "x-goog-api-key": GEMINI_API_KEY,
+                    },
+                    json={
+                        "contents": [{"parts": [{"text": prompt}]}],
+                        "generationConfig": {"maxOutputTokens": 4000},
+                    },
+                )
+                response.raise_for_status()
+                data = response.json()
+                text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                score, verdict, feedback = _parse_review(text)
+                return PressureTestResult(
+                    model="gemini", score=score, verdict=verdict,
+                    feedback=feedback, raw_response=text
+                )
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 403 and MAKE_WEBHOOK_PRESSURE_GEMINI:
+                print("[PRESSURE] Gemini 403 — falling back to Make.com webhook")
+                return await _call_via_make(MAKE_WEBHOOK_PRESSURE_GEMINI, "gemini", prompt)
             return PressureTestResult(
-                model="gemini", score=score, verdict=verdict,
-                feedback=feedback, raw_response=text
+                model="gemini", score=0, verdict="ERROR",
+                feedback="", raw_response="", error=str(e)
             )
-    except Exception as e:
-        return PressureTestResult(
-            model="gemini", score=0, verdict="ERROR",
-            feedback="", raw_response="", error=str(e)
-        )
+        except Exception as e:
+            if MAKE_WEBHOOK_PRESSURE_GEMINI:
+                print(f"[PRESSURE] Gemini error ({e}) — falling back to Make.com webhook")
+                return await _call_via_make(MAKE_WEBHOOK_PRESSURE_GEMINI, "gemini", prompt)
+            return PressureTestResult(
+                model="gemini", score=0, verdict="ERROR",
+                feedback="", raw_response="", error=str(e)
+            )
+
+    # No API key but Make.com is configured
+    return await _call_via_make(MAKE_WEBHOOK_PRESSURE_GEMINI, "gemini", prompt)
 
 
 async def _call_grok(prompt: str) -> PressureTestResult:
-    """Call Grok API for review (xAI)."""
-    if not GROK_API_KEY:
+    """Call Grok API for review (xAI). Falls back to Make.com if direct call fails."""
+    if not GROK_API_KEY and not MAKE_WEBHOOK_PRESSURE_GROK:
         return PressureTestResult(
             model="grok", score=0, verdict="SKIP",
-            feedback="", raw_response="", error="GROK_API_KEY not set — add to .env to enable Grok pressure testing"
+            feedback="", raw_response="", error="GROK_API_KEY not set and no Make.com fallback configured"
         )
 
-    try:
-        async with httpx.AsyncClient(timeout=120) as client:
-            response = await client.post(
-                "https://api.x.ai/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {GROK_API_KEY}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": GROK_MODEL,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 2000,
-                },
-            )
-            response.raise_for_status()
-            data = response.json()
-            text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-            score, verdict, feedback = _parse_review(text)
+    # Try direct API first
+    if GROK_API_KEY:
+        try:
+            async with httpx.AsyncClient(timeout=120) as client:
+                response = await client.post(
+                    "https://api.x.ai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {GROK_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": GROK_MODEL,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "max_tokens": 4000,
+                    },
+                )
+                response.raise_for_status()
+                data = response.json()
+                text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                score, verdict, feedback = _parse_review(text)
+                return PressureTestResult(
+                    model="grok", score=score, verdict=verdict,
+                    feedback=feedback, raw_response=text
+                )
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 403 and MAKE_WEBHOOK_PRESSURE_GROK:
+                print("[PRESSURE] Grok 403 — falling back to Make.com webhook")
+                return await _call_via_make(MAKE_WEBHOOK_PRESSURE_GROK, "grok", prompt)
             return PressureTestResult(
-                model="grok", score=score, verdict=verdict,
-                feedback=feedback, raw_response=text
+                model="grok", score=0, verdict="ERROR",
+                feedback="", raw_response="", error=str(e)
             )
-    except Exception as e:
-        return PressureTestResult(
-            model="grok", score=0, verdict="ERROR",
-            feedback="", raw_response="", error=str(e)
-        )
+        except Exception as e:
+            if MAKE_WEBHOOK_PRESSURE_GROK:
+                print(f"[PRESSURE] Grok error ({e}) — falling back to Make.com webhook")
+                return await _call_via_make(MAKE_WEBHOOK_PRESSURE_GROK, "grok", prompt)
+            return PressureTestResult(
+                model="grok", score=0, verdict="ERROR",
+                feedback="", raw_response="", error=str(e)
+            )
+
+    # No API key but Make.com is configured
+    return await _call_via_make(MAKE_WEBHOOK_PRESSURE_GROK, "grok", prompt)
 
 
 def _parse_review(text: str) -> tuple[int, str, str]:
