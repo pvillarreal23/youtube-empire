@@ -15,6 +15,7 @@ from app.routers.vault import router as vault_router
 from app.routers.tools import router as tools_router, init_tools
 from app.routers.media import router as media_router
 from app.routers.skills import router as skills_router
+from app.services.skill_seeder import seed_baseline_skills
 from app.config import CORS_ORIGINS
 import os
 
@@ -28,6 +29,11 @@ async def lifespan(app: FastAPI):
     async with async_session() as session:
         await load_agents_to_db(session)
     print("Loaded agents into database")
+    new_skills = await seed_baseline_skills()
+    if new_skills:
+        print(f"Seeded {new_skills} baseline skills across all agents")
+    else:
+        print("Agent skills already seeded — ready to grow")
     await init_scheduled_tasks()
     await init_tools()
     await start_scheduler()

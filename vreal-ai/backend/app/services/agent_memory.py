@@ -487,8 +487,17 @@ async def build_memory_prompt(agent_id: str, stage: str = None) -> str:
         for i in insights[:3]:
             sections.append(f"  💡 {i['content'][:200]}")
 
+    # META-PROMPTING: Self-generated improvement rules
+    # Agents create their own rules based on patterns they've seen
+    meta_rules = _generate_meta_prompt_rules(failures, successes, pressure_tests, reviewer_fb)
+    if meta_rules:
+        sections.append("\n### YOUR SELF-GENERATED RULES (meta-prompting — rules you wrote for yourself):")
+        for rule in meta_rules:
+            sections.append(f"  📌 {rule}")
+
     sections.append("\n" + "=" * 60)
     sections.append("Apply ALL of this knowledge. You are getting better every episode.")
+    sections.append("Use meta-prompting: before submitting, re-read your rules above and verify compliance.")
     sections.append("=" * 60 + "\n")
 
     return "\n".join(sections)
@@ -630,6 +639,83 @@ async def get_mastery_timeline(agent_id: str) -> list[dict]:
 # ═══════════════════════════════════════════════════════════════════════════
 # HELPER FUNCTIONS
 # ═══════════════════════════════════════════════════════════════════════════
+
+def _generate_meta_prompt_rules(
+    failures: list[dict],
+    successes: list[dict],
+    pressure_tests: list[dict],
+    reviewer_fb: list[dict],
+) -> list[str]:
+    """
+    META-PROMPTING ENGINE: Generate self-improvement rules from patterns.
+
+    Instead of just remembering "I failed because X", the agent creates
+    an explicit RULE for itself: "ALWAYS do Y before submitting."
+
+    This turns scattered feedback into a personal checklist that grows
+    with every episode. By episode 20, the agent has a robust set of
+    self-generated instructions that prevent all known failure modes.
+    """
+    rules = []
+
+    # Rule from repeated failures: "I keep failing at X → RULE: always check X"
+    failure_keywords = {}
+    for f in failures[:10]:
+        content = f.get("content", "").lower()
+        for keyword in ["missing", "weak", "incomplete", "no source", "no data",
+                       "generic", "vague", "shallow", "repetitive", "boring",
+                       "no hook", "no structure", "too long", "too short",
+                       "no emotion", "no story", "no evidence", "no examples"]:
+            if keyword in content:
+                failure_keywords[keyword] = failure_keywords.get(keyword, 0) + 1
+
+    for keyword, count in sorted(failure_keywords.items(), key=lambda x: -x[1]):
+        if count >= 2:
+            rules.append(
+                f"RULE (from {count} past failures): ALWAYS check for '{keyword}' issues before submitting. "
+                f"This has been flagged {count} times — make it a non-negotiable checklist item."
+            )
+        if len(rules) >= 3:
+            break
+
+    # Rule from successes: "When I did X, I got 10/10 → RULE: always do X"
+    for s in successes[:3]:
+        content = s.get("content", "")
+        if "First try!" in content:
+            # Extract what worked
+            if "WINNING APPROACH:" in content:
+                approach = content.split("WINNING APPROACH:")[1].split("\n")[0].strip()[:150]
+                rules.append(f"WINNING RULE: {approach} — this approach got 10/10 first try. Repeat it.")
+                break
+
+    # Rule from pressure tests: "Multiple models flagged X → RULE: X is critical"
+    for pt in pressure_tests[:3]:
+        content = pt.get("content", "")
+        if "FAILED" in content and "COMBINED FEEDBACK:" in content:
+            feedback = content.split("COMBINED FEEDBACK:")[1].strip()[:150]
+            rules.append(f"PRESSURE TEST RULE: Multi-model consensus says: {feedback}")
+            break
+
+    # Rule from reviewer patterns: "Reviewer keeps saying X → RULE: pre-check X"
+    reviewer_patterns = {}
+    for r in reviewer_fb[:5]:
+        content = r.get("content", "").lower()
+        source = r.get("source_agent", "reviewer")
+        for keyword in ["missing", "needs", "add", "include", "improve", "strengthen",
+                       "more detail", "more specific", "more examples", "cite sources"]:
+            if keyword in content:
+                reviewer_patterns[keyword] = reviewer_patterns.get(keyword, 0) + 1
+
+    for keyword, count in sorted(reviewer_patterns.items(), key=lambda x: -x[1]):
+        if count >= 2:
+            rules.append(
+                f"REVIEWER RULE: Reviewers flag '{keyword}' repeatedly ({count}x). "
+                f"Pre-check this BEFORE submitting to avoid revision loops."
+            )
+            break
+
+    return rules[:5]  # Max 5 meta-prompting rules — keep it focused
+
 
 def _extract_key_issues(feedback: str) -> str:
     """Extract the most actionable points from feedback text."""
