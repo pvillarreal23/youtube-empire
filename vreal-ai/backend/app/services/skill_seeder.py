@@ -322,7 +322,7 @@ AGENT_TIERS = {
     "voice-director": 4, "thumbnail-designer": 4, "video-editor": 4, "seo-specialist": 4, "shorts-and-clips-agent": 4,
     "quality-assurance-lead": 5, "project-manager": 5, "workflow-orchestrator": 5,
     "automation-engineer": 5, "reflection-council": 5, "finance-controller": 5,
-    "senior-researcher": 6, "data-analyst": 6, "trend-researcher": 6,
+    "senior-researcher": 6, "data-analyst": 6,
     "partnership-manager": 7, "affiliate-coordinator": 7, "newsletter-strategist": 7, "digital-product-manager": 7,
     "community-manager": 8, "social-media-manager": 8, "secretary-agent": 8,
     "compliance-officer": 9,

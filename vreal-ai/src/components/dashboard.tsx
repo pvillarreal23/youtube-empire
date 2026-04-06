@@ -17,7 +17,7 @@ const FEED_CHANNELS: Record<string, { name: string; emoji: string }> = { general
 interface ThreadMsg { id: string; sender_type: "user" | "agent"; sender_agent_id: string | null; sender_name?: string; content: string; created_at: string; status: string; }
 interface Thread { id: string; subject: string; participants: string[]; messages: ThreadMsg[]; status: string; updated_at: string; }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// All API calls go through Next.js proxy routes — no direct backend calls
 
 type Status = "RESEARCHED" | "TITLED" | "SCRIPTED" | "PRODUCTION" | "READY" | "SCHEDULED" | "LIVE";
 
@@ -239,9 +239,9 @@ export default function Dashboard() {
     fetch(`/api/tools/scenarios`).then(r => r.json()).then(d => setScenariosList(Array.isArray(d) ? {} : (d.scenarios || d))).catch(() => {});
     fetch(`/api/channels`).then(r => r.json()).then(d => setChannels(Array.isArray(d) ? d : d.channels || [])).catch(() => {});
     // Production jobs + skills leaderboards
-    fetch(`${API_URL}/api/production/jobs`).then(r => r.json()).then(d => setProdJobs(Array.isArray(d) ? d : [])).catch(() => {});
-    fetch(`${API_URL}/api/skills/leaderboard/growth`).then(r => r.json()).then(d => setGrowthBoard(Array.isArray(d) ? d : [])).catch(() => {});
-    fetch(`${API_URL}/api/skills/leaderboard/production`).then(r => r.json()).then(d => setProdBoard(Array.isArray(d) ? d : [])).catch(() => {});
+    fetch(`/api/production/jobs`).then(r => r.json()).then(d => setProdJobs(Array.isArray(d) ? d : [])).catch(() => {});
+    fetch(`/api/skills/leaderboard/growth`).then(r => r.json()).then(d => setGrowthBoard(Array.isArray(d) ? d : [])).catch(() => {});
+    fetch(`/api/skills/leaderboard/production`).then(r => r.json()).then(d => setProdBoard(Array.isArray(d) ? d : [])).catch(() => {});
   }, []);
 
   // Poll activity + feed + production every 10 seconds
@@ -250,8 +250,8 @@ export default function Dashboard() {
       fetch(`/api/scheduler/activity`).then(r => r.json()).then(setActivityData).catch(() => {});
       fetch(`/api/feed/messages?channel=${feedChannel}&limit=50`).then(r => r.json()).then(d => setFeedMessages(d.messages || [])).catch(() => {});
       fetch(`/api/feed/unread_count`).then(r => r.json()).then(setFeedUnread).catch(() => {});
-      fetch(`${API_URL}/api/production/jobs`).then(r => r.json()).then(d => setProdJobs(Array.isArray(d) ? d : [])).catch(() => {});
-      fetch(`${API_URL}/api/skills/leaderboard/growth`).then(r => r.json()).then(d => setGrowthBoard(Array.isArray(d) ? d : [])).catch(() => {});
+      fetch(`/api/production/jobs`).then(r => r.json()).then(d => setProdJobs(Array.isArray(d) ? d : [])).catch(() => {});
+      fetch(`/api/skills/leaderboard/growth`).then(r => r.json()).then(d => setGrowthBoard(Array.isArray(d) ? d : [])).catch(() => {});
     }, 10000);
     return () => clearInterval(poll);
   }, [feedChannel]);
@@ -439,10 +439,10 @@ export default function Dashboard() {
   // Mobile bottom nav — most important tabs for quick access
   const mobileBottomTabs: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
     { id: "overview", label: "Home", icon: LayoutDashboard },
+    { id: "pipeline", label: "Pipeline", icon: Layers },
+    { id: "agents", label: "Agents", icon: Bot },
     { id: "feed", label: "Feed", icon: MessageSquare },
     { id: "inbox", label: "Inbox", icon: Inbox },
-    { id: "agents", label: "Agents", icon: Bot },
-    { id: "activity", label: "Activity", icon: Activity },
   ];
 
   return (
@@ -764,58 +764,176 @@ export default function Dashboard() {
           </div>
         )}
 
-        {tab === "pipeline" && (
+        {tab === "pipeline" && (() => {
+          const PROD_STAGES = ["research","scripted","voiceover","thumbnail","edited","seo","review","approved","published"];
+          const stageColor: Record<string,string> = { research:"text-purple-400 bg-purple-500/20 border-purple-500/30", scripted:"text-cyan-400 bg-cyan-500/20 border-cyan-500/30", voiceover:"text-blue-400 bg-blue-500/20 border-blue-500/30", thumbnail:"text-orange-400 bg-orange-500/20 border-orange-500/30", edited:"text-yellow-400 bg-yellow-500/20 border-yellow-500/30", seo:"text-green-400 bg-green-500/20 border-green-500/30", review:"text-pink-400 bg-pink-500/20 border-pink-500/30", approved:"text-emerald-400 bg-emerald-500/20 border-emerald-500/30", published:"text-red-400 bg-red-500/20 border-red-500/30" };
+          const stageIcon: Record<string,string> = { research:"🔍", scripted:"📝", voiceover:"🎙️", thumbnail:"🎨", edited:"🎬", seo:"📊", review:"👁️", approved:"✅", published:"🚀" };
+          const refreshJobs = () => fetch('/api/production/jobs').then(r=>r.json()).then(d=>setProdJobs(Array.isArray(d)?d:[])).catch(()=>{});
+          const [pipelineView, setPipelineView] = useState<"cards"|"table"|"kanban">("cards");
+
+          return (
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <h2 className="text-xl font-bold">Content Pipeline</h2>
-              <button onClick={() => setShowNewModal(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" />New Video</button>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <button onClick={() => setFilterStatus("ALL")} className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${filterStatus==="ALL" ? "bg-white/20 text-white border-white/30" : "border-white/10 text-white/50"}`}>ALL</button>
-              {STATUSES.map(s => (<button key={s} onClick={() => setFilterStatus(s)} className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${filterStatus===s ? SC[s] : "border-white/10 text-white/40"}`}>{s}</button>))}
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-              <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/10 text-xs text-white/40 font-medium uppercase tracking-wider">
-                <div className="col-span-4">Title</div><div className="col-span-2">Channel</div><div className="col-span-2">Status</div><div className="col-span-1">Date</div><div className="col-span-1">Views</div><div className="col-span-2 text-right">Actions</div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-bold">Content Pipeline</h2>
+                <p className="text-xs text-white/40 mt-0.5">{prodJobs.length} active jobs | {prodJobs.filter(j => j.stage === "published").length} published</p>
               </div>
-              {filteredPipeline.length === 0 && <div className="px-6 py-12 text-center text-white/30">No items match this filter.</div>}
-              {filteredPipeline.map(item => (
-                <div key={item.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-4 px-4 sm:px-6 py-4 border-b border-white/5 hover:bg-white/5 transition-all items-center">
-                  <div className="sm:col-span-4 flex items-center gap-3"><div className={`w-2 h-2 rounded-full flex-shrink-0 ${item.status==="LIVE" ? "bg-red-500 animate-pulse" : "bg-white/20"}`} /><span className="text-sm font-medium">{item.title}</span></div>
-                  <div className="sm:col-span-2 text-sm text-white/60 pl-5 sm:pl-0">{item.channel}</div>
-                  <div className="sm:col-span-2 pl-5 sm:pl-0"><select value={item.status} onChange={e => handleStatusChange(item.id, e.target.value as Status)} className="text-xs px-2 py-1 rounded-full border bg-transparent cursor-pointer focus:outline-none border-white/20">{STATUSES.map(s => <option key={s} value={s} className="bg-[#141414]">{s}</option>)}</select></div>
-                  <div className="sm:col-span-1 text-sm text-white/40 pl-5 sm:pl-0">{item.date}</div>
-                  <div className="sm:col-span-1 text-sm text-white/40 pl-5 sm:pl-0">{item.views}</div>
-                  <div className="sm:col-span-2 flex items-center gap-2 justify-end pl-5 sm:pl-0">
-                    <button onClick={() => setEditItem(item)} className="p-1.5 rounded-lg hover:bg-white/10"><Edit3 className="w-4 h-4 text-white/50 hover:text-blue-400" /></button>
-                    <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded-lg hover:bg-red-500/10"><Trash2 className="w-4 h-4 text-white/50 hover:text-red-400" /></button>
-                  </div>
+              <div className="flex items-center gap-2">
+                <div className="flex bg-white/5 rounded-lg p-0.5 border border-white/10">
+                  {(["cards","table","kanban"] as const).map(v => (
+                    <button key={v} onClick={() => setPipelineView(v)} className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all ${pipelineView === v ? "bg-white/10 text-white" : "text-white/40"}`}>
+                      {v === "cards" ? "Cards" : v === "table" ? "Table" : "Board"}
+                    </button>
+                  ))}
                 </div>
-              ))}
+                <button onClick={() => setShowNewModal(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded-lg text-xs font-medium transition-colors"><Plus className="w-3.5 h-3.5" />New Video</button>
+              </div>
             </div>
-            {/* Real Production Jobs from Backend */}
-            {prodJobs.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold mb-4">Live Production Jobs</h3>
-                <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-                  <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/10 text-xs text-white/40 font-medium uppercase tracking-wider">
-                    <div className="col-span-3">Title</div><div className="col-span-2">Channel</div><div className="col-span-2">Stage</div><div className="col-span-2">Agent</div><div className="col-span-1">Progress</div><div className="col-span-2 text-right">Actions</div>
+
+            {/* Stage progress bar */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4">
+              <div className="flex gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar">
+                {PROD_STAGES.map(stage => {
+                  const count = prodJobs.filter(j => j.stage === stage).length;
+                  return (
+                    <div key={stage} className="flex-1 min-w-[60px]">
+                      <div className={`text-center p-1.5 sm:p-2 rounded-lg border transition-all ${count > 0 ? stageColor[stage] : "bg-white/[0.02] border-white/5 text-white/20"}`}>
+                        <span className="text-sm sm:text-base">{stageIcon[stage]}</span>
+                        <p className="text-[9px] sm:text-[10px] font-medium mt-0.5 uppercase tracking-wider truncate">{stage}</p>
+                        <p className="text-xs sm:text-sm font-bold">{count}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* CARD VIEW — mobile-first */}
+            {pipelineView === "cards" && (
+              <div className="space-y-3">
+                {prodJobs.length === 0 && (
+                  <div className="text-center py-12 bg-white/5 border border-white/10 rounded-xl">
+                    <Layers className="w-10 h-10 text-white/10 mx-auto mb-3" />
+                    <p className="text-sm text-white/30">No production jobs yet</p>
+                    <p className="text-xs text-white/15 mt-1">Click "New Video" to start your first production</p>
                   </div>
-                  {prodJobs.map((j: any) => {
-                    const stages = ["research","scripted","voiceover","thumbnail","edited","seo","review","approved","published"];
-                    const stageIdx = stages.indexOf(j.stage);
-                    const progress = Math.round(((stageIdx + 1) / stages.length) * 100);
-                    const stageColor: Record<string,string> = { research:"text-purple-400 bg-purple-500/20", scripted:"text-cyan-400 bg-cyan-500/20", voiceover:"text-blue-400 bg-blue-500/20", thumbnail:"text-orange-400 bg-orange-500/20", edited:"text-yellow-400 bg-yellow-500/20", seo:"text-green-400 bg-green-500/20", review:"text-pink-400 bg-pink-500/20", approved:"text-emerald-400 bg-emerald-500/20", published:"text-red-400 bg-red-500/20" };
+                )}
+                {prodJobs.map((j: any) => {
+                  const stageIdx = PROD_STAGES.indexOf(j.stage);
+                  const progress = Math.round(((stageIdx + 1) / PROD_STAGES.length) * 100);
+                  return (
+                    <div key={j.id} className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-all">
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold truncate">{j.title}</p>
+                          <p className="text-xs text-white/40 mt-0.5">{j.channel}</p>
+                        </div>
+                        <span className={`text-[10px] px-2 py-1 rounded-full border font-medium shrink-0 ${stageColor[j.stage] || "text-white/40 bg-white/10 border-white/10"}`}>
+                          {stageIcon[j.stage]} {j.stage.toUpperCase()}
+                        </span>
+                      </div>
+                      {/* Progress bar */}
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] text-white/30">Progress</span>
+                          <span className="text-[10px] text-white/40 font-medium">{progress}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all" style={{width:`${progress}%`}} />
+                        </div>
+                        {/* Stage dots */}
+                        <div className="flex justify-between mt-1.5">
+                          {PROD_STAGES.map((s, i) => (
+                            <div key={s} className={`w-1.5 h-1.5 rounded-full ${i <= stageIdx ? "bg-cyan-400" : "bg-white/10"}`} title={s} />
+                          ))}
+                        </div>
+                      </div>
+                      {/* Agent + actions */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {j.current_agent_id && (
+                            <>
+                              <img src={getAgentAvatar(j.current_agent_id)} className="w-6 h-6 rounded-full object-cover ring-1 ring-white/10" alt="" />
+                              <span className="text-[11px] text-white/50">{getHumanName(j.current_agent_id) || j.current_agent_name || j.current_agent_id}</span>
+                            </>
+                          )}
+                          {!j.current_agent_id && <span className="text-[11px] text-white/30">No agent assigned</span>}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {j.stage === "review" && (
+                            <button onClick={() => fetch(`/api/production/jobs/${j.id}/approve`,{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}).then(refreshJobs).catch(()=>{})} className="text-[10px] px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white font-medium transition-all">Approve</button>
+                          )}
+                          {j.stage !== "published" && j.stage !== "review" && (
+                            <button onClick={() => fetch(`/api/production/jobs/${j.id}/advance`,{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}).then(refreshJobs).catch(()=>{})} className="text-[10px] px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/60 font-medium transition-all">Advance</button>
+                          )}
+                          {j.stage !== "published" && (
+                            <button onClick={() => fetch(`/api/production/jobs/${j.id}/reject`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({notes:"Manual rejection"})}).then(refreshJobs).catch(()=>{})} className="text-[10px] px-2 py-1.5 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400 transition-all">Reject</button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* TABLE VIEW — desktop optimized */}
+            {pipelineView === "table" && (
+              <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/10 text-xs text-white/40 font-medium uppercase tracking-wider">
+                  <div className="col-span-3">Title</div><div className="col-span-2">Channel</div><div className="col-span-2">Stage</div><div className="col-span-2">Agent</div><div className="col-span-1">Progress</div><div className="col-span-2 text-right">Actions</div>
+                </div>
+                {prodJobs.length === 0 && <div className="px-6 py-12 text-center text-white/30">No production jobs yet.</div>}
+                {prodJobs.map((j: any) => {
+                  const stageIdx = PROD_STAGES.indexOf(j.stage);
+                  const progress = Math.round(((stageIdx + 1) / PROD_STAGES.length) * 100);
+                  return (
+                    <div key={j.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-4 px-4 sm:px-6 py-3 border-b border-white/5 hover:bg-white/5 transition-all items-center">
+                      <div className="sm:col-span-3 text-sm font-medium truncate">{j.title}</div>
+                      <div className="sm:col-span-2 text-xs text-white/50">{j.channel}</div>
+                      <div className="sm:col-span-2"><span className={`text-[10px] px-2 py-1 rounded-full border ${stageColor[j.stage] || "text-white/40 bg-white/10 border-white/10"}`}>{j.stage.toUpperCase()}</span></div>
+                      <div className="sm:col-span-2 text-[11px] text-white/40 truncate">{getHumanName(j.current_agent_id) || j.current_agent_name || "—"}</div>
+                      <div className="sm:col-span-1"><div className="w-full h-2 bg-white/10 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all" style={{width:`${progress}%`}} /></div></div>
+                      <div className="sm:col-span-2 flex items-center gap-1.5 justify-end">
+                        {j.stage === "review" && <button onClick={() => fetch(`/api/production/jobs/${j.id}/approve`,{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}).then(refreshJobs).catch(()=>{})} className="text-[10px] px-2.5 py-1 rounded-lg bg-green-600 hover:bg-green-500 text-white font-medium">Approve</button>}
+                        {j.stage !== "published" && j.stage !== "review" && <button onClick={() => fetch(`/api/production/jobs/${j.id}/advance`,{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}).then(refreshJobs).catch(()=>{})} className="text-[10px] px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/60">Advance</button>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* KANBAN BOARD VIEW */}
+            {pipelineView === "kanban" && (
+              <div className="overflow-x-auto -mx-3 px-3 pb-4">
+                <div className="flex gap-3" style={{ minWidth: PROD_STAGES.length * 180 }}>
+                  {PROD_STAGES.map(stage => {
+                    const jobs = prodJobs.filter(j => j.stage === stage);
                     return (
-                      <div key={j.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-4 px-4 sm:px-6 py-4 border-b border-white/5 hover:bg-white/5 transition-all items-center">
-                        <div className="sm:col-span-3 text-sm font-medium">{j.title}</div>
-                        <div className="sm:col-span-2 text-sm text-white/60">{j.channel}</div>
-                        <div className="sm:col-span-2"><span className={`text-xs px-2 py-1 rounded-full ${stageColor[j.stage] || "text-white/40 bg-white/10"}`}>{j.stage.toUpperCase()}</span></div>
-                        <div className="sm:col-span-2 text-xs text-white/50">{j.current_agent_name || j.current_agent_id || "—"}</div>
-                        <div className="sm:col-span-1"><div className="w-full h-2 bg-white/10 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all" style={{width:`${progress}%`}} /></div></div>
-                        <div className="sm:col-span-2 flex items-center gap-2 justify-end">
-                          {j.stage === "approved" && <button onClick={() => fetch(`${API_URL}/api/production/jobs/${j.id}/approve`,{method:"POST"}).then(()=>fetch(`${API_URL}/api/production/jobs`).then(r=>r.json()).then(d=>setProdJobs(Array.isArray(d)?d:[]))).catch(()=>{})} className="text-xs px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white font-medium">Approve</button>}
-                          {j.stage !== "published" && j.stage !== "approved" && <button onClick={() => fetch(`${API_URL}/api/production/jobs/${j.id}/advance`,{method:"POST"}).then(()=>fetch(`${API_URL}/api/production/jobs`).then(r=>r.json()).then(d=>setProdJobs(Array.isArray(d)?d:[]))).catch(()=>{})} className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/70">Skip Stage</button>}
+                      <div key={stage} className="flex-1 min-w-[160px]">
+                        <div className={`rounded-t-lg p-2 border-b-2 ${stageColor[stage] || "bg-white/5 border-white/10"} text-center`}>
+                          <span className="text-sm">{stageIcon[stage]}</span>
+                          <p className="text-[10px] font-bold uppercase tracking-wider mt-0.5">{stage}</p>
+                          <p className="text-[9px] text-white/40">{jobs.length} job{jobs.length !== 1 ? 's' : ''}</p>
+                        </div>
+                        <div className="space-y-2 mt-2 min-h-[100px]">
+                          {jobs.map((j: any) => (
+                            <div key={j.id} className="bg-white/5 border border-white/10 rounded-lg p-3 hover:border-white/20 transition-all">
+                              <p className="text-xs font-medium leading-tight">{j.title}</p>
+                              <p className="text-[9px] text-white/30 mt-1">{j.channel}</p>
+                              {j.current_agent_id && (
+                                <div className="flex items-center gap-1.5 mt-2">
+                                  <img src={getAgentAvatar(j.current_agent_id)} className="w-4 h-4 rounded-full object-cover" alt="" />
+                                  <span className="text-[9px] text-white/40 truncate">{getHumanName(j.current_agent_id) || j.current_agent_name}</span>
+                                </div>
+                              )}
+                              <div className="flex gap-1 mt-2">
+                                {stage === "review" && <button onClick={() => fetch(`/api/production/jobs/${j.id}/approve`,{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}).then(refreshJobs).catch(()=>{})} className="text-[9px] px-2 py-1 rounded bg-green-600/80 hover:bg-green-500 text-white">Approve</button>}
+                                {stage !== "published" && stage !== "review" && <button onClick={() => fetch(`/api/production/jobs/${j.id}/advance`,{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}).then(refreshJobs).catch(()=>{})} className="text-[9px] px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-white/50">Advance</button>}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     );
@@ -823,8 +941,40 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+
+            {/* Static pipeline items (planning) */}
+            {pipeline.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-white/50">Planning Pipeline</h3>
+                  <div className="flex gap-1.5 flex-wrap">
+                    <button onClick={() => setFilterStatus("ALL")} className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${filterStatus==="ALL" ? "bg-white/15 text-white border-white/25" : "border-white/10 text-white/40"}`}>ALL</button>
+                    {STATUSES.map(s => (<button key={s} onClick={() => setFilterStatus(s)} className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${filterStatus===s ? SC[s] : "border-white/10 text-white/30"}`}>{s}</button>))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {filteredPipeline.map(item => (
+                    <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5 hover:border-white/15 transition-all">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${item.status==="LIVE" ? "bg-red-500 animate-pulse" : "bg-white/20"}`} />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{item.title}</p>
+                          <p className="text-[10px] text-white/30">{item.channel} &middot; {item.date}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${SC[item.status]}`}>{item.status}</span>
+                        <button onClick={() => setEditItem(item)} className="p-1 rounded hover:bg-white/10"><Edit3 className="w-3.5 h-3.5 text-white/30" /></button>
+                        <button onClick={() => handleDelete(item.id)} className="p-1 rounded hover:bg-red-500/10"><Trash2 className="w-3.5 h-3.5 text-white/30" /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        )}
+          );
+        })()}
 
         {tab === "channels" && (
           <div className="space-y-6">
@@ -861,7 +1011,7 @@ export default function Dashboard() {
               {growthBoard.length === 0 && <p className="text-sm text-white/30">Loading leaderboard...</p>}
               <div className="space-y-2">
                 {growthBoard.slice(0, 15).map((a: any, i: number) => (
-                  <div key={a.agent_id} className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-white/5 cursor-pointer transition-all" onClick={() => fetch(`${API_URL}/api/skills/agent/${a.agent_id}`).then(r=>r.json()).then(setSelectedAgentSkills).catch(()=>{})}>
+                  <div key={a.agent_id} className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-white/5 cursor-pointer transition-all" onClick={() => fetch(`/api/skills/agent/${a.agent_id}`).then(r=>r.json()).then(setSelectedAgentSkills).catch(()=>{})}>
                     <span className="text-xs text-white/30 w-5">{i+1}.</span>
                     <div className="flex-1">
                       <p className="text-sm font-medium">{a.agent_id}</p>
@@ -2268,16 +2418,28 @@ export default function Dashboard() {
         )}
       </Modal>
 
-      <Modal open={showNewModal} onClose={() => setShowNewModal(false)} title="Add New Video">
+      <Modal open={showNewModal} onClose={() => setShowNewModal(false)} title="Start New Production">
         <div className="space-y-4">
-          <div><label className="block text-sm text-white/60 mb-1.5">Title</label><input type="text" value={newItem.title||""} onChange={e => setNewItem({...newItem, title:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none" placeholder="Enter video title..." /></div>
+          <div><label className="block text-sm text-white/60 mb-1.5">Video Title / Topic</label><input type="text" value={newItem.title||""} onChange={e => setNewItem({...newItem, title:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500/50" placeholder="e.g. 5 AI Tools That Will Replace Your Job in 2026" /></div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className="block text-sm text-white/60 mb-1.5">Channel</label><select value={newItem.channel||""} onChange={e => setNewItem({...newItem, channel:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none">{channels.map(c => <option key={c.id} value={c.name} className="bg-[#141414]">{c.name}</option>)}</select></div>
-            <div><label className="block text-sm text-white/60 mb-1.5">Status</label><select value={newItem.status||"RESEARCHED"} onChange={e => setNewItem({...newItem, status:e.target.value as Status})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none">{STATUSES.map(s => <option key={s} value={s} className="bg-[#141414]">{s}</option>)}</select></div>
+            <div><label className="block text-sm text-white/60 mb-1.5">Target Date</label><input type="text" value={newItem.date||""} onChange={e => setNewItem({...newItem, date:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none" placeholder="e.g. Apr 20" /></div>
           </div>
-          <div><label className="block text-sm text-white/60 mb-1.5">Target Date</label><input type="text" value={newItem.date||""} onChange={e => setNewItem({...newItem, date:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none" placeholder="e.g. Apr 20" /></div>
+          <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3">
+            <p className="text-xs text-blue-400 font-medium mb-1">What happens next?</p>
+            <p className="text-[10px] text-white/40 leading-relaxed">Your agents will automatically: Research the topic → Write a script → Generate voiceover brief → Create thumbnail brief → Plan the edit → Optimize SEO → Quality review → Submit for your approval.</p>
+          </div>
           <div className="flex gap-3 pt-2">
-            <button onClick={handleAddNew} className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-lg text-sm font-medium"><Plus className="w-4 h-4" />Add Video</button>
+            <button onClick={() => {
+              if (!newItem.title) return;
+              fetch('/api/production/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: newItem.title, channel: newItem.channel || channels[0]?.name || 'V-Real AI', target_date: newItem.date || undefined }) })
+                .then(r => r.json())
+                .then(() => {
+                  fetch('/api/production/jobs').then(r=>r.json()).then(d=>setProdJobs(Array.isArray(d)?d:[])).catch(()=>{});
+                  handleAddNew();
+                })
+                .catch(() => { handleAddNew(); });
+            }} className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-lg text-sm font-medium transition-all"><Zap className="w-4 h-4" />Start Production</button>
             <button onClick={() => setShowNewModal(false)} className="px-4 py-2.5 rounded-lg text-sm border border-white/10 hover:bg-white/5">Cancel</button>
           </div>
         </div>

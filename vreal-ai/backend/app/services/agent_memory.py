@@ -559,7 +559,7 @@ async def update_skill_score(
             revision_score = max(0, 1 - (avg_revisions / 5))  # 0 revisions = 1.0, 5+ = 0.0
 
             record.score = round(
-                (ftp_rate * 6.0 + revision_score * 2.0 + (record.current_streak / max(record.total_attempts, 1)) * 2.0),
+                (ftp_rate * 6.0 + revision_score * 2.0 + (min(record.current_streak, 10) / max(record.total_attempts, 1)) * 2.0),
                 1
             )
             record.score = min(record.score, 10.0)
