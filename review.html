@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Creator AI | Script Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .review-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+    .review-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .review-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+    }
+    .review-logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--primary);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+    .review-logo-text {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .review-logo-text span { color: var(--primary); }
+    .review-header-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .status-badge.pending { background: rgba(234,179,8,0.15); color: #eab308; border: 1px solid rgba(234,179,8,0.3); }
+    .status-badge.approved { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
+    .status-badge.rejected { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+    .review-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+    }
+    .review-card-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .review-video-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+    .review-meta {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    .review-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .review-meta-item i { width: 14px; height: 14px; }
+
+    .script-container {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .script-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.875rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(255,255,255,0.02);
+    }
+    .script-toolbar-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .script-toolbar-title i { width: 16px; height: 16px; color: var(--primary); }
+    .script-word-count {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .script-body {
+      padding: 1.5rem;
+      max-height: 500px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      font-family: inherit;
+    }
+    .script-body::-webkit-scrollbar { width: 6px; }
+    .script-body::-webkit-scrollbar-track { background: transparent; }
+    .script-body::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+
+    .review-actions {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .btn-approve {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.5rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-approve:hover { background: #0ea5e9; transform: translateY(-1px); }
+    .btn-approve:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-reject {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.5rem;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-reject:hover { border-color: #ef4444; color: #ef4444; }
+    .btn-reject:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .review-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .step-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .step-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-icon.done { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .step-icon.active { background: rgba(14,165,233,0.15); color: var(--primary); }
+    .step-icon.wait { background: rgba(255,255,255,0.04); color: var(--text-muted); }
+    .step-label { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); }
+    .step-sublabel { font-size: 0.7rem; color: var(--text-muted); }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--text-muted);
+    }
+    .empty-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1rem;
+      background: rgba(255,255,255,0.04);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .empty-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+    .empty-desc { font-size: 0.875rem; }
+
+    .result-banner {
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+    }
+    .result-banner.approved { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #22c55e; }
+    .result-banner.rejected { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; }
+    .result-banner i { width: 18px; height: 18px; }
+
+    .sheets-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      color: var(--primary);
+      text-decoration: none;
+      border: 1px solid var(--primary);
+      border-radius: 6px;
+      padding: 0.3rem 0.75rem;
+      transition: background 0.15s;
+    }
+    .sheets-link:hover { background: rgba(14,165,233,0.1); }
+    .sheets-link i { width: 13px; height: 13px; }
+
+    @media (max-width: 600px) {
+      .review-container { padding: 1rem; }
+      .review-actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="review-container">
+    <!-- Header -->
+    <div class="review-header">
+      <a href="/" class="review-logo">
+        <div class="review-logo-icon"><i data-lucide="youtube" style="width:18px;height:18px;"></i></div>
+        <span class="review-logo-text">Creator<span>AI</span></span>
+      </a>
+      <span style="color:var(--text-muted);font-size:0.85rem;">/ Script Review</span>
+      <div class="review-header-right">
+        <span id="status-badge" class="status-badge pending">
+          <span class="status-dot"></span>
+          <span id="status-text">Awaiting Review</span>
+        </span>
+        <a href="/" class="btn-reject" style="padding:0.4rem 0.9rem;font-size:0.8rem;">
+          <i data-lucide="layout-dashboard" style="width:14px;height:14px;"></i>
+          Dashboard
+        </a>
+      </div>
+    </div>
+
+    <!-- Result banner (shown after action) -->
+    <div class="result-banner" id="result-banner">
+      <i data-lucide="check-circle" id="result-icon"></i>
+      <span id="result-text"></span>
+    </div>
+
+    <!-- Loading / Empty state -->
+    <div id="empty-state" class="empty-state" style="display:none;">
+      <div class="empty-icon"><i data-lucide="inbox" style="width:28px;height:28px;"></i></div>
+      <div class="empty-title">No script ready for review</div>
+      <div class="empty-desc">Run the video pipeline in Make.com to generate a script. It will appear here automatically.</div>
+    </div>
+
+    <div id="main-content" style="display:none;">
+      <!-- Video info card -->
+      <div class="review-card">
+        <div class="review-card-title">Latest Generated Script</div>
+        <div class="review-video-title" id="review-title">—</div>
+        <div class="review-meta">
+          <div class="review-meta-item">
+            <i data-lucide="calendar"></i>
+            <span id="review-date">—</span>
+          </div>
+          <div class="review-meta-item">
+            <i data-lucide="clock"></i>
+            <span id="review-duration">—</span>
+          </div>
+          <div class="review-meta-item">
+            <i data-lucide="table"></i>
+            <a href="https://docs.google.com/spreadsheets/d/1hwXVtk4yYBA4dApSpFiL7ZNolyNnjSG93J7SRRby9XQ/edit"
+               target="_blank" class="sheets-link">
+              <i data-lucide="external-link"></i>
+              View in Google Sheets
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pipeline progress -->
+      <div class="review-steps">
+        <div class="step-card">
+          <div class="step-icon done"><i data-lucide="check" style="width:16px;height:16px;"></i></div>
+          <div>
+            <div class="step-label">Script Generated</div>
+            <div class="step-sublabel">Claude AI</div>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-icon done"><i data-lucide="check" style="width:16px;height:16px;"></i></div>
+          <div>
+            <div class="step-label">Saved to Sheets</div>
+            <div class="step-sublabel">Google Sheets</div>
+          </div>
+        </div>
+        <div class="step-card" id="step-voiceover">
+          <div class="step-icon active" id="step-voiceover-icon"><i data-lucide="mic" style="width:16px;height:16px;"></i></div>
+          <div>
+            <div class="step-label">Voiceover</div>
+            <div class="step-sublabel" id="step-voiceover-sub">Waiting for approval</div>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-icon wait"><i data-lucide="upload" style="width:16px;height:16px;"></i></div>
+          <div>
+            <div class="step-label">YouTube Upload</div>
+            <div class="step-sublabel">Coming next</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Script content -->
+      <div class="script-container">
+        <div class="script-toolbar">
+          <div class="script-toolbar-title">
+            <i data-lucide="file-text"></i>
+            Full Script
+          </div>
+          <span class="script-word-count" id="word-count"></span>
+        </div>
+        <div class="script-body" id="script-body">Loading...</div>
+      </div>
+
+      <!-- Approve / Reject actions -->
+      <div class="review-actions" id="review-actions">
+        <button class="btn-approve" id="btn-approve" onclick="handleApprove()">
+          <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
+          Approve — Send to Voiceover
+        </button>
+        <button class="btn-reject" id="btn-reject" onclick="handleReject()">
+          <i data-lucide="x-circle" style="width:18px;height:18px;"></i>
+          Reject — Generate New
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Config — these can also come from the server
+    const SHEETS_ID = '1hwXVtk4yYBA4dApSpFiL7ZNolyNnjSG93J7SRRby9XQ';
+    const REVIEW_API = '/api/notify';
+
+    let currentReview = null;
+
+    function formatDate(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+             ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function estimateDuration(text) {
+      if (!text) return '—';
+      const words = text.trim().split(/\s+/).length;
+      const minutes = Math.round(words / 130); // ~130 wpm voiceover
+      return minutes < 1 ? '<1 min' : `~${minutes} min`;
+    }
+
+    function countWords(text) {
+      if (!text) return 0;
+      return text.trim().split(/\s+/).length;
+    }
+
+    async function loadLatestScript() {
+      try {
+        // First try the notify API for the latest pending review
+        const resp = await fetch(REVIEW_API);
+        const data = await resp.json();
+
+        if (data && data.status !== 'no_pending' && data.script) {
+          currentReview = data;
+          showReview(data);
+          return;
+        }
+
+        // Fallback: try Google Sheets gviz API (works if Pedro is logged in)
+        await loadFromSheets();
+      } catch (e) {
+        console.error('Load error:', e);
+        showEmptyState();
+      }
+    }
+
+    async function loadFromSheets() {
+      try {
+        const url = `https://docs.google.com/spreadsheets/d/${SHEETS_ID}/gviz/tq?tqx=out:json`;
+        const resp = await fetch(url, { credentials: 'include' });
+        const text = await resp.text();
+        // Strip the google.visualization.Query.setResponse(...) wrapper
+        const json = JSON.parse(text.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, ''));
+        const rows = json.table?.rows || [];
+        if (rows.length === 0) { showEmptyState(); return; }
+
+        // Get column labels
+        const cols = json.table.cols.map(c => c.label.toLowerCase());
+        const scriptIdx = cols.findIndex(c => c.includes('script') || c.includes('content') || c.includes('output'));
+        const titleIdx = cols.findIndex(c => c.includes('title') || c.includes('topic') || c.includes('subject'));
+        const tsIdx = cols.findIndex(c => c.includes('timestamp') || c.includes('date') || c.includes('time'));
+
+        // Get the last row
+        const lastRow = rows[rows.length - 1];
+        const getCell = (idx) => idx >= 0 && lastRow.c[idx] ? lastRow.c[idx].v : null;
+
+        const scriptText = getCell(scriptIdx) || lastRow.c.map(c => c?.v).filter(Boolean).join('\n\n');
+        const titleText = getCell(titleIdx) || 'Untitled Script';
+        const tsText = getCell(tsIdx);
+
+        if (!scriptText) { showEmptyState(); return; }
+
+        currentReview = {
+          title: titleText,
+          script: scriptText,
+          timestamp: tsText,
+          source: 'sheets'
+        };
+        showReview(currentReview);
+      } catch (e) {
+        console.error('Sheets load error:', e);
+        showEmptyState();
+      }
+    }
+
+    function showReview(data) {
+      document.getElementById('empty-state').style.display = 'none';
+      document.getElementById('main-content').style.display = 'block';
+
+      document.getElementById('review-title').textContent = data.title || 'Video Script';
+      document.getElementById('review-date').textContent = formatDate(data.timestamp);
+      document.getElementById('review-duration').textContent =
+        'Est. ' + estimateDuration(data.script) + ' video';
+      document.getElementById('script-body').textContent = data.script || '';
+      document.getElementById('word-count').textContent =
+        countWords(data.script).toLocaleString() + ' words';
+
+      if (data.status === 'approved') {
+        setApproved();
+      } else if (data.status === 'rejected') {
+        setRejected();
+      }
+
+      lucide.createIcons();
+    }
+
+    function showEmptyState() {
+      document.getElementById('empty-state').style.display = 'block';
+      document.getElementById('main-content').style.display = 'none';
+      lucide.createIcons();
+    }
+
+    async function handleApprove() {
+      const btn = document.getElementById('btn-approve');
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader" style="width:18px;height:18px;"></i> Sending to voiceover...';
+      lucide.createIcons();
+
+      try {
+        const resp = await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'approve', reviewId: currentReview?.id })
+        });
+        const result = await resp.json();
+
+        if (result.success || result.webhookCalled) {
+          setApproved();
+        } else if (result.noWebhook) {
+          // Webhook not configured yet — still mark approved visually
+          setApproved('Script approved! Configure MAKE_CONTINUE_WEBHOOK_URL in Vercel to auto-trigger voiceover.');
+        } else {
+          throw new Error(result.error || 'Unknown error');
+        }
+      } catch (e) {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="check-circle" style="width:18px;height:18px;"></i> Approve — Send to Voiceover';
+        alert('Error: ' + e.message);
+        lucide.createIcons();
+      }
+    }
+
+    async function handleReject() {
+      if (!confirm('Reject this script and queue a new generation?')) return;
+      const btn = document.getElementById('btn-reject');
+      btn.disabled = true;
+
+      try {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'reject', reviewId: currentReview?.id })
+        });
+        setRejected();
+      } catch (e) {
+        btn.disabled = false;
+      }
+    }
+
+    function setApproved(msg) {
+      const banner = document.getElementById('result-banner');
+      banner.className = 'result-banner approved';
+      banner.style.display = 'flex';
+      document.getElementById('result-icon').setAttribute('data-lucide', 'check-circle');
+      document.getElementById('result-text').textContent =
+        msg || 'Approved! Voiceover generation has been triggered. You\'ll receive a notification when the video is ready.';
+      document.getElementById('review-actions').style.display = 'none';
+      document.getElementById('status-badge').className = 'status-badge approved';
+      document.getElementById('status-text').textContent = 'Approved';
+      document.getElementById('step-voiceover-icon').className = 'step-icon active';
+      document.getElementById('step-voiceover-sub').textContent = 'In progress…';
+      lucide.createIcons();
+    }
+
+    function setRejected() {
+      const banner = document.getElementById('result-banner');
+      banner.className = 'result-banner rejected';
+      banner.style.display = 'flex';
+      document.getElementById('result-icon').setAttribute('data-lucide', 'x-circle');
+      document.getElementById('result-text').textContent =
+        'Script rejected. Head back to the dashboard to trigger a new pipeline run.';
+      document.getElementById('review-actions').style.display = 'none';
+      document.getElementById('status-badge').className = 'status-badge rejected';
+      document.getElementById('status-text').textContent = 'Rejected';
+      lucide.createIcons();
+    }
+
+    // Init
+    loadLatestScript();
+    lucide.createIcons();
+  </script>
+</body>
+</html>
