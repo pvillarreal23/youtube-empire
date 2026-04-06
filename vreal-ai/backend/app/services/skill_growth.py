@@ -11,7 +11,7 @@ import os
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case
 from app.database import async_session
 from app.models.skills import (
     AgentSkill, AgentProductionLog, AgentGrowthSnapshot,
@@ -275,7 +275,7 @@ async def get_agent_skill_portfolio(agent_id: str) -> dict:
                 func.count(AgentProductionLog.id).label("total"),
                 func.avg(AgentProductionLog.quality_score).label("avg_score"),
                 func.sum(
-                    func.case(
+                    case(
                         (AgentProductionLog.attempts_needed == 1, 1),
                         else_=0,
                     )
