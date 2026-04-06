@@ -4,7 +4,7 @@ Status: PENDING = needs doing | DONE = completed | BLOCKED = waiting on somethin
 
 ---
 
-## TASK 1: Set Up YouTube Channel [PENDING] [PRIORITY: HIGH]
+## TASK 1: Update YouTube Channel Settings [DONE — Channel already exists]
 **When:** Anytime — no dependencies
 **Time needed:** ~20 minutes
 
