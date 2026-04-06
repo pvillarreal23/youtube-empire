@@ -18,8 +18,10 @@ from app.services.claude_service import generate_agent_response, generate_agent_
 from app.services.pressure_test import pressure_test
 from app.services.agent_memory import (
     record_failure_lesson, record_success, record_insight,
+    record_pressure_test_lesson, record_reviewer_feedback,
     build_memory_prompt, update_skill_score,
 )
+from app.services.skill_growth import grant_xp
 
 router = APIRouter(prefix="/api/production", tags=["production"])
 
@@ -31,7 +33,8 @@ QUALITY_THRESHOLD = 10  # Only 10/10 passes. Period.
 GATED_STAGES = {"research", "scripted", "voiceover", "thumbnail", "edited", "seo"}
 
 # Which stages get multi-model pressure tested (Claude + ChatGPT + Gemini + Grok)
-PRESSURE_TEST_STAGES = {"scripted", "seo"}
+# ALL gated stages get pressure tested — nothing ships without multi-model consensus
+PRESSURE_TEST_STAGES = {"research", "scripted", "voiceover", "thumbnail", "edited", "seo"}
 
 # The QA reviewer for each stage — who judges the work
 STAGE_REVIEWERS = {
@@ -359,6 +362,18 @@ async def _advance_pipeline(job_id: str):
 
             passed, score, feedback = await _quality_gate(job, job.stage, response, db)
 
+            # Record reviewer feedback in agent memory (even if passed — learn what reviewers care about)
+            reviewer_name = STAGE_REVIEWERS.get(job.stage)
+            if reviewer_name and feedback:
+                await record_reviewer_feedback(
+                    agent_id=agent_id,
+                    reviewer_id=reviewer_name,
+                    feedback=feedback[:500],
+                    score=score,
+                    stage=job.stage,
+                    episode_title=job.title,
+                )
+
             if passed:
                 # Record success in agent memory
                 await record_success(
@@ -420,8 +435,28 @@ async def _advance_pipeline(job_id: str):
                     db.add(pt_result_msg)
                     await db.commit()
 
+                # Record pressure test results in agent memory
+                model_scores = {r.model: r.score for r in pt_result.results if r.verdict not in ("SKIP", "ERROR")}
+                await record_pressure_test_lesson(
+                    agent_id=agent_id,
+                    stage=job.stage,
+                    episode_title=job.title,
+                    model_scores=model_scores,
+                    synthesized_feedback=pt_result.synthesized_feedback or "",
+                    passed=pt_result.passed,
+                )
+
                 if pt_result.passed:
                     print(f"[PRESSURE TEST] ✓ All models approved {job.stage} — avg {pt_result.average_score}/10")
+                    # Grant skill XP — pressure test pass is the biggest XP boost
+                    leveled_up = await grant_xp(
+                        agent_id=agent_id, stage=job.stage, episode_title=job.title,
+                        score=score, passed_first_try=(revision_count == 0),
+                        pressure_test_passed=True, attempts=revision_count + 1,
+                    )
+                    if leveled_up:
+                        for lu in leveled_up:
+                            print(f"[SKILLS] ⬆ {agent_id} leveled up: {lu['skill']} → {lu['level_name']} (Lv{lu['new_level']})")
                     break  # Passed everything!
                 else:
                     # Failed pressure test — use synthesized feedback for revision
@@ -433,6 +468,15 @@ async def _advance_pipeline(job_id: str):
             elif passed:
                 # Passed internal QA, no pressure test needed for this stage
                 print(f"[QUALITY] ✓ {job.stage} for '{job.title}' scored {score}/10 — APPROVED (attempt {revision_count + 1})")
+                # Grant skill XP
+                leveled_up = await grant_xp(
+                    agent_id=agent_id, stage=job.stage, episode_title=job.title,
+                    score=score, passed_first_try=(revision_count == 0),
+                    pressure_test_passed=False, attempts=revision_count + 1,
+                )
+                if leveled_up:
+                    for lu in leveled_up:
+                        print(f"[SKILLS] ⬆ {agent_id} leveled up: {lu['skill']} → {lu['level_name']} (Lv{lu['new_level']})")
                 break
 
             # Not 10/10 — loop back and LEARN from the failure
