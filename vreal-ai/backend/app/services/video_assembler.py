@@ -11,10 +11,13 @@ Assembly order (per production bible):
   4. Text overlays (kinetic typography)
   5. SFX and transitions
 
-Audio targets:
-  - Voice: -14 to -16 LUFS
-  - Music: -25 to -30 LUFS, ducked to -35 under voice
-  - Final master: -14 LUFS integrated
+Audio engineering (broadcast-grade 4-layer mix):
+  - Voice:   -14 LUFS (broadcast standard, two-pass loudnorm)
+  - Music:   -28 LUFS nominal, ducked to -35 LUFS under voice
+  - SFX:     -20 LUFS
+  - Ambient: -35 LUFS
+  - Music fades in over first 3s, fades out over last 5s
+  - Final master: -14 LUFS integrated, -1 dBTP peak ceiling
 """
 from __future__ import annotations
 
@@ -58,13 +61,21 @@ VIDEO_SPECS = {
     "audio_sample_rate": 48000,
 }
 
-# Audio levels (LUFS targets)
+# Audio levels (LUFS targets — broadcast standard)
 AUDIO_LEVELS = {
-    "voice_lufs": -15,
-    "music_lufs": -28,
-    "music_duck_lufs": -35,
-    "sfx_lufs": -20,
-    "master_lufs": -14,
+    "voice_lufs": -14,         # Broadcast standard for speech
+    "music_lufs": -28,         # Background music nominal level
+    "music_duck_lufs": -35,    # Music level when voice is active (sidechain ducking)
+    "sfx_lufs": -20,           # Sound effects
+    "ambient_lufs": -35,       # Ambient / room tone
+    "master_lufs": -14,        # Final mix target (YouTube standard)
+    "peak_ceiling": -1,        # True peak ceiling in dBTP
+}
+
+# Audio fade durations (seconds)
+AUDIO_FADES = {
+    "music_fade_in": 3.0,      # Music fades in over first 3 seconds
+    "music_fade_out": 5.0,     # Music fades out over last 5 seconds
 }
 
 
@@ -106,6 +117,8 @@ class AssemblyProject:
     title: str
     voice_audio_path: str
     music_path: Optional[str] = None
+    sfx_path: Optional[str] = None         # Sound effects track
+    ambient_path: Optional[str] = None     # Ambient / room tone track
     scenes: list[SceneClip] = field(default_factory=list)
     text_overlays: list[TextOverlay] = field(default_factory=list)
     intro_path: Optional[str] = None       # Pre-rendered brand intro
@@ -131,16 +144,35 @@ def get_duration(file_path: str) -> float:
     return float(info["format"]["duration"])
 
 
-def normalize_audio(input_path: str, output_path: str, target_lufs: float = -14) -> str:
+def normalize_audio(
+    input_path: str,
+    output_path: str,
+    target_lufs: float = -14,
+    peak_ceiling: Optional[float] = None,
+) -> str:
     """
-    Two-pass loudness normalization to target LUFS.
-    This is critical — voice must be -14 to -16 LUFS, music must be -28 LUFS.
+    Two-pass loudness normalization to target LUFS using the EBU R128 loudnorm filter.
+
+    Pass 1 measures the input's integrated loudness, true peak, and loudness range.
+    Pass 2 applies a linear correction using measured values for transparent,
+    artifact-free normalization.
+
+    Args:
+        input_path:   Source audio file.
+        output_path:  Destination for normalized audio.
+        target_lufs:  Target integrated loudness (e.g. -14 for voice, -28 for music).
+        peak_ceiling: True peak ceiling in dBTP. Defaults to AUDIO_LEVELS["peak_ceiling"].
+
+    Returns: output_path.
     """
+    if peak_ceiling is None:
+        peak_ceiling = AUDIO_LEVELS["peak_ceiling"]
+
     # Pass 1: Measure current loudness
     measure = subprocess.run(
         [
             "ffmpeg", "-y", "-i", input_path,
-            "-af", f"loudnorm=I={target_lufs}:TP=-1.5:LRA=11:print_format=json",
+            "-af", f"loudnorm=I={target_lufs}:TP={peak_ceiling}:LRA=11:print_format=json",
             "-f", "null", "-"
         ],
         capture_output=True, text=True,
@@ -153,21 +185,21 @@ def normalize_audio(input_path: str, output_path: str, target_lufs: float = -14)
         json_end = stderr.rfind("}") + 1
         measured = json.loads(stderr[json_start:json_end])
     except (json.JSONDecodeError, ValueError):
-        # Fallback: simple volume adjustment
+        # Fallback: single-pass normalization (less precise but functional)
         subprocess.run(
             ["ffmpeg", "-y", "-i", input_path, "-af",
-             f"loudnorm=I={target_lufs}:TP=-1.5:LRA=11",
+             f"loudnorm=I={target_lufs}:TP={peak_ceiling}:LRA=11",
              "-ar", str(VIDEO_SPECS["audio_sample_rate"]), output_path],
             check=True, capture_output=True,
         )
         return output_path
 
-    # Pass 2: Apply measured values for precise normalization
+    # Pass 2: Apply measured values for precise linear normalization
     subprocess.run(
         [
             "ffmpeg", "-y", "-i", input_path,
             "-af", (
-                f"loudnorm=I={target_lufs}:TP=-1.5:LRA=11:"
+                f"loudnorm=I={target_lufs}:TP={peak_ceiling}:LRA=11:"
                 f"measured_I={measured['input_i']}:"
                 f"measured_TP={measured['input_tp']}:"
                 f"measured_LRA={measured['input_lra']}:"
