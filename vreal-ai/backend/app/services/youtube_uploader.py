@@ -21,12 +21,15 @@ from dataclasses import dataclass, field
 from typing import Optional
 from pathlib import Path
 
-# Google API imports
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
+# Google API imports — lazy loaded to avoid cryptography conflicts on some systems
+# These are only needed when actually uploading to YouTube
+def _import_google():
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+    from google_auth_oauthlib.flow import InstalledAppFlow
+    from googleapiclient.discovery import build
+    from googleapiclient.http import MediaFileUpload
+    return Request, Credentials, InstalledAppFlow, build, MediaFileUpload
 
 
 # ── Configuration ────────────────────────────────────────────────────────────
@@ -114,6 +117,7 @@ def get_youtube_service():
     Authenticate and return YouTube API service.
     First run requires browser-based OAuth. After that, token is cached.
     """
+    Request, Credentials, InstalledAppFlow, build, MediaFileUpload = _import_google()
     creds = None
 
     # Load cached token
@@ -229,6 +233,7 @@ def upload_video(video_path: str, metadata: VideoMetadata) -> UploadResult:
         body["status"]["publishAt"] = metadata.publish_at
 
     # Upload
+    _, _, _, _, MediaFileUpload = _import_google()
     media = MediaFileUpload(
         video_path,
         mimetype="video/mp4",
@@ -273,6 +278,7 @@ def upload_video(video_path: str, metadata: VideoMetadata) -> UploadResult:
 def set_thumbnail(video_id: str, thumbnail_path: str):
     """Upload a custom thumbnail for a video."""
     youtube = get_youtube_service()
+    _, _, _, _, MediaFileUpload = _import_google()
     media = MediaFileUpload(thumbnail_path, mimetype="image/jpeg")
     youtube.thumbnails().set(videoId=video_id, media_body=media).execute()
     print(f"[UPLOADER] ✓ Thumbnail set for {video_id}")

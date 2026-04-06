@@ -25,7 +25,9 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import Optional
 from pathlib import Path
+from dotenv import load_dotenv
 
+load_dotenv(Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
 # ── Configuration ────────────────────────────────────────────────────────────
 

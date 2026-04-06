@@ -9,7 +9,7 @@ from app.models.agent import Agent
 from app.config import AGENTS_DIR
 
 # ── Load the V-Real AI Operating System v1.0 universal prompt ──
-CORE_DIR = AGENTS_DIR.parent / "core"
+CORE_DIR = AGENTS_DIR.parent.parent / "core"
 _os_file = CORE_DIR / "operating-system.md"
 if _os_file.exists():
     OPERATING_SYSTEM_PROMPT = _os_file.read_text()
