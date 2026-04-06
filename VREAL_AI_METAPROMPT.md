@@ -117,16 +117,21 @@ Phase 10 → Post-Publish (48h retention check, debrief log)
 
 ---
 
-### VOICE SETTINGS (ElevenLabs — locked)
+### VOICE SETTINGS (ElevenLabs — LOCKED, single source of truth)
 
 | Setting | Value |
 |---------|-------|
-| Voice | Julian — Deep, Rich and Mature |
+| Voice | **Julian — Deep, Rich and Mature** |
 | Model | Eleven Multilingual v2 |
-| Stability | 0.65 |
-| Similarity | 0.75 |
-| Style Exaggeration | 0.00 |
-| Speaker Boost | OFF |
+| Stability | **0.65** |
+| Similarity | **0.75** |
+| Style Exaggeration | **0.00** |
+| Speaker Boost | **OFF** |
+
+**⚠️ ALL OTHER VOICE REFERENCES ARE OBSOLETE:**
+- Daniel (production-bible.ts old version) → REPLACED with Julian
+- Aaron (voice-director agent old version) → REPLACED with Julian
+- Pedro/Veronica Voice clone → EXPERIMENTAL ONLY, not for episodes
 
 **Known ElevenLabs issues:**
 - Sliders are `role="slider"` SPAN elements — use `slider.focus()` via JS then keyboard ArrowRight (not dispatchEvent)

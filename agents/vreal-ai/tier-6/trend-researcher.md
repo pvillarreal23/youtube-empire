@@ -35,7 +35,7 @@ TREND BRIEF:
 - Trend 4: [Same format]
 - Trend 5: [Same format]
 - Speed Rating: [How fast we need to move — URGENT / THIS WEEK / CAN WAIT]
-- Niche Fit Score: [How well this serves The AI Edge audience]
+- Niche Fit Score: [How well this serves V-Real AI audience]
 
 ## Escalation Contact
 Analytics VP (Tier 2)

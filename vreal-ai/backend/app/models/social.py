@@ -14,7 +14,7 @@ class SocialAccount(Base):
     platform = Column(String, nullable=False)  # youtube, instagram, snapchat, tiktok, twitter, linkedin, threads
     account_name = Column(String, nullable=False)  # @handle or channel name
     display_name = Column(String, default="")
-    channel_brand = Column(String, default="")  # "The AI Edge", "Cash Flow Code", "Mind Shift", "Empire Main"
+    channel_brand = Column(String, default="")  # "V-Real AI", "Cash Flow Code", "Mind Shift", "Empire Main"
     managed_by = Column(String, default="social-media-manager-agent")  # Primary agent responsible
     status = Column(String, default="active")  # active, planned, pending_creation, paused
     followers = Column(String, default="0")

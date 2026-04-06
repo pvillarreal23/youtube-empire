@@ -8,7 +8,7 @@ from sqlalchemy import select
 from app.models.agent import Agent
 from app.config import AGENTS_DIR
 
-# ── Load the The AI Edge Operating System v1.0 universal prompt ──
+# ── Load the V-Real AI Operating System v1.0 universal prompt ──
 CORE_DIR = AGENTS_DIR.parent / "core"
 _os_file = CORE_DIR / "operating-system.md"
 if _os_file.exists():

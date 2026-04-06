@@ -248,7 +248,7 @@ DEFAULT_TASKS = [
     {"agent_id": "ai-and-tech-channel-manager", "name": "Daily AI Trend Scan", "cron": "0 7 * * *", "category": "content",
      "prompt": "Scan for trending AI and tech topics today. Check YouTube trending, Google Trends, Reddit r/artificial, Twitter/X tech discussions, and HackerNews. Report any content opportunities with urgency level."},
     {"agent_id": "ai-and-tech-channel-manager", "name": "Weekly Content Proposals", "cron": "0 9 * * 2", "category": "content",
-     "prompt": "Propose 5 video topics for The AI Edge this week. Use your CONTENT PROPOSAL format. Prioritize by trending potential and SEO opportunity. Include at least 1 evergreen and 1 trending topic."},
+     "prompt": "Propose 5 video topics for V-Real AI this week. Use your CONTENT PROPOSAL format. Prioritize by trending potential and SEO opportunity. Include at least 1 evergreen and 1 trending topic."},
 
     {"agent_id": "finance-and-business-channel-manager", "name": "Daily Finance News Scan", "cron": "0 7 * * *", "category": "content",
      "prompt": "Scan for trending personal finance and investing topics. Check market movements, economic news, policy changes, and social media finance discussions. Flag time-sensitive content opportunities."},

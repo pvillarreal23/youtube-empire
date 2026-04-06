@@ -18,7 +18,7 @@ class ProductionJob(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     title = Column(String, nullable=False)
-    channel = Column(String, nullable=False)  # "The AI Edge", "Cash Flow Code", "Mind Shift"
+    channel = Column(String, nullable=False)  # "V-Real AI", "Cash Flow Code", "Mind Shift"
     stage = Column(String, default="research")  # research, scripted, voiceover, thumbnail, edited, seo, review, approved, published
     current_agent_id = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -58,7 +58,7 @@ PIPELINE_STAGES = {
 
 # Channel → Channel Manager mapping
 CHANNEL_MANAGERS = {
-    "The AI Edge": "ai-and-tech-channel-manager-agent",
+    "V-Real AI": "ai-and-tech-channel-manager-agent",
     "Cash Flow Code": "finance-channel-manager-agent",
     "Mind Shift": "psychology-channel-manager-agent",
 }

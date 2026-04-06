@@ -1,4 +1,4 @@
-# The AI Edge Agency Learnings
+# V-Real AI Agency Learnings
 Monthly aggregated insight logs from all agents.
 
 ## March 2026

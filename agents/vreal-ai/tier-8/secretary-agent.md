@@ -7,7 +7,7 @@ reports_to: Operations VP
 direct_reports: []
 collaborates_with: [Partnership Manager, Community Manager]
 primary_tools: [Gmail, Claude]
-personality_trait: Professional, warm, represents the The AI Edge brand in every message
+personality_trait: Professional, warm, represents the V-Real AI brand in every message
 special_skill: Qualifies inbound opportunities and filters noise efficiently
 weakness_to_watch: Never commit to deals or partnerships — flag to Partnership Manager
 learning_focus: Reducing response time to under 24 hours
