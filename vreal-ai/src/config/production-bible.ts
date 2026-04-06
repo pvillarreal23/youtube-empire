@@ -6,12 +6,12 @@ export const PRODUCTION_BIBLE = {
     targetLength: { min: 8, max: 12 }, // minutes
     publishDays: ["Tuesday", "Thursday"],
     publishTime: "14:00 EST",
-    contentMix: { stories: 0.50, breakdowns: 0.30, playbooks: 0.20 }
+    contentMix: { breakdowns: 0.45, playbooks: 0.40, stories: 0.15 }
   },
   brand: {
-    positioning: "A faceless documentary channel about AI tools, systems, and what's actually changing. No fluff. No theory. Just leverage.",
+    positioning: "AI-powered documentary channel exploring how artificial intelligence is reshaping work, business, and daily life. For marketing professionals and solopreneurs adapting to AI disruption.",
     voiceTone: "BBC/Netflix documentary — cinematic, rhythmic, intimate. Smart friend sharing what they discovered, not news anchor or hype-man",
-    tagline: "No fluff. No theory. Just leverage.",
+    tagline: "You're not paranoid. You're observant.",
     signatureLines: [
       "No one sent an announcement. No one rang a bell. The rules just changed.",
       "They no longer require mastery of execution. They require taste.",
@@ -98,8 +98,8 @@ export const PRODUCTION_BIBLE = {
     }
   },
   elevenlabs: {
-    voiceId: "LOOKUP_JULIAN", // Julian — Deep, Rich and Mature, LOCKED for @VRealAI
-    voiceName: "Julian — Deep, Rich and Mature",
+    voiceId: "CjK4w2V6sbgFJY05zTGt", // Pedro V-Real v2 — production voice clone, LOCKED for @VRealAI
+    voiceName: "V-Real AI Voice (Julian Clone)",
     model: "eleven_multilingual_v2",
     // LOCKED settings — do not change without full team sign-off
     settings: { stability: 0.65, similarity_boost: 0.75, style: 0.00, speaker_boost: false },

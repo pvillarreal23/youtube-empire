@@ -37,20 +37,17 @@ const SC: Record<Status, string> = {
 const STATUSES: Status[] = ["RESEARCHED","TITLED","SCRIPTED","PRODUCTION","READY","SCHEDULED","LIVE"];
 
 const initialChannels: Channel[] = [
-  { id:"1", name:"V-Real AI", subs:"47", views:"—", freq:"3x/week", color:"from-cyan-600 to-blue-500", growth:"—", vids:"0", ctr:"—", revenue:"—", nextVideo:"EP001", subsCount: 47 },
+  { id:"1", name:"V-Real AI", subs:"47", views:"—", freq:"2x/week", color:"from-cyan-600 to-blue-500", growth:"—", vids:"0", ctr:"—", revenue:"—", nextVideo:"EP001", subsCount: 47 },
   { id:"2", name:"Cash Flow Code", subs:"—", views:"—", freq:"2x/week", color:"from-green-600 to-emerald-500", growth:"—", vids:"—", ctr:"—", revenue:"—", nextVideo:"Planned" },
   { id:"3", name:"Mind Shift", subs:"—", views:"—", freq:"1x/week", color:"from-purple-600 to-pink-500", growth:"—", vids:"—", ctr:"—", revenue:"—", nextVideo:"Planned" },
 ];
 
 const initialPipeline: PipelineItem[] = [
-  { id:"1", title:"5 AI Tools Replacing Jobs in 2026", channel:"V-Real AI", status:"SCRIPTED", date:"Apr 2", views:"-" },
-  { id:"2", title:"Claude vs GPT-4o: Real Comparison", channel:"V-Real AI", status:"SCRIPTED", date:"Apr 5", views:"-" },
-  { id:"4", title:"How I Built a $10K/mo AI Business", channel:"Cash Flow Code", status:"PRODUCTION", date:"Apr 12", views:"-" },
-  { id:"5", title:"The Psychology of Going Viral", channel:"Mind Shift", status:"TITLED", date:"Apr 14", views:"-" },
-  { id:"6", title:"AI Agents Will Replace SaaS", channel:"V-Real AI", status:"SCRIPTED", date:"Apr 16", views:"-" },
-  { id:"7", title:"Why Most Side Hustles Fail in 2026", channel:"Cash Flow Code", status:"PRODUCTION", date:"Apr 19", views:"-" },
-  { id:"8", title:"How YouTube Algorithm Actually Works", channel:"Mind Shift", status:"TITLED", date:"Apr 21", views:"-" },
-  { id:"3", title:"How Make.com Automates Everything", channel:"V-Real AI", status:"SCRIPTED", date:"Apr 9", views:"-" },
+  { id:"1", title:"EP001 - The Shift", channel:"V-Real AI", status:"SCRIPTED", date:"Apr 15", views:"-" },
+  { id:"2", title:"EP002 - Claude vs GPT-4o vs Gemini", channel:"V-Real AI", status:"RESEARCHED", date:"Apr 17", views:"-" },
+  { id:"3", title:"EP003 - $50/Month AI Stack", channel:"V-Real AI", status:"TITLED", date:"Apr 22", views:"-" },
+  { id:"4", title:"EP004 - Automated Research Pipeline", channel:"V-Real AI", status:"TITLED", date:"Apr 24", views:"-" },
+  { id:"5", title:"EP005 - AI Marketing 2026", channel:"V-Real AI", status:"TITLED", date:"Apr 29", views:"-" },
 ];
 
 const SKILLS = [
@@ -66,10 +63,10 @@ const SKILLS = [
 
 const AUTOMATIONS = [
   { id:"1", name:"Run Research", desc:"Agent finds trending topics, keywords & competitor gaps", icon:BookOpen, color:"from-purple-600 to-blue-600", step:"Step 1", route:"/api/research/trending", bodyFn: (t:string) => ({ topic: t, platform: "youtube" }) },
-  { id:"2", name:"Generate Script", desc:"Agent writes full 8-12 min narration script", icon:FileText, color:"from-blue-600 to-cyan-600", step:"Step 2", route:"/api/script/generate", bodyFn: (t:string) => ({ topic: t, duration_minutes: 10 }) },
-  { id:"3", name:"Create Voiceover", desc:"ElevenLabs Daniel voice converts script to MP3", icon:Mic, color:"from-cyan-600 to-teal-600", step:"Step 3", route:"/api/voiceover", bodyFn: (t:string) => ({ text: t, voice_id: "onwK4e9ZLuTAKqWW03F9" }) },
+  { id:"2", name:"Generate Script", desc:"Agent writes full 8-12 min narration script", icon:FileText, color:"from-blue-600 to-cyan-600", step:"Step 2", route:"/api/script", bodyFn: (t:string) => ({ topic: t, duration_minutes: 10 }) },
+  { id:"3", name:"Create Voiceover", desc:"ElevenLabs V-Real AI voice converts script to MP3", icon:Mic, color:"from-cyan-600 to-teal-600", step:"Step 3", route:"/api/voiceover", bodyFn: (t:string) => ({ text: t, voice_id: "CjK4w2V6sbgFJY05zTGt" }) },
   { id:"4", name:"Generate Thumbnail", desc:"Ideogram AI auto-generates YouTube thumbnail", icon:Image, color:"from-orange-600 to-red-600", step:"Step 4", route:"/api/thumbnail", bodyFn: (t:string) => ({ title: t }) },
-  { id:"5", name:"Optimize SEO", desc:"Agent writes title, description, tags & chapters", icon:Type, color:"from-green-600 to-emerald-600", step:"Step 5", route:"/api/seo/optimize", bodyFn: (t:string) => ({ topic: t, platform: "youtube" }) },
+  { id:"5", name:"Optimize SEO", desc:"Agent writes title, description, tags & chapters", icon:Type, color:"from-green-600 to-emerald-600", step:"Step 5", route:"/api/seo", bodyFn: (t:string) => ({ topic: t, platform: "youtube" }) },
   { id:"6", name:"Video Editor Brief", desc:"Nadia maps every shot, b-roll & text animation", icon:PlayCircle, color:"from-red-600 to-pink-600", step:"Step 6", route:"/api/video-editor/brief", bodyFn: (t:string) => ({ topic: t, video_type: "standard" }) },
   { id:"7", name:"Full Pipeline (All Steps)", desc:"Marcus orchestrates all 6 stages in one shot", icon:Zap, color:"from-amber-500 to-orange-600", step:"All Steps", route:"/api/workflow/orchestrate", bodyFn: (t:string) => ({ topic: t, tool_name: t, key_insight: `Key insight about ${t}`, run_live_research: true }) },
 ];
@@ -457,7 +454,7 @@ export default function Dashboard() {
                 <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
                   <PlayCircle className="w-4 h-4" />
                 </div>
-                <span className="text-sm font-semibold">Creator AI</span>
+                <span className="text-sm font-semibold">V-Real AI</span>
               </div>
               <button onClick={() => setMobileMenuOpen(false)} className="p-1 rounded-lg hover:bg-white/10">
                 <X className="w-5 h-5 text-white/50" />
@@ -502,8 +499,8 @@ export default function Dashboard() {
             <PlayCircle className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-sm font-semibold tracking-tight">Creator AI</span>
-            <p className="text-[10px] text-white/30 -mt-0.5">Agency Dashboard</p>
+            <span className="text-sm font-semibold tracking-tight">V-Real AI</span>
+            <p className="text-[10px] text-white/30 -mt-0.5">Command Center</p>
           </div>
         </div>
 
@@ -1734,7 +1731,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold flex items-center gap-2"><Activity className="w-5 h-5 text-purple-400" /> Workforce Activity</h2>
-                <p className="text-sm text-white/40 mt-1">Real-time view of what every agent is doing — Goal: 1B subscribers</p>
+                <p className="text-sm text-white/40 mt-1">Real-time view of what every agent is doing — Goal: 30K subscribers by Month 18</p>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />

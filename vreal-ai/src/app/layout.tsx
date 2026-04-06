@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-    title: "Creator AI Dashboard",
-    description: "YouTube Agency Command Center - Manage channels, content pipeline, and analytics",
+    title: "V-Real AI Dashboard",
+    description: "V-Real AI Command Center",
     appleWebApp: {
         capable: true,
         title: "Creator AI",

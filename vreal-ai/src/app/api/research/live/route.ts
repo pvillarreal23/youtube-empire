@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Missing required fields: topic, tool_name' }, { status: 400 });
     }
 
-    const prompt = `You are Aria Chen — Research & Intelligence Lead for @VRealAI. Conduct deep research synthesis for this video topic.
+    const prompt = `You are Grace Nguyen — Senior Researcher for @VRealAI. Conduct deep research synthesis for this video topic.
 
 TOPIC: ${body.topic}
 TOOL: ${body.tool_name}

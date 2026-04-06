@@ -29,7 +29,7 @@ export async function GET(request: Request) {
       { id: 'tool-3', service: 'InVideo AI', account_name: 'pedro@VRealAI.com', category: 'tool', platform_url: 'https://invideo.io', notes: 'B-roll assembly + captions', api_key_hint: '', managed_by: 'video-editor', status: 'active' },
       { id: 'tool-4', service: 'Canva Pro', account_name: 'pedro@VRealAI.com', category: 'tool', platform_url: 'https://canva.com', notes: 'Thumbnail design + brand assets', api_key_hint: '', managed_by: 'thumbnail-designer', status: 'active' },
       // Social accounts
-      { id: 'soc-1', service: 'YouTube Studio', account_name: '@TheAIEdge', category: 'social', platform_url: 'https://studio.youtube.com', notes: 'V-Real AI main channel', api_key_hint: '', managed_by: 'ai-and-tech-channel-manager', status: 'active' },
+      { id: 'soc-1', service: 'YouTube Studio', account_name: '@VRealAI', category: 'social', platform_url: 'https://studio.youtube.com', notes: 'V-Real AI main channel', api_key_hint: '', managed_by: 'ai-and-tech-channel-manager', status: 'active' },
       { id: 'soc-2', service: 'Instagram', account_name: '@VRealAI', category: 'social', platform_url: 'https://instagram.com/VRealAI', notes: 'Clips + behind-the-scenes', api_key_hint: '', managed_by: 'social-media-manager', status: 'active' },
       { id: 'soc-3', service: 'X / Twitter', account_name: '@VRealAI', category: 'social', platform_url: 'https://x.com/VRealAI', notes: 'Thread repurposing + engagement', api_key_hint: '', managed_by: 'secretary-agent', status: 'active' },
       // Hosting

@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     const titlesJson = JSON.stringify(body.titles ?? []);
     const chaptersJson = JSON.stringify(body.chapters ?? []);
 
-    const prompt = `You are Sofia Reyes — SEO Strategist for @VRealAI YouTube channel. Optimize this video for maximum discoverability.
+    const prompt = `You are Ethan Park — SEO Specialist for @VRealAI YouTube channel. Optimize this video for maximum discoverability.
 
 TOPIC: ${body.topic}
 TOOL: ${body.tool_name}
