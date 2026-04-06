@@ -153,7 +153,44 @@ Subscribe on YouTube: @VRealAI"
 
 ---
 
-## TASK 4: SET UP MAKE.COM PRESSURE TEST SCENARIOS
+## TASK 4: GET API KEYS FOR OPENAI, GEMINI, AND GROK
+We need API keys from 3 AI providers for our multi-model pressure testing system (4 AI models review every piece of content before it goes live).
+
+OPENAI (ChatGPT):
+1. Go to https://platform.openai.com/api-keys
+2. Sign in (or create account)
+3. Click "Create new secret key"
+4. Name it "V-Real AI Pressure Test"
+5. Copy the key (starts with sk-)
+6. Check billing: https://platform.openai.com/settings/organization/billing
+   - Add a payment method if not already there
+   - Set a monthly budget limit of $10 to start (we use very little)
+7. Save the key somewhere safe
+
+GOOGLE GEMINI:
+1. Go to https://aistudio.google.com/app/apikey
+2. Sign in with Google account
+3. Click "Create API key"
+4. Select or create a Google Cloud project
+5. Copy the key (starts with AI)
+6. Gemini API has a generous free tier — no payment needed initially
+7. Save the key somewhere safe
+
+XAI GROK:
+1. Go to https://console.x.ai
+2. Sign in (or create account — may need X/Twitter account)
+3. Go to API Keys section
+4. Create a new key, name it "V-Real AI Pressure Test"
+5. Copy the key (starts with xai-)
+6. Check if there's a free tier or add payment method
+   - Set a monthly budget limit of $10 to start
+7. Save the key somewhere safe
+
+Write down all 3 keys. You'll need them for Task 5 and Task 6.
+
+---
+
+## TASK 5: SET UP MAKE.COM PRESSURE TEST SCENARIOS (needs keys from Task 4)
 Our cloud server gets 403 blocked when calling OpenAI, Gemini, and Grok directly. Make.com will relay the requests.
 
 NOTE: You need API keys for OpenAI, Google Gemini, and xAI Grok first. If Pedro doesn't have these yet, skip this task and come back later.
@@ -200,7 +237,7 @@ MAKE_WEBHOOK_PRESSURE_GROK=https://hook.us1.make.com/zzz
 
 ---
 
-## TASK 5: ADD API KEYS TO SERVER
+## TASK 6: ADD API KEYS TO SERVER (needs keys from Task 4)
 When Pedro has API keys ready, add them to the server.
 
 Open terminal and run (replace YOUR_KEY_HERE with real keys):
@@ -226,7 +263,7 @@ Should return: {"status":"ok"}
 
 ---
 
-## TASK 6: ADD MAKE.COM WEBHOOK URLS TO SERVER
+## TASK 7: ADD MAKE.COM WEBHOOK URLS TO SERVER (needs URLs from Task 5)
 After Task 4 is done, add the webhook URLs.
 
 Open terminal:
@@ -249,7 +286,7 @@ nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > /tmp/backend.l
 
 ---
 
-## TASK 7: PUSH EP001 ASSETS FROM LOCAL MACHINE
+## TASK 8: PUSH EP001 ASSETS FROM LOCAL MACHINE
 When Pedro has laptop access. The 17 EP001 asset files (~176MB) need to get to the cloud server.
 
 On Pedro's laptop terminal:
@@ -274,7 +311,7 @@ Then share the Google Drive link.
 
 ---
 
-## TASK 8: SET UP MAKE.COM YOUTUBE UPLOAD SCENARIO
+## TASK 9: SET UP MAKE.COM YOUTUBE UPLOAD SCENARIO
 After YouTube channel is ready and EP001 is done.
 
 Create Make.com scenario: "YouTube Upload — V-Real AI"
