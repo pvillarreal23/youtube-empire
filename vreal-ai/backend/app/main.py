@@ -13,6 +13,7 @@ from app.routers.workspace import router as workspace_router
 from app.routers.social import router as social_router
 from app.routers.vault import router as vault_router
 from app.routers.tools import router as tools_router, init_tools
+from app.routers.media import router as media_router
 from app.config import CORS_ORIGINS
 import os
 
@@ -54,6 +55,7 @@ app.include_router(workspace_router)
 app.include_router(social_router)
 app.include_router(vault_router)
 app.include_router(tools_router)
+app.include_router(media_router)
 
 
 @app.get("/api/health")
