@@ -1,58 +1,83 @@
 # @VRealAI Video Pipeline — Tools Status
-_Last updated: 2026-04-03_
+_Last updated: 2026-04-06_
 
-## ✅ Installed & Ready
+## Production Environments
 
-| Tool | Version / Notes |
-|------|-----------------|
-| **Homebrew** | 5.1.3 — installed at `/opt/homebrew/bin/brew` (not in default PATH; run `export PATH="/opt/homebrew/bin:$PATH"` or add to `~/.zshrc`) |
-| **ffmpeg** | v8.1 — installed at `/opt/homebrew/bin/ffmpeg`. Use for video encoding, transcoding, merging audio/video. |
-| **OBS Studio** | 32.1.1 — installed at `/Applications/OBS.app`. Use for screen recording, live streaming, scene management. |
-| **Node.js** | v22.22.1 — at `/opt/homebrew/bin/node` |
-| **Remotion** | v4.0.443 — `remotion`, `@remotion/cli`, `@remotion/player` added to `creator-ai-dashboard` |
+### Cloud Server (Claude Code — strategy, code, assembly)
+| Tool | Status | Purpose |
+|------|--------|---------|
+| **Python 3.11** | Ready | Backend, video assembly, pressure testing |
+| **FastAPI** | Ready | Backend API server (port 8000) |
+| **Node.js** | Ready | Next.js frontend (port 3000) |
+| **FFmpeg** | Ready | Video encoding, assembly, audio normalization |
+| **Remotion** | Ready | Animated intros/outros, motion graphics |
+| **Claude API** | Ready | Scripts, research, pressure testing (4-persona) |
+| **SQLite (aiosqlite)** | Ready | Production pipeline database |
 
-### Remotion Files Created
-- `src/remotion/Root.tsx` — Remotion entry point with `BrandedIntro` composition
-- `src/remotion/BrandedIntro.tsx` — 3s (90 frames @ 30fps), 1920×1080 branded intro
-  - Background: `#0A0F1E` (dark navy)
-  - Accent color: `#00D4FF` (cyan)
-  - Animated logo, brand name, tagline, accent line
-
-To preview in Remotion Studio:
-```bash
-export PATH="/opt/homebrew/bin:$PATH"
-cd /Users/pedrovillarreal/creator-ai-dashboard
-npx remotion studio src/remotion/Root.tsx
-```
-
----
-
-## ⚠️ Missing — Needs Manual Install
-
-| Tool | Why / How to Install |
-|------|----------------------|
-| **DaVinci Resolve** | Not found at `/Applications/DaVinci Resolve/`. Large download (~3 GB). Download free from: https://www.blackmagicdesign.com/products/davinciresolve |
-
----
-
-## 🔧 Fix Recommended
-
-**Add Homebrew to your shell PATH permanently** so tools like `ffmpeg`, `node`, `npm`, `obs` work without full paths:
-
-```bash
-echo 'export PATH="/opt/homebrew/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
-```
+### Local Machine (Cowork — asset generation)
+| Tool | Status | Purpose |
+|------|--------|---------|
+| **ElevenLabs** | Ready | Voiceover generation (Julian voice) |
+| **Kling AI** | Ready | Custom AI video footage |
+| **Pexels** | Ready | Free stock footage |
+| **Epidemic Sound** | Ready | Music licensing |
+| **Canva / Midjourney** | Ready | Thumbnail design |
+| **Browser** | Ready | All web-based tools |
 
 ---
 
 ## Pipeline Overview
 
 ```
-Record (OBS) → Edit (DaVinci Resolve) → Encode/Process (ffmpeg) → Animate (Remotion) → Publish
+Script (Claude) → Voice (ElevenLabs) → Footage (Kling AI + Pexels) → Music (Epidemic Sound)
+    ↓                                         ↓
+Assembly (FFmpeg video_assembler.py) ← Assets land in output/ep[XXX]/
+    ↓
+Intro/Outro (Remotion) → Text Overlays → Audio Normalization → Final Export
+    ↓
+Upload (YouTube) → Distribution
 ```
 
-- **OBS**: capture raw footage, screen recordings, webcam
-- **DaVinci Resolve**: full NLE editing, color grading, audio mix (install manually)
-- **ffmpeg**: batch encoding, format conversion, audio extraction, thumbnail generation
-- **Remotion**: programmatic animated intros/outros, lower thirds, motion graphics
+**Cloud handles:** Script writing, video assembly, audio mixing, text overlays, quality gate
+**Local handles:** Voice generation, footage creation, music selection, thumbnail design, YouTube upload
+
+---
+
+## Remotion Files
+- `vreal-ai/src/remotion/Root.tsx` — Composition registry
+- `vreal-ai/src/remotion/BrandedIntro.tsx` — 3s V-Real AI branded intro (1920x1080, 30fps)
+  - V-shaped cyan logo with glow animation
+  - "V-Real AI" brand text
+  - Tagline: "You're not paranoid. You're observant."
+
+---
+
+## API Keys Required (.env)
+
+| Key | Status | Service |
+|-----|--------|---------|
+| ANTHROPIC_API_KEY | Set | Claude (primary AI) |
+| ELEVENLABS_API_KEY | Set | Voice generation |
+| PEXELS_API_KEY | Needs setup | Stock footage auto-sourcing |
+| OPENAI_API_KEY | Set (403 on cloud) | ChatGPT pressure testing |
+| GEMINI_API_KEY | Set (403 on cloud) | Gemini pressure testing |
+| GROK_API_KEY | Set (403 on cloud) | Grok pressure testing |
+| KLING_API_KEY | Not set | AI video generation |
+| YOUTUBE_CREDENTIALS | Not set | YouTube upload API |
+
+**Note:** OpenAI, Gemini, and Grok APIs return 403 from the cloud server due to network restrictions. Workaround: Claude role-plays 4 different reviewer personas for pressure testing.
+
+---
+
+## Video Specs
+
+| Setting | Value |
+|---------|-------|
+| Resolution | 1920x1080 |
+| Frame rate | 30fps |
+| Codec | H.264 (libx264) |
+| CRF | 18 (high quality) |
+| Audio | AAC 192kbps, 48kHz |
+| Voice LUFS | -14 to -16 |
+| Music LUFS | -28 (duck to -35 under voice) |
+| Master LUFS | -14 (YouTube standard) |

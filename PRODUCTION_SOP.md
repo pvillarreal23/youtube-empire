@@ -141,12 +141,16 @@ Do not proceed to Phase 4 until the script scores 10/10.
 
 ## PHASE 7 — EDITING & POST-PRODUCTION
 
-### Assembly Order
-1. Lay voiceover on timeline first — this is the spine
-2. Cut visuals to the narration rhythm, not the other way around
-3. Add music underneath — voiceover always wins in the mix
-4. Add text overlays where needed (titles, key stats, callouts)
-5. Color grade all footage to a consistent look
+### Assembly Order (automated via video_assembler.py)
+1. Normalize voice audio to -14 LUFS
+2. Prepare scene clips (trim, apply motion effects — zoom, pan, ken burns)
+3. Concatenate scenes with branded background fills for gaps
+4. Mix voice + auto-ducked music (sidechain compression)
+5. Apply text overlays (kinetic typography, lower thirds, data viz)
+6. Prepend Remotion intro / append outro
+7. Final export at CRF 18 (high quality H.264)
+
+**Manual alternative:** If automated assembly needs tweaks, the voiceover is the spine — cut visuals to narration rhythm, not the other way around.
 
 ### Audio Standards
 | Setting | Target |
@@ -275,18 +279,17 @@ If backlog drops below 3, Sunday topic research session is mandatory before any 
 
 ## TOOL STACK
 
-| Tool | Purpose |
-|------|---------|
-| Claude (this) | Script writing, SOP management, strategy |
-| ElevenLabs | Voiceover — Julian, Multilingual v2 |
-| Kling AI | AI video generation for custom scenes |
-| Storyblocks | Stock footage library |
-| Canva | Thumbnail design |
-| Midjourney | Custom thumbnail imagery |
-| CapCut | Video editing |
-| Epidemic Sound | Music licensing |
-| Google Trends | Topic research |
-| VidIQ / TubeBuddy | SEO optimization |
+| Tool | Purpose | Where |
+|------|---------|-------|
+| Claude API | Script writing, strategy, pressure testing, video assembly orchestration | Cloud server |
+| FFmpeg + video_assembler.py | Automated video assembly, audio normalization, text overlays | Cloud server |
+| Remotion | Animated intros/outros, motion graphics | Cloud server |
+| ElevenLabs | Voiceover — Julian, Multilingual v2 | Local (browser) |
+| Kling AI | AI video generation for custom scenes | Local (browser) |
+| Pexels | Free stock footage (also auto-sourced via footage_sourcer.py) | Cloud + Local |
+| Canva / Midjourney | Thumbnail design | Local (browser) |
+| Epidemic Sound | Music licensing | Local (browser) |
+| Google Trends | Topic research | Local (browser) |
 
 ---
 
