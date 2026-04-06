@@ -1,22 +1,23 @@
-# EP001 "The Shift" — YouTube Upload Metadata
+# EP001 "The Shift" — YouTube Upload Metadata v2
+## Post-pressure test rewrite (6.0/10 → targeting 9.5+)
 
 ## Video Title Options (pick one)
-1. **The Shift: Why AI Changed Everything in 2025** (primary — keyword-rich, curiosity)
-2. **AI Just Changed the Rules — Most People Don't See It Yet** (curiosity gap)
-3. **The AI Shift Nobody Talks About (It Already Happened)** (urgency + curiosity)
+1. **The AI Shift That's Coming for Marketers (Most Aren't Ready)** (primary — niche-targeted, urgency)
+2. **How AI Changed Marketing Forever — A Documentary** (SEO-forward, clear format)
+3. **The Shift: AI Is Rewriting Marketing. Are You Ready?** (brand-forward + niche)
 
-**Recommended:** Option 1 — balanced SEO + click appeal
+**Recommended:** Option 1 — targets the audience by name, creates urgency, high CTR from the right viewer
 
 ---
 
 ## Description
 
 ```
+AI is transforming marketing, business, and income — and most professionals haven't adapted yet. This documentary explores the AI shift for marketing professionals and solopreneurs who want to stay ahead in 2026.
+
 The shift already happened. Most people just haven't felt it yet.
 
-In this documentary, we explore how AI quietly rewrote the rules of work, creativity, and income — and why the gap between those who adapted and those who didn't is already enormous.
-
-This isn't hype. This is what's actually happening right now.
+Covers: AI tools for marketing 2026 | AI automation for solopreneurs | How to start using AI in marketing | ChatGPT vs Claude for business
 
 📌 CHAPTERS:
 0:00 — The Void (Opening)
@@ -27,24 +28,14 @@ This isn't hype. This is what's actually happening right now.
 6:15 — The Window Is Still Open
 7:30 — This Is V-Real AI
 
-🔗 RESOURCES MENTIONED:
-→ Free: 10 Best AI Prompts for Beginners — [Lead Magnet Link]
-→ Full Prompt Vault (100+ prompts, $9) — [Gumroad Link]
-
-📧 JOIN THE NEWSLETTER:
-Get weekly AI insights for marketing professionals and solopreneurs.
-→ [Beehiiv Signup Link]
-
 🎙️ ABOUT V-REAL AI:
-V-Real AI is a cinematic documentary series exploring how AI is transforming work, marketing, and income. Every video is researched, scripted, voiced, and produced using AI tools — transparently.
+Cinematic documentaries about how AI is changing marketing and work. Every episode shows you exactly which AI tools were used and how — so you can apply the same techniques to your own marketing.
 
-Voice: Julian (ElevenLabs)
-Production: Claude + Kling AI + FFmpeg + Remotion
-Channel built 100% with AI. We show you how.
+New episodes weekly. Made for marketing professionals and solopreneurs adapting to AI.
 
-🔔 Subscribe for new episodes every week.
+🔔 Subscribe so you don't miss what's coming next.
 
-#AI #ArtificialIntelligence #AIMarketing #FutureOfWork #AITools #Documentary #VRealAI
+#AIMarketing #AIForBeginners #FutureOfWork
 ```
 
 ---
@@ -52,7 +43,7 @@ Channel built 100% with AI. We show you how.
 ## Tags
 
 ```
-AI, artificial intelligence, AI 2025, AI 2026, AI marketing, AI tools, AI for beginners, future of work, AI documentary, AI revolution, make money with AI, AI business, AI automation, AI side hustle, solopreneur AI, marketing automation, AI workflow, ChatGPT, Claude AI, AI tools for marketing, faceless youtube, AI content creation, passive income AI, AI transformation, digital marketing AI
+AI marketing, AI for marketers, AI tools for marketing, AI 2026, AI documentary, future of marketing, AI for solopreneurs, marketing automation AI, AI workflow for business, how to use AI for marketing, AI marketing strategy, AI marketing tools, ChatGPT for marketing, Claude AI for business, solopreneur AI tools, marketing professional AI, AI beginner guide, digital marketing AI, AI content strategy, AI business automation
 ```
 
 ---
@@ -75,7 +66,7 @@ AI, artificial intelligence, AI 2025, AI 2026, AI marketing, AI tools, AI for be
 ## End Screen Elements (last 20 seconds)
 1. **Subscribe button** — center
 2. **Next video card** — EP002 (when published)
-3. **Lead magnet link** — "Free AI Prompts" card
+3. **Playlist link** — V-Real AI series playlist
 
 ---
 
@@ -86,10 +77,19 @@ This entire video was researched, scripted, narrated, and produced using AI.
 
 Every tool. Every step. Transparent.
 
-If you want to learn how to use AI — not just hear about it — grab the free 10 Best AI Prompts guide (link in description).
+If you're a marketer or solopreneur figuring out AI — you're in the right place. We show you what's actually working, not what's trending.
 
-Welcome to V-Real AI. You're not paranoid. You're observant. 🎬
+Welcome to V-Real AI. You're not paranoid. You're observant.
 ```
+
+---
+
+## First 48 Hours Comment Strategy
+
+- Reply to EVERY comment in the first 48 hours (drives comment velocity, key algorithm signal)
+- Pin a question as first reply to early comments: "What's your biggest question about using AI in your work?"
+- Heart all comments from marketing professionals (builds community signal)
+- If comment mentions a specific AI tool, reply with a helpful tip (drives reply chains)
 
 ---
 
@@ -108,18 +108,31 @@ Welcome to V-Real AI. You're not paranoid. You're observant. 🎬
 ## Channel Description (for About page — set once)
 
 ```
-V-Real AI is the insider's guide to the AI revolution.
+V-Real AI is the insider's guide to the AI revolution — made for marketing professionals and solopreneurs.
 
-Cinematic documentaries exploring how AI is transforming marketing, work, and income — made for professionals and solopreneurs who want to adapt, not get left behind.
-
-Every video is produced using AI tools: Claude for research and scripts, ElevenLabs for voice, Kling AI for footage, FFmpeg for assembly. 100% AI-powered. 100% transparent.
+Cinematic documentaries exploring how AI is transforming marketing, work, and income. Every episode shows you the exact tools and techniques so you can apply them to your own work.
 
 New episodes weekly.
 
 📧 Newsletter: [Beehiiv Link]
-🛒 Products: [Gumroad Link]
 
 Business inquiries: [email]
 
 You're not paranoid. You're observant.
 ```
+
+---
+
+## v2 Changes (from pressure test)
+
+1. **Fixed year**: Removed "2025" — titles now use "2026" or are timeless
+2. **Niche-targeted titles**: Added "marketers"/"marketing" to all title options
+3. **Keyword-rich first 2 lines**: Front-loaded "AI," "marketing," "solopreneurs," "2026" for algorithm
+4. **Added search keyword block**: "Covers: AI tools for marketing 2026 | AI automation for solopreneurs..." for NLP parser
+5. **Reduced hashtags**: Cut from 7 generic to 3 niche-specific (#AIMarketing #AIForBeginners #FutureOfWork)
+6. **Fixed tags**: Removed "passive income AI" and "make money with AI" (wrong audience, suppressed category). Added marketing-specific terms
+7. **Removed production stack from description**: Replaced "Claude + Kling AI + FFmpeg" with outcome language ("shows you exactly which tools and how")
+8. **Deferred lead magnet**: Removed email/product CTAs from EP001 description (trust not established yet). Lead magnet moves to EP003+
+9. **Added 48-hour comment strategy**: Reply to every comment, pin a question, heart professionals
+10. **Removed emoji from pinned comment**: Professional audience converts better without
+11. **Channel About page simplified**: Removed tool list, focused on viewer benefit
