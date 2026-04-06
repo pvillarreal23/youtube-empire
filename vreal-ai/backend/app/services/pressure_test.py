@@ -364,7 +364,7 @@ async def pressure_test(
     prompt = PRESSURE_TEST_PROMPT.format(
         stage=stage,
         title=title,
-        content=content[:6000],  # Limit content to avoid token overflow
+        content=content[:12000],  # Limit content to avoid token overflow
     )
 
     # Determine which models to use
