@@ -56,27 +56,31 @@ export const BrandedIntro: React.FC = () => {
         }}
       />
 
-      {/* Logo mark */}
+      {/* Logo mark — V-shaped icon representing V-Real */}
       <div
         style={{
           transform: `scale(${logoScale})`,
           marginBottom: 40,
         }}
       >
-        <svg width="100" height="100" viewBox="0 0 100 100" fill="none">
-          <polygon
-            points="50,5 95,95 5,95"
+        <svg width="120" height="100" viewBox="0 0 120 100" fill="none">
+          {/* V shape */}
+          <path
+            d="M10,10 L60,90 L110,10"
             stroke="#00D4FF"
-            strokeWidth="4"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
             fill="none"
             style={{
               filter: `drop-shadow(0 0 ${glowIntensity * 20}px #00D4FF)`,
             }}
           />
+          {/* Dot accent at the V base */}
           <circle
-            cx="50"
-            cy="60"
-            r="12"
+            cx="60"
+            cy="90"
+            r="6"
             fill="#00D4FF"
             style={{
               filter: `drop-shadow(0 0 ${glowIntensity * 15}px #00D4FF)`,
@@ -96,14 +100,13 @@ export const BrandedIntro: React.FC = () => {
           textTransform: "uppercase",
         }}
       >
-        The{" "}
         <span
           style={{
             color: "#00D4FF",
             textShadow: `0 0 ${glowIntensity * 40}px rgba(0, 212, 255, 0.8)`,
           }}
         >
-          Edge
+          V-Real
         </span>{" "}
         AI
       </div>
@@ -112,15 +115,15 @@ export const BrandedIntro: React.FC = () => {
       <div
         style={{
           opacity: taglineOpacity,
-          fontSize: 28,
+          fontSize: 24,
           fontWeight: 300,
-          letterSpacing: "6px",
+          letterSpacing: "4px",
           color: "rgba(255,255,255,0.55)",
-          textTransform: "uppercase",
           marginTop: 16,
+          fontStyle: "italic",
         }}
       >
-        Build the Future
+        You're not paranoid. You're observant.
       </div>
 
       {/* Bottom accent line */}

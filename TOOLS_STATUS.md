@@ -1,4 +1,4 @@
-# @theedgeai Video Pipeline — Tools Status
+# @VRealAI Video Pipeline — Tools Status
 _Last updated: 2026-04-03_
 
 ## ✅ Installed & Ready

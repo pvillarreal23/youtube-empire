@@ -1,6 +1,6 @@
 # Channel Branding Evaluation — All 32 Agents Vote
 
-**Channel:** V-Real AI (@theedgeai)
+**Channel:** V-Real AI (@VRealAI)
 **Date:** April 2, 2026
 **Evaluation Scope:** Channel name, banner design, and profile picture
 **Total Agent Votes:** 32 agents across 9 tiers
@@ -135,7 +135,7 @@
 *Fan relationship perspective:* Current brand voice and fan appreciation messages all reference "V-Real AI" organically. Renaming would require rewriting fan engagement templates and confusion in outreach responses.
 
 **Social Media Manager** ✓ KEEP
-*Social platform branding perspective:* Handle @theedgeai is established across TikTok, Instagram, Twitter, Twitter (X), LinkedIn. Changing the name would create platform inconsistency (handle vs. name mismatch). Current handle-to-name alignment is a strength.
+*Social platform branding perspective:* Handle @VRealAI is established across TikTok, Instagram, Twitter, Twitter (X), LinkedIn. Changing the name would create platform inconsistency (handle vs. name mismatch). Current handle-to-name alignment is a strength.
 
 ---
 
