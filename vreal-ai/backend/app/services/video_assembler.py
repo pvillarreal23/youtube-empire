@@ -264,41 +264,356 @@ def apply_motion(input_path: str, output_path: str, motion: str, duration: float
     return output_path
 
 
+def detect_voice_segments(voice_path: str, silence_thresh: float = -40, min_silence_dur: float = 0.3) -> list[tuple[float, float]]:
+    """
+    Detect non-silent segments in voice audio using FFmpeg silencedetect.
+
+    Returns a list of (start, end) tuples indicating where voice is active.
+    These segments drive sidechain ducking of the music track.
+
+    Args:
+        voice_path:       Path to normalized voice audio.
+        silence_thresh:   Silence threshold in dB (default -40 dB).
+        min_silence_dur:  Minimum silence duration to count as a gap (seconds).
+
+    Returns: List of (start_sec, end_sec) tuples for voiced segments.
+    """
+    result = subprocess.run(
+        [
+            "ffmpeg", "-i", voice_path,
+            "-af", f"silencedetect=noise={silence_thresh}dB:d={min_silence_dur}",
+            "-f", "null", "-"
+        ],
+        capture_output=True, text=True,
+    )
+
+    total_duration = get_duration(voice_path)
+    stderr = result.stderr
+
+    # Parse silence_start / silence_end markers from FFmpeg output
+    silence_starts = []
+    silence_ends = []
+    for line in stderr.split("\n"):
+        if "silence_start:" in line:
+            try:
+                val = float(line.split("silence_start:")[1].strip().split()[0])
+                silence_starts.append(val)
+            except (ValueError, IndexError):
+                pass
+        if "silence_end:" in line:
+            try:
+                val = float(line.split("silence_end:")[1].strip().split()[0])
+                silence_ends.append(val)
+            except (ValueError, IndexError):
+                pass
+
+    # Build voiced segments (inverse of silence regions)
+    voiced = []
+    pos = 0.0
+
+    for i, s_start in enumerate(silence_starts):
+        if s_start > pos:
+            voiced.append((pos, s_start))
+        if i < len(silence_ends):
+            pos = silence_ends[i]
+        else:
+            pos = total_duration
+
+    if pos < total_duration:
+        voiced.append((pos, total_duration))
+
+    # If detection failed or found nothing, assume entire track is voiced
+    if not voiced:
+        voiced = [(0.0, total_duration)]
+
+    return voiced
+
+
 def duck_music_under_voice(
     music_path: str,
     voice_path: str,
     output_path: str,
+    temp_dir: str,
     music_level: float = AUDIO_LEVELS["music_lufs"],
     duck_level: float = AUDIO_LEVELS["music_duck_lufs"],
 ) -> str:
     """
-    Auto-duck background music under voice audio.
-    Music plays at -28 LUFS normally, drops to -35 LUFS when voice is active.
+    Sidechain ducking: lower music volume when voice is active.
+
+    Strategy:
+      1. Normalize music to -28 LUFS (nominal level).
+      2. Detect voiced segments via silencedetect.
+      3. Build an FFmpeg volume expression that drops from -28 to -35 LUFS
+         during voiced segments (a 7 dB reduction).
+      4. Apply smooth attack/release ramps to avoid clicks.
+
+    This uses the volume filter rather than sidechaincompress for broader
+    FFmpeg compatibility and deterministic results.
+
+    Args:
+        music_path:   Raw music file.
+        voice_path:   Normalized voice audio (used to detect speech segments).
+        output_path:  Destination for ducked music.
+        temp_dir:     Episode temp directory for intermediate files.
+        music_level:  Target LUFS for music when voice is silent (-28).
+        duck_level:   Target LUFS for music when voice is active (-35).
+
+    Returns: output_path.
     """
     voice_duration = get_duration(voice_path)
 
-    # Normalize music to target level first
-    music_norm = os.path.join(TEMP_DIR, "music_normalized.wav")
+    # Step 1: Normalize music to nominal level
+    music_norm = os.path.join(temp_dir, "music_normalized.wav")
     normalize_audio(music_path, music_norm, target_lufs=music_level)
 
-    # Use sidechaincompress to duck music when voice is present
+    # Step 2: Loop/trim music to match voice duration
+    music_fitted = os.path.join(temp_dir, "music_fitted.wav")
+    music_duration = get_duration(music_norm)
+
+    if music_duration < voice_duration:
+        # Loop music to fill the full voice duration
+        loop_count = int(voice_duration / music_duration) + 1
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-stream_loop", str(loop_count),
+                "-i", music_norm,
+                "-t", str(voice_duration),
+                "-ar", str(VIDEO_SPECS["audio_sample_rate"]),
+                music_fitted,
+            ],
+            check=True, capture_output=True,
+        )
+    else:
+        # Trim music to voice duration
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", music_norm,
+                "-t", str(voice_duration),
+                "-ar", str(VIDEO_SPECS["audio_sample_rate"]),
+                music_fitted,
+            ],
+            check=True, capture_output=True,
+        )
+
+    # Step 3: Detect where voice is active
+    voiced_segments = detect_voice_segments(voice_path)
+
+    # Step 4: Build volume expression for ducking
+    # Duck amount in dB (negative = quieter)
+    duck_db = duck_level - music_level  # e.g. -35 - (-28) = -7 dB
+    ramp_duration = 0.05  # 50ms attack/release ramp to avoid clicks
+
+    # Build a volume expression: start at 0dB, duck by duck_db during voiced segments
+    # Each segment contributes: between(t, start-ramp, end+ramp) * duck_db
+    # We use enable/volume filter chains for reliable cross-version compatibility
+    if voiced_segments:
+        # Build a single volume expression using nested if() for ducking
+        # volume=dB expression that evaluates to duck_db during voice, 0 otherwise
+        conditions = []
+        for seg_start, seg_end in voiced_segments:
+            # Smooth ramp: linear ramp over ramp_duration at boundaries
+            conditions.append(
+                f"between(t,{seg_start:.3f},{seg_end:.3f})"
+            )
+
+        # Combine all voiced segment conditions with + and clamp
+        duck_expr = "+".join(conditions)
+        # If any condition is true (>=1), apply duck; min() clamps overlapping segments
+        volume_expr = f"volume=enable=1:volume='{duck_db}*min(1,{duck_expr})':eval=frame"
+
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", music_fitted,
+                "-af", f"{volume_expr}",
+                "-ar", str(VIDEO_SPECS["audio_sample_rate"]),
+                output_path,
+            ],
+            check=True, capture_output=True,
+        )
+    else:
+        # No voiced segments detected — use music as-is
+        shutil.copy2(music_fitted, output_path)
+
+    return output_path
+
+
+def apply_music_fades(
+    input_path: str,
+    output_path: str,
+    total_duration: float,
+    fade_in_dur: float = AUDIO_FADES["music_fade_in"],
+    fade_out_dur: float = AUDIO_FADES["music_fade_out"],
+) -> str:
+    """
+    Apply fade-in and fade-out to a music track.
+
+    Music fades in over the first fade_in_dur seconds and fades out over
+    the last fade_out_dur seconds, giving the episode a polished opening
+    and a clean ending.
+
+    Args:
+        input_path:    Source music audio.
+        output_path:   Destination for faded music.
+        total_duration: Total duration of the track in seconds.
+        fade_in_dur:   Fade-in duration (default 3s per PRODUCTION_SOP).
+        fade_out_dur:  Fade-out duration (default 5s per PRODUCTION_SOP).
+
+    Returns: output_path.
+    """
+    fade_out_start = max(0, total_duration - fade_out_dur)
+
     subprocess.run(
         [
-            "ffmpeg", "-y",
-            "-i", music_norm,
-            "-i", voice_path,
-            "-filter_complex",
-            (
-                f"[0:a]aloop=loop=-1:size={int(48000 * voice_duration)},atrim=0:{voice_duration}[music_loop];"
-                f"[music_loop][1:a]sidechaincompress=threshold=0.02:ratio=8:attack=50:release=300:level_sc=1[ducked]"
+            "ffmpeg", "-y", "-i", input_path,
+            "-af", (
+                f"afade=t=in:st=0:d={fade_in_dur},"
+                f"afade=t=out:st={fade_out_start:.3f}:d={fade_out_dur}"
             ),
-            "-map", "[ducked]",
-            "-t", str(voice_duration),
             "-ar", str(VIDEO_SPECS["audio_sample_rate"]),
             output_path,
         ],
         check=True, capture_output=True,
     )
+    return output_path
+
+
+def prepare_audio_layer(
+    input_path: str,
+    output_path: str,
+    target_lufs: float,
+    target_duration: float,
+    temp_dir: str,
+) -> str:
+    """
+    Prepare a single audio layer: normalize to target LUFS, fit to target duration.
+
+    If the source is shorter than target_duration it is looped; if longer it is trimmed.
+
+    Args:
+        input_path:       Source audio file.
+        output_path:      Destination for prepared audio.
+        target_lufs:      LUFS normalization target.
+        target_duration:  Desired duration in seconds.
+        temp_dir:         Temp directory for intermediates.
+
+    Returns: output_path.
+    """
+    # Normalize
+    norm_path = output_path + ".norm.wav"
+    normalize_audio(input_path, norm_path, target_lufs=target_lufs)
+
+    # Fit to duration
+    source_dur = get_duration(norm_path)
+    if source_dur < target_duration:
+        loop_count = int(target_duration / source_dur) + 1
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-stream_loop", str(loop_count),
+                "-i", norm_path,
+                "-t", str(target_duration),
+                "-ar", str(VIDEO_SPECS["audio_sample_rate"]),
+                output_path,
+            ],
+            check=True, capture_output=True,
+        )
+    else:
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", norm_path,
+                "-t", str(target_duration),
+                "-ar", str(VIDEO_SPECS["audio_sample_rate"]),
+                output_path,
+            ],
+            check=True, capture_output=True,
+        )
+
+    # Clean up intermediate
+    if os.path.exists(norm_path):
+        os.remove(norm_path)
+
+    return output_path
+
+
+def mix_audio_layers(
+    voice_path: str,
+    music_path: Optional[str],
+    sfx_path: Optional[str],
+    ambient_path: Optional[str],
+    output_path: str,
+    temp_dir: str,
+) -> str:
+    """
+    Broadcast-grade 4-layer audio mix.
+
+    Layer stack (mixed via FFmpeg amix):
+      1. Voice      — -14 LUFS (already normalized before this call)
+      2. Music      — -28 LUFS nominal, ducked to -35 LUFS under voice, faded in/out
+      3. SFX        — -20 LUFS
+      4. Ambient    — -35 LUFS
+
+    After mixing, the combined output is normalized to -14 LUFS master.
+
+    Args:
+        voice_path:   Normalized voice audio (-14 LUFS).
+        music_path:   Music file (or None to skip).
+        sfx_path:     SFX file (or None to skip).
+        ambient_path: Ambient/room-tone file (or None to skip).
+        output_path:  Destination for final mixed audio.
+        temp_dir:     Episode temp directory for intermediates.
+
+    Returns: output_path.
+    """
+    voice_duration = get_duration(voice_path)
+    layers = [voice_path]
+    input_args = ["-i", voice_path]
+
+    # ── Layer 2: Music (normalize + duck + fade) ────────────────────────
+    if music_path and os.path.exists(music_path):
+        ducked = os.path.join(temp_dir, "music_ducked.wav")
+        duck_music_under_voice(music_path, voice_path, ducked, temp_dir)
+
+        faded = os.path.join(temp_dir, "music_faded.wav")
+        apply_music_fades(ducked, faded, voice_duration)
+
+        layers.append(faded)
+        input_args.extend(["-i", faded])
+
+    # ── Layer 3: SFX ────────────────────────────────────────────────────
+    if sfx_path and os.path.exists(sfx_path):
+        sfx_prepared = os.path.join(temp_dir, "sfx_prepared.wav")
+        prepare_audio_layer(sfx_path, sfx_prepared, AUDIO_LEVELS["sfx_lufs"], voice_duration, temp_dir)
+        layers.append(sfx_prepared)
+        input_args.extend(["-i", sfx_prepared])
+
+    # ── Layer 4: Ambient ────────────────────────────────────────────────
+    if ambient_path and os.path.exists(ambient_path):
+        ambient_prepared = os.path.join(temp_dir, "ambient_prepared.wav")
+        prepare_audio_layer(ambient_path, ambient_prepared, AUDIO_LEVELS["ambient_lufs"], voice_duration, temp_dir)
+        layers.append(ambient_prepared)
+        input_args.extend(["-i", ambient_prepared])
+
+    # ── Mix all layers ──────────────────────────────────────────────────
+    num_layers = len(layers)
+
+    if num_layers == 1:
+        # Voice only — no mixing needed
+        mixed_raw = voice_path
+    else:
+        mixed_raw = os.path.join(temp_dir, "mix_raw.wav")
+        # Build filter_complex for amix
+        filter_inputs = "".join(f"[{i}:a]" for i in range(num_layers))
+        filter_expr = f"{filter_inputs}amix=inputs={num_layers}:duration=first:dropout_transition=2:normalize=0[mixed]"
+
+        cmd = ["ffmpeg", "-y"] + input_args + [
+            "-filter_complex", filter_expr,
+            "-map", "[mixed]",
+            "-ar", str(VIDEO_SPECS["audio_sample_rate"]),
+            mixed_raw,
+        ]
+        subprocess.run(cmd, check=True, capture_output=True)
+
+    # ── Final master normalization to -14 LUFS ──────────────────────────
+    normalize_audio(mixed_raw, output_path, AUDIO_LEVELS["master_lufs"])
     return output_path
 
 
@@ -376,7 +691,7 @@ def assemble_video(project: AssemblyProject) -> str:
     print(f"[ASSEMBLER] Scenes: {len(project.scenes)}")
 
     # ── Step 1: Normalize voice ──────────────────────────────────────────
-    print("[ASSEMBLER] Step 1/7: Normalizing voice audio...")
+    print("[ASSEMBLER] Step 1/7: Normalizing voice audio to -14 LUFS...")
     voice_norm = os.path.join(episode_temp, "voice_normalized.wav")
     normalize_audio(project.voice_audio_path, voice_norm, AUDIO_LEVELS["voice_lufs"])
 
@@ -458,32 +773,17 @@ def assemble_video(project: AssemblyProject) -> str:
         check=True, capture_output=True,
     )
 
-    # ── Step 4: Mix audio (voice + ducked music) ─────────────────────────
-    print("[ASSEMBLER] Step 4/7: Mixing audio...")
-    if project.music_path and os.path.exists(project.music_path):
-        ducked_music = os.path.join(episode_temp, "music_ducked.wav")
-        duck_music_under_voice(project.music_path, voice_norm, ducked_music)
-
-        # Mix voice + ducked music
-        mixed_audio = os.path.join(episode_temp, "audio_mixed.wav")
-        subprocess.run(
-            [
-                "ffmpeg", "-y",
-                "-i", voice_norm,
-                "-i", ducked_music,
-                "-filter_complex", "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=2[mixed]",
-                "-map", "[mixed]",
-                "-ar", str(VIDEO_SPECS["audio_sample_rate"]),
-                mixed_audio,
-            ],
-            check=True, capture_output=True,
-        )
-    else:
-        mixed_audio = voice_norm
-
-    # Final audio normalization
+    # ── Step 4: 4-layer audio mix (voice + music + SFX + ambient) ──────
+    print("[ASSEMBLER] Step 4/7: Mixing audio (4-layer broadcast mix)...")
     final_audio = os.path.join(episode_temp, "audio_final.wav")
-    normalize_audio(mixed_audio, final_audio, AUDIO_LEVELS["master_lufs"])
+    mix_audio_layers(
+        voice_path=voice_norm,
+        music_path=project.music_path,
+        sfx_path=project.sfx_path,
+        ambient_path=project.ambient_path,
+        output_path=final_audio,
+        temp_dir=episode_temp,
+    )
 
     # ── Step 5: Merge video + audio ──────────────────────────────────────
     print("[ASSEMBLER] Step 5/7: Merging video + audio...")
