@@ -1,15 +1,35 @@
 from __future__ import annotations
 
 import anthropic
+import time
 from datetime import datetime, timezone
 from app.config import ANTHROPIC_API_KEY, CLAUDE_MODEL
 
 # Haiku for lightweight tasks (QA reviews, scoring) — 90% cheaper than Sonnet
 CLAUDE_MODEL_LITE = "claude-haiku-4-5-20251001"
 
+# Retry config for rate limits (429 errors)
+MAX_RETRIES = 4
+RETRY_BASE_DELAY = 30  # seconds — waits 30, 60, 120, 240
+
 
 def get_client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+
+
+def _call_with_retry(create_fn) -> str:
+    """Call Claude API with exponential backoff on 429 rate limit errors."""
+    for attempt in range(MAX_RETRIES + 1):
+        try:
+            response = create_fn()
+            return response.content[0].text
+        except anthropic.RateLimitError as e:
+            if attempt == MAX_RETRIES:
+                raise
+            delay = RETRY_BASE_DELAY * (2 ** attempt)
+            print(f"[RATE LIMIT] 429 hit, waiting {delay}s before retry {attempt + 1}/{MAX_RETRIES}...")
+            time.sleep(delay)
+    raise RuntimeError("Unreachable")
 
 
 def format_thread_for_agent(messages: list[dict], agent_id: str) -> list[dict]:
@@ -89,13 +109,12 @@ def generate_agent_response(
 
     max_tokens = STAGE_TOKEN_LIMITS.get(stage, DEFAULT_MAX_TOKENS) if stage else DEFAULT_MAX_TOKENS
 
-    response = client.messages.create(
+    return _call_with_retry(lambda: client.messages.create(
         model=CLAUDE_MODEL,
         max_tokens=max_tokens,
         system=full_system_prompt,
         messages=messages,
-    )
-    return response.content[0].text
+    ))
 
 
 def generate_review_response(
@@ -111,13 +130,12 @@ def generate_review_response(
     messages = format_thread_for_agent(thread_messages, agent_id)
     full_system_prompt = system_prompt + get_date_context()
 
-    response = client.messages.create(
+    return _call_with_retry(lambda: client.messages.create(
         model=CLAUDE_MODEL_LITE,
         max_tokens=2048,  # Reviews don't need more than this
         system=full_system_prompt,
         messages=messages,
-    )
-    return response.content[0].text
+    ))
 
 
 async def generate_agent_response_async(
