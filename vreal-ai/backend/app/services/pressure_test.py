@@ -462,15 +462,41 @@ async def pressure_test(
     if models is None:
         models = ["claude", "chatgpt", "gemini", "grok"]
 
-    # Run all models in parallel
+    # Smart model selection: only call models that can actually respond
+    # (have API keys or Make.com webhooks configured). Avoids wasting calls
+    # that just return SKIP.
+    available_models = []
+    if "claude" in models and ANTHROPIC_API_KEY:
+        available_models.append("claude")
+    if "chatgpt" in models and (OPENAI_API_KEY or MAKE_WEBHOOK_PRESSURE_OPENAI):
+        available_models.append("chatgpt")
+    if "gemini" in models and (GEMINI_API_KEY or MAKE_WEBHOOK_PRESSURE_GEMINI):
+        available_models.append("gemini")
+    if "grok" in models and (GROK_API_KEY or MAKE_WEBHOOK_PRESSURE_GROK):
+        available_models.append("grok")
+
+    # Fallback: at minimum use Claude
+    if not available_models and ANTHROPIC_API_KEY:
+        available_models = ["claude"]
+
+    if not available_models:
+        return PressureTestSummary(
+            passed=False, average_score=0, lowest_score=0, highest_score=0,
+            results=[], synthesized_feedback="No API keys configured.",
+            unanimous=False,
+        )
+
+    print(f"[PRESSURE TEST] Active models: {available_models} ({len(available_models)}/{len(models)})")
+
+    # Run only available models in parallel — no wasted SKIP calls
     tasks = []
-    if "claude" in models:
+    if "claude" in available_models:
         tasks.append(_call_claude(prompt))
-    if "chatgpt" in models:
+    if "chatgpt" in available_models:
         tasks.append(_call_openai(prompt))
-    if "gemini" in models:
+    if "gemini" in available_models:
         tasks.append(_call_gemini(prompt))
-    if "grok" in models:
+    if "grok" in available_models:
         tasks.append(_call_grok(prompt))
 
     results = await asyncio.gather(*tasks)
@@ -489,8 +515,11 @@ async def pressure_test(
     avg_score = sum(scores) / len(scores)
     all_pass = all(r.verdict == "PASS" for r in active)
 
-    # Synthesize the best feedback from all models
-    synthesized = await _synthesize_feedback(list(results))
+    # Synthesize feedback — skip expensive synthesis when only 1 model responded
+    if len(active) == 1:
+        synthesized = f"[{active[0].model}] {active[0].feedback}"
+    else:
+        synthesized = await _synthesize_feedback(list(results))
 
     return PressureTestSummary(
         passed=all_pass and min(scores) >= 10,

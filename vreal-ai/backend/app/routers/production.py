@@ -14,7 +14,7 @@ from app.models.production import ProductionJob, PIPELINE_STAGES, CHANNEL_MANAGE
 from app.models.thread import Thread, Message
 from app.models.agent import Agent
 from app.models.scheduler import Escalation
-from app.services.claude_service import generate_agent_response, generate_agent_response_async
+from app.services.claude_service import generate_agent_response, generate_agent_response_async, generate_review_response_async
 from app.services.pressure_test import pressure_test
 from app.services.agent_memory import (
     record_failure_lesson, record_success,
@@ -177,9 +177,9 @@ async def _quality_gate(
         work_output=work_output[:8000],  # Limit to avoid token overflow
     )
 
-    # Get the reviewer's assessment
+    # Get the reviewer's assessment (uses Haiku — scoring doesn't need Sonnet)
     try:
-        review_response = await generate_agent_response_async(
+        review_response = await generate_review_response_async(
             system_prompt=reviewer.system_prompt,
             thread_messages=[{"id": "review", "sender_type": "user", "sender_agent_id": None,
                             "sender_name": "Pipeline QA System", "content": review_prompt,
@@ -341,6 +341,7 @@ async def _advance_pipeline(job_id: str, _depth: int = 0):
                     system_prompt=enhanced_prompt,
                     thread_messages=thread_msgs,
                     agent_id=agent_id,
+                    stage=job.stage,
                 )
 
                 # Save response

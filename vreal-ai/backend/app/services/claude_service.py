@@ -4,6 +4,9 @@ import anthropic
 from datetime import datetime, timezone
 from app.config import ANTHROPIC_API_KEY, CLAUDE_MODEL
 
+# Haiku for lightweight tasks (QA reviews, scoring) — 90% cheaper than Sonnet
+CLAUDE_MODEL_LITE = "claude-haiku-4-5-20251001"
+
 
 def get_client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
@@ -59,19 +62,58 @@ def get_date_context() -> str:
     )
 
 
+# Stage-specific token caps — only use what each stage actually needs
+STAGE_TOKEN_LIMITS = {
+    "scripted": 8192,     # Scripts need full length
+    "research": 6144,     # Research briefs are detailed but shorter than scripts
+    "voiceover": 4096,    # Voiceover briefs are structured directions
+    "edited": 4096,       # Edit briefs are structured directions
+    "thumbnail": 2048,    # Thumbnail concepts are short
+    "seo": 3072,          # SEO metadata is compact
+    "review": 4096,       # Final QA review
+    "approved": 2048,     # Approval summary is short
+}
+DEFAULT_MAX_TOKENS = 8192
+
+
 def generate_agent_response(
     system_prompt: str,
     thread_messages: list[dict],
     agent_id: str,
+    stage: str | None = None,
 ) -> str:
     """Generate a response from an agent using Claude. Synchronous — use generate_agent_response_async for async contexts."""
     client = get_client()
     messages = format_thread_for_agent(thread_messages, agent_id)
     full_system_prompt = system_prompt + get_date_context()
 
+    max_tokens = STAGE_TOKEN_LIMITS.get(stage, DEFAULT_MAX_TOKENS) if stage else DEFAULT_MAX_TOKENS
+
     response = client.messages.create(
         model=CLAUDE_MODEL,
-        max_tokens=8192,
+        max_tokens=max_tokens,
+        system=full_system_prompt,
+        messages=messages,
+    )
+    return response.content[0].text
+
+
+def generate_review_response(
+    system_prompt: str,
+    thread_messages: list[dict],
+    agent_id: str,
+) -> str:
+    """Generate a QA review using Haiku — same quality scoring, 90% cheaper than Sonnet.
+
+    Used for quality gate reviews where the task is scoring/grading, not creative work.
+    """
+    client = get_client()
+    messages = format_thread_for_agent(thread_messages, agent_id)
+    full_system_prompt = system_prompt + get_date_context()
+
+    response = client.messages.create(
+        model=CLAUDE_MODEL_LITE,
+        max_tokens=2048,  # Reviews don't need more than this
         system=full_system_prompt,
         messages=messages,
     )
@@ -82,12 +124,27 @@ async def generate_agent_response_async(
     system_prompt: str,
     thread_messages: list[dict],
     agent_id: str,
+    stage: str | None = None,
 ) -> str:
     """Async wrapper — runs the blocking Claude call in a thread pool so it doesn't block the event loop."""
     import asyncio
+    import functools
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(
-        None, generate_agent_response, system_prompt, thread_messages, agent_id
+        None, functools.partial(generate_agent_response, system_prompt, thread_messages, agent_id, stage=stage)
+    )
+
+
+async def generate_review_response_async(
+    system_prompt: str,
+    thread_messages: list[dict],
+    agent_id: str,
+) -> str:
+    """Async wrapper for Haiku-based QA reviews."""
+    import asyncio
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None, generate_review_response, system_prompt, thread_messages, agent_id
     )
 
 
