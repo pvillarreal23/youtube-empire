@@ -128,7 +128,7 @@ async def _call_claude(prompt: str) -> PressureTestResult:
                 },
                 json={
                     "model": CLAUDE_MODEL,
-                    "max_tokens": 2000,
+                    "max_tokens": 4000,
                     "messages": [{"role": "user", "content": prompt}],
                 },
             )
@@ -327,7 +327,7 @@ async def _synthesize_feedback(results: list[PressureTestResult]) -> str:
                     },
                     json={
                         "model": CLAUDE_MODEL,
-                        "max_tokens": 1500,
+                        "max_tokens": 4000,
                         "messages": [{"role": "user", "content": SYNTHESIS_PROMPT.format(reviews=reviews_text)}],
                     },
                 )

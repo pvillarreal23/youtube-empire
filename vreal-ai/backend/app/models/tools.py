@@ -100,7 +100,7 @@ DEFAULT_TOOLS = [
      "description": "Powers all 32 agents. Script writing, research, analysis, strategy.",
      "website": "https://console.anthropic.com", "api_key_env": "ANTHROPIC_API_KEY",
      "managed_by": "ceo-agent", "status": "active",
-     "config": {"model": "claude-sonnet-4-20250514", "max_tokens": 4096}},
+     "config": {"model": "claude-sonnet-4-20250514", "max_tokens": 8192}},
 
     {"name": "Perplexity", "category": "text", "icon": "🔍",
      "description": "AI search engine for real-time research and fact-checking.",

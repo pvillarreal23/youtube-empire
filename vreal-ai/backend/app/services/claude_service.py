@@ -71,7 +71,7 @@ def generate_agent_response(
 
     response = client.messages.create(
         model=CLAUDE_MODEL,
-        max_tokens=2048,
+        max_tokens=8192,
         system=full_system_prompt,
         messages=messages,
     )
