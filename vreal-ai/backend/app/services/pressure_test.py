@@ -132,6 +132,7 @@ async def _call_claude(prompt: str) -> PressureTestResult:
                     "messages": [{"role": "user", "content": prompt}],
                 },
             )
+            response.raise_for_status()
             data = response.json()
             text = data.get("content", [{}])[0].get("text", "")
             score, verdict, feedback = _parse_review(text)
@@ -168,6 +169,7 @@ async def _call_openai(prompt: str) -> PressureTestResult:
                     "max_tokens": 2000,
                 },
             )
+            response.raise_for_status()
             data = response.json()
             text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
             score, verdict, feedback = _parse_review(text)
@@ -193,13 +195,17 @@ async def _call_gemini(prompt: str) -> PressureTestResult:
     try:
         async with httpx.AsyncClient(timeout=120) as client:
             response = await client.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}",
-                headers={"Content-Type": "application/json"},
+                f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
+                headers={
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": GEMINI_API_KEY,
+                },
                 json={
                     "contents": [{"parts": [{"text": prompt}]}],
                     "generationConfig": {"maxOutputTokens": 2000},
                 },
             )
+            response.raise_for_status()
             data = response.json()
             text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
             score, verdict, feedback = _parse_review(text)
@@ -236,6 +242,7 @@ async def _call_grok(prompt: str) -> PressureTestResult:
                     "max_tokens": 2000,
                 },
             )
+            response.raise_for_status()
             data = response.json()
             text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
             score, verdict, feedback = _parse_review(text)
@@ -324,6 +331,7 @@ async def _synthesize_feedback(results: list[PressureTestResult]) -> str:
                         "messages": [{"role": "user", "content": SYNTHESIS_PROMPT.format(reviews=reviews_text)}],
                     },
                 )
+                response.raise_for_status()
                 data = response.json()
                 return data.get("content", [{}])[0].get("text", reviews_text)
         except Exception:
