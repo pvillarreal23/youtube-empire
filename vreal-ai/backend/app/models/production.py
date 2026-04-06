@@ -29,10 +29,17 @@ class ProductionJob(Base):
     # Content produced at each stage
     research_data = Column(Text, nullable=True)
     script = Column(Text, nullable=True)
+    voiceover_brief = Column(Text, nullable=True)   # Voice direction output
+    thumbnail_brief = Column(Text, nullable=True)   # Thumbnail concepts output
+    edit_brief = Column(Text, nullable=True)         # Edit brief output
+    seo_metadata = Column(Text, nullable=True)
+    review_summary = Column(Text, nullable=True)     # Final QA review output
+    approval_summary = Column(Text, nullable=True)   # CEO approval summary
+
+    # Final asset URLs (filled when assets are actually produced)
     voiceover_url = Column(String, nullable=True)
     thumbnail_url = Column(String, nullable=True)
     video_url = Column(String, nullable=True)
-    seo_metadata = Column(Text, nullable=True)
 
     # Review chain
     reviewed_by = Column(JSON, default=list)  # list of agent_ids who reviewed

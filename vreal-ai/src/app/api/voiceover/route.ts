@@ -2,7 +2,9 @@ export const dynamic = 'force-dynamic';
 
 import { PRODUCTION_BIBLE } from '@/config/production-bible';
 
-const { voiceId: DEFAULT_VOICE_ID, model, tutorialSettings, hookSettings } = PRODUCTION_BIBLE.elevenlabs;
+const { voiceId: DEFAULT_VOICE_ID, model, settings: defaultSettings } = PRODUCTION_BIBLE.elevenlabs;
+const tutorialSettings = defaultSettings;
+const hookSettings = { ...defaultSettings, stability: 0.50, style: 0.15 };
 
 export async function POST(request: Request) {
   try {

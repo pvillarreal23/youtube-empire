@@ -258,10 +258,13 @@ def _parse_review(text: str) -> tuple[int, str, str]:
     verdict = "FAIL"
     feedback = ""
 
-    # Extract score (handles "SCORE: X/10" and "QUALITY SCORE: X/10")
-    score_match = re.search(r"SCORE:\s*(\d+)\s*/\s*10", text)
+    # Extract score — case-insensitive, handles multiple formats
+    score_match = re.search(r"(?:QUALITY\s+)?SCORE:\s*(\d+)\s*/\s*10", text, re.IGNORECASE)
+    if not score_match:
+        # Fallback: any X/10 pattern
+        score_match = re.search(r"(\d+)\s*/\s*10", text)
     if score_match:
-        score = int(score_match.group(1))
+        score = min(int(score_match.group(1)), 10)
 
     # Extract verdict
     if re.search(r"VERDICT:\s*(PASS|APPROVED)", text, re.IGNORECASE):

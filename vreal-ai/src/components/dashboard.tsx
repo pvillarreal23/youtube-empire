@@ -182,6 +182,10 @@ function BracketGroup({ parent, children, agents, depth }: { parent: AgentInfo; 
 export default function Dashboard() {
   const [tab, setTab] = useState<Tab>("overview");
   const [pipeline, setPipeline] = useState<PipelineItem[]>(initialPipeline);
+  const [prodJobs, setProdJobs] = useState<any[]>([]);
+  const [growthBoard, setGrowthBoard] = useState<any[]>([]);
+  const [prodBoard, setProdBoard] = useState<any[]>([]);
+  const [selectedAgentSkills, setSelectedAgentSkills] = useState<any>(null);
   const [channels, setChannels] = useState<Channel[]>(initialChannels);
   const [editItem, setEditItem] = useState<PipelineItem | null>(null);
   const [showNewModal, setShowNewModal] = useState(false);
@@ -234,14 +238,20 @@ export default function Dashboard() {
     fetch(`/api/tools`).then(r => r.json()).then(d => setToolsList(Array.isArray(d) ? d : d.tools || [])).catch(() => {});
     fetch(`/api/tools/scenarios`).then(r => r.json()).then(d => setScenariosList(Array.isArray(d) ? {} : (d.scenarios || d))).catch(() => {});
     fetch(`/api/channels`).then(r => r.json()).then(d => setChannels(Array.isArray(d) ? d : d.channels || [])).catch(() => {});
+    // Production jobs + skills leaderboards
+    fetch(`${API_URL}/api/production/jobs`).then(r => r.json()).then(d => setProdJobs(Array.isArray(d) ? d : [])).catch(() => {});
+    fetch(`${API_URL}/api/skills/leaderboard/growth`).then(r => r.json()).then(d => setGrowthBoard(Array.isArray(d) ? d : [])).catch(() => {});
+    fetch(`${API_URL}/api/skills/leaderboard/production`).then(r => r.json()).then(d => setProdBoard(Array.isArray(d) ? d : [])).catch(() => {});
   }, []);
 
-  // Poll activity + feed every 10 seconds
+  // Poll activity + feed + production every 10 seconds
   useEffect(() => {
     const poll = setInterval(() => {
       fetch(`/api/scheduler/activity`).then(r => r.json()).then(setActivityData).catch(() => {});
       fetch(`/api/feed/messages?channel=${feedChannel}&limit=50`).then(r => r.json()).then(d => setFeedMessages(d.messages || [])).catch(() => {});
       fetch(`/api/feed/unread_count`).then(r => r.json()).then(setFeedUnread).catch(() => {});
+      fetch(`${API_URL}/api/production/jobs`).then(r => r.json()).then(d => setProdJobs(Array.isArray(d) ? d : [])).catch(() => {});
+      fetch(`${API_URL}/api/skills/leaderboard/growth`).then(r => r.json()).then(d => setGrowthBoard(Array.isArray(d) ? d : [])).catch(() => {});
     }, 10000);
     return () => clearInterval(poll);
   }, [feedChannel]);
@@ -663,6 +673,54 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
+            {/* Live Production Jobs */}
+            {prodJobs.length > 0 && (
+              <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold flex items-center gap-2"><Target className="w-5 h-5 text-green-400" />Live Production Jobs</h2>
+                  <button onClick={() => setTab("pipeline")} className="text-sm text-green-400 hover:text-green-300 flex items-center gap-1">View All <ChevronRight className="w-4 h-4" /></button>
+                </div>
+                <div className="space-y-2">
+                  {prodJobs.slice(0,5).map((j: any) => {
+                    const stages = ["research","scripted","voiceover","thumbnail","edited","seo","review","approved","published"];
+                    const stageIdx = stages.indexOf(j.stage);
+                    const progress = Math.round(((stageIdx+1)/stages.length)*100);
+                    return (
+                      <div key={j.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{j.title}</p>
+                          <p className="text-xs text-white/40">{j.channel} — {j.current_agent_name || j.stage}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-20 h-2 bg-white/10 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full" style={{width:`${progress}%`}} /></div>
+                          <span className="text-xs text-white/40 w-8 text-right">{progress}%</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {/* Agent Growth Summary */}
+            {growthBoard.length > 0 && (
+              <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold flex items-center gap-2"><TrendingUp className="w-5 h-5 text-purple-400" />Top Growing Agents</h2>
+                  <button onClick={() => setTab("skills")} className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1">View All <ChevronRight className="w-4 h-4" /></button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {growthBoard.slice(0,6).map((a: any) => (
+                    <div key={a.agent_id} className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                      <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-xs font-bold text-purple-400">Lv{a.highest_level}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{a.agent_id}</p>
+                        <p className="text-[10px] text-white/40">{a.total_skills} skills | {a.total_xp} XP</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {/* AI Research Tools */}
             <div>
               <h2 className="text-lg font-semibold flex items-center gap-2 mb-4"><Sparkles className="w-5 h-5 text-purple-400" />AI Tools</h2>
@@ -735,6 +793,36 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
+            {/* Real Production Jobs from Backend */}
+            {prodJobs.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-4">Live Production Jobs</h3>
+                <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                  <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/10 text-xs text-white/40 font-medium uppercase tracking-wider">
+                    <div className="col-span-3">Title</div><div className="col-span-2">Channel</div><div className="col-span-2">Stage</div><div className="col-span-2">Agent</div><div className="col-span-1">Progress</div><div className="col-span-2 text-right">Actions</div>
+                  </div>
+                  {prodJobs.map((j: any) => {
+                    const stages = ["research","scripted","voiceover","thumbnail","edited","seo","review","approved","published"];
+                    const stageIdx = stages.indexOf(j.stage);
+                    const progress = Math.round(((stageIdx + 1) / stages.length) * 100);
+                    const stageColor: Record<string,string> = { research:"text-purple-400 bg-purple-500/20", scripted:"text-cyan-400 bg-cyan-500/20", voiceover:"text-blue-400 bg-blue-500/20", thumbnail:"text-orange-400 bg-orange-500/20", edited:"text-yellow-400 bg-yellow-500/20", seo:"text-green-400 bg-green-500/20", review:"text-pink-400 bg-pink-500/20", approved:"text-emerald-400 bg-emerald-500/20", published:"text-red-400 bg-red-500/20" };
+                    return (
+                      <div key={j.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-4 px-4 sm:px-6 py-4 border-b border-white/5 hover:bg-white/5 transition-all items-center">
+                        <div className="sm:col-span-3 text-sm font-medium">{j.title}</div>
+                        <div className="sm:col-span-2 text-sm text-white/60">{j.channel}</div>
+                        <div className="sm:col-span-2"><span className={`text-xs px-2 py-1 rounded-full ${stageColor[j.stage] || "text-white/40 bg-white/10"}`}>{j.stage.toUpperCase()}</span></div>
+                        <div className="sm:col-span-2 text-xs text-white/50">{j.current_agent_name || j.current_agent_id || "—"}</div>
+                        <div className="sm:col-span-1"><div className="w-full h-2 bg-white/10 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all" style={{width:`${progress}%`}} /></div></div>
+                        <div className="sm:col-span-2 flex items-center gap-2 justify-end">
+                          {j.stage === "approved" && <button onClick={() => fetch(`${API_URL}/api/production/jobs/${j.id}/approve`,{method:"POST"}).then(()=>fetch(`${API_URL}/api/production/jobs`).then(r=>r.json()).then(d=>setProdJobs(Array.isArray(d)?d:[]))).catch(()=>{})} className="text-xs px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white font-medium">Approve</button>}
+                          {j.stage !== "published" && j.stage !== "approved" && <button onClick={() => fetch(`${API_URL}/api/production/jobs/${j.id}/advance`,{method:"POST"}).then(()=>fetch(`${API_URL}/api/production/jobs`).then(r=>r.json()).then(d=>setProdJobs(Array.isArray(d)?d:[]))).catch(()=>{})} className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/70">Skip Stage</button>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -765,29 +853,72 @@ export default function Dashboard() {
         {tab === "skills" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">AI Skill Files</h2>
-              <a href="https://github.com/pvillarreal23/youtube-agency/tree/main/skills" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 bg-white/5 px-4 py-2 rounded-lg border border-white/10">
-                <ExternalLink className="w-4 h-4" />View on GitHub
-              </a>
+              <h2 className="text-xl font-bold">Agent Skills & Growth</h2>
             </div>
-            <p className="text-sm text-white/50">These skill files live in your GitHub repo and power Claude Code. Click any skill to preview it.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {SKILLS.map(skill => (
-                <div key={skill.name} className="bg-white/5 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center"><skill.icon className="w-5 h-5 text-white/60" /></div>
-                      <div><p className="text-sm font-medium font-mono">{skill.name}</p><p className="text-xs text-white/40">{skill.desc}</p></div>
+            {/* Growth Leaderboard */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+              <h3 className="text-sm font-semibold text-white/70 mb-4 uppercase tracking-wider">Growth Leaderboard</h3>
+              {growthBoard.length === 0 && <p className="text-sm text-white/30">Loading leaderboard...</p>}
+              <div className="space-y-2">
+                {growthBoard.slice(0, 15).map((a: any, i: number) => (
+                  <div key={a.agent_id} className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-white/5 cursor-pointer transition-all" onClick={() => fetch(`${API_URL}/api/skills/agent/${a.agent_id}`).then(r=>r.json()).then(setSelectedAgentSkills).catch(()=>{})}>
+                    <span className="text-xs text-white/30 w-5">{i+1}.</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{a.agent_id}</p>
+                      <p className="text-xs text-white/40">{a.total_skills} skills | Avg Lv {a.avg_level} | {a.total_xp} XP</p>
                     </div>
-                    <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">ready</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30">Lv{a.highest_level} max</span>
                   </div>
-                  <div className="flex gap-2 mt-3">
-                    <button onClick={() => setSkillModal(skill)} className="flex-1 text-xs py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors">Preview</button>
-                    <a href={`https://github.com/pvillarreal23/youtube-agency/edit/main/${skill.file}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 transition-colors">Edit on GitHub</a>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
+            {/* Production Leaderboard */}
+            {prodBoard.length > 0 && (
+              <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+                <h3 className="text-sm font-semibold text-white/70 mb-4 uppercase tracking-wider">Production Leaderboard</h3>
+                <div className="space-y-2">
+                  {prodBoard.slice(0, 10).map((a: any, i: number) => (
+                    <div key={a.agent_id} className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-white/5">
+                      <span className="text-xs text-white/30 w-5">{i+1}.</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{a.agent_id}</p>
+                        <p className="text-xs text-white/40">{a.total_productions} productions | Avg {a.avg_quality}/10 | {a.avg_attempts} avg attempts</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Selected Agent Skill Portfolio */}
+            {selectedAgentSkills && (
+              <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider">Skill Portfolio: {selectedAgentSkills.agent_id}</h3>
+                  <button onClick={() => setSelectedAgentSkills(null)} className="p-1 rounded-lg hover:bg-white/10"><X className="w-4 h-4 text-white/40" /></button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                  <div className="bg-white/5 rounded-lg p-3"><p className="text-xs text-white/40">Total Skills</p><p className="text-lg font-bold">{selectedAgentSkills.summary?.total_skills || 0}</p></div>
+                  <div className="bg-white/5 rounded-lg p-3"><p className="text-xs text-white/40">Avg Level</p><p className="text-lg font-bold">{selectedAgentSkills.summary?.avg_level || 0}</p></div>
+                  <div className="bg-white/5 rounded-lg p-3"><p className="text-xs text-white/40">Total XP</p><p className="text-lg font-bold">{selectedAgentSkills.summary?.total_xp || 0}</p></div>
+                  <div className="bg-white/5 rounded-lg p-3"><p className="text-xs text-white/40">1st Try Pass</p><p className="text-lg font-bold">{selectedAgentSkills.summary?.first_try_pass_rate || "0%"}</p></div>
+                </div>
+                <div className="space-y-2">
+                  {(selectedAgentSkills.skills || []).map((s: any) => (
+                    <div key={s.name} className="flex items-center gap-3 py-2 px-3 bg-white/5 rounded-lg">
+                      <span className="text-lg">{s.level_icon}</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{s.name.replace(/-/g, ' ')}</p>
+                        <p className="text-xs text-white/40">{s.description}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-medium">{s.level_name} (Lv{s.level})</p>
+                        <p className="text-xs text-white/40">{s.xp} XP{s.xp_to_next ? ` / ${s.xp_to_next}` : ''}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

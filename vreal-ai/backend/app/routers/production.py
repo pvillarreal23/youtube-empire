@@ -17,7 +17,7 @@ from app.models.scheduler import Escalation
 from app.services.claude_service import generate_agent_response, generate_agent_response_async
 from app.services.pressure_test import pressure_test
 from app.services.agent_memory import (
-    record_failure_lesson, record_success, record_insight,
+    record_failure_lesson, record_success,
     record_pressure_test_lesson, record_reviewer_feedback,
     build_memory_prompt, update_skill_score,
 )
@@ -113,22 +113,27 @@ def _extract_score(review_text: str) -> tuple[int, str, str]:
     verdict = "REVISION_NEEDED"
     feedback = ""
 
-    # Extract score
-    score_match = re.search(r"QUALITY SCORE:\s*(\d+)\s*/\s*10", review_text)
+    # Extract score — case-insensitive, handles "Quality Score", "QUALITY SCORE", "Score", etc.
+    score_match = re.search(r"(?:QUALITY\s+)?SCORE:\s*(\d+)\s*/\s*10", review_text, re.IGNORECASE)
+    if not score_match:
+        # Fallback: look for any X/10 pattern
+        score_match = re.search(r"(\d+)\s*/\s*10", review_text)
     if score_match:
-        score = int(score_match.group(1))
+        score = min(int(score_match.group(1)), 10)  # Cap at 10
 
-    # Extract verdict
-    if "VERDICT:" in review_text:
-        verdict_section = review_text.split("VERDICT:")[1].split("\n")[0].strip()
-        if "APPROVED" in verdict_section.upper():
+    # Extract verdict — case-insensitive
+    verdict_match = re.search(r"VERDICT:\s*(.+)", review_text, re.IGNORECASE)
+    if verdict_match:
+        verdict_text = verdict_match.group(1).strip().upper()
+        if "APPROVED" in verdict_text and "REVISION" not in verdict_text:
             verdict = "APPROVED"
         else:
             verdict = "REVISION_NEEDED"
 
-    # Extract feedback
-    if "FEEDBACK:" in review_text:
-        feedback = review_text.split("FEEDBACK:")[1].strip()
+    # Extract feedback — case-insensitive
+    feedback_match = re.search(r"FEEDBACK:\s*(.*)", review_text, re.IGNORECASE | re.DOTALL)
+    if feedback_match:
+        feedback = feedback_match.group(1).strip()
         # Clean up — remove trailing sections if any
         if "---" in feedback:
             feedback = feedback.split("---")[0].strip()
@@ -205,7 +210,10 @@ async def _quality_gate(
         return False, 0, f"Review failed: {str(e)}"
 
 
-async def _advance_pipeline(job_id: str):
+MAX_PIPELINE_DEPTH = 10  # Safety valve against infinite recursion
+
+
+async def _advance_pipeline(job_id: str, _depth: int = 0):
     """
     Auto-advance a production job through the pipeline.
 
@@ -213,6 +221,10 @@ async def _advance_pipeline(job_id: str):
     loops back with feedback until it hits 10/10 or max revisions.
     Only 10/10 work advances. Everything else loops.
     """
+    if _depth >= MAX_PIPELINE_DEPTH:
+        print(f"[PRODUCTION] ⚠ Max pipeline depth ({MAX_PIPELINE_DEPTH}) reached for job {job_id}. Stopping.")
+        return
+
     async with async_session() as db:
         job = await db.get(ProductionJob, job_id)
         if not job:
@@ -263,12 +275,18 @@ async def _advance_pipeline(job_id: str):
 
         prompt = stage_prompts.get(job.stage, f"Process stage '{job.stage}' for '{job.title}'")
 
-        # Add context about previous stages
+        # Add context about previous stages so each agent sees prior work
         context_parts = []
         if job.research_data:
             context_parts.append(f"[Research completed — 10/10]\n{job.research_data[:2000]}")
         if job.script:
             context_parts.append(f"[Script completed — 10/10]\n{job.script[:2000]}")
+        if job.voiceover_brief:
+            context_parts.append(f"[Voiceover Brief completed — 10/10]\n{job.voiceover_brief[:1500]}")
+        if job.thumbnail_brief:
+            context_parts.append(f"[Thumbnail Concepts completed — 10/10]\n{job.thumbnail_brief[:1500]}")
+        if job.edit_brief:
+            context_parts.append(f"[Edit Brief completed — 10/10]\n{job.edit_brief[:1500]}")
         if job.seo_metadata:
             context_parts.append(f"[SEO completed — 10/10]\n{job.seo_metadata[:1000]}")
         if job.rejection_notes:
@@ -317,7 +335,7 @@ async def _advance_pipeline(job_id: str):
 
                 # Inject agent memory (lessons from past work) into system prompt
                 memory_prompt = await build_memory_prompt(agent_id, stage=job.stage)
-                enhanced_prompt = agent.system_prompt + memory_prompt
+                enhanced_prompt = agent.system_prompt + "\n\n---\n\n" + memory_prompt if memory_prompt else agent.system_prompt
 
                 response = await generate_agent_response_async(
                     system_prompt=enhanced_prompt,
@@ -337,12 +355,19 @@ async def _advance_pipeline(job_id: str):
                 db.add(agent_msg)
 
                 # Store output in the appropriate field
-                if job.stage == "research":
-                    job.research_data = response
-                elif job.stage == "scripted":
-                    job.script = response
-                elif job.stage == "seo":
-                    job.seo_metadata = response
+                _stage_field_map = {
+                    "research": "research_data",
+                    "scripted": "script",
+                    "voiceover": "voiceover_brief",
+                    "thumbnail": "thumbnail_brief",
+                    "edited": "edit_brief",
+                    "seo": "seo_metadata",
+                    "review": "review_summary",
+                    "approved": "approval_summary",
+                }
+                field = _stage_field_map.get(job.stage)
+                if field:
+                    setattr(job, field, response)
 
                 # Add to reviewed_by
                 reviewed = job.reviewed_by or []
@@ -353,6 +378,19 @@ async def _advance_pipeline(job_id: str):
 
             except Exception as e:
                 print(f"[PRODUCTION] Pipeline error at stage '{job.stage}' for '{job.title}': {e}")
+                # Escalate to Pedro instead of silently dying
+                escalation = Escalation(
+                    id=str(uuid.uuid4()),
+                    thread_id=job.thread_id,
+                    agent_id=agent_id,
+                    reason=(
+                        f"PIPELINE ERROR: '{job.title}' stage '{job.stage}' hit an exception: {str(e)[:300]}\n\n"
+                        f"The pipeline has stopped. Pedro: check the logs and retry or manually advance."
+                    ),
+                    severity="critical",
+                )
+                db.add(escalation)
+                await db.commit()
                 return
 
             # ── QUALITY GATE ──────────────────────────────────────────
@@ -384,7 +422,7 @@ async def _advance_pipeline(job_id: str):
                     attempts=revision_count + 1,
                     work_summary=response[:500],
                 )
-                await update_skill_score(agent_id, job.stage, passed_first_try=(revision_count == 0))
+                await update_skill_score(agent_id, job.stage, passed_first_try=(revision_count == 0), revisions_needed=revision_count)
 
             if passed and job.stage in PRESSURE_TEST_STAGES:
                 # Passed internal QA — now run multi-model pressure test
@@ -409,11 +447,9 @@ async def _advance_pipeline(job_id: str):
                 )
 
                 # Log pressure test results in thread
+                pt_scores_dict = {r.model: r.score for r in pt_result.results if r.verdict not in ("SKIP", "ERROR")}
                 if job.thread_id:
-                    model_scores = ", ".join(
-                        f"{r.model}: {r.score}/10" for r in pt_result.results
-                        if r.verdict not in ("SKIP", "ERROR")
-                    )
+                    scores_display = ", ".join(f"{m}: {s}/10" for m, s in pt_scores_dict.items())
                     skipped = [r.model for r in pt_result.results if r.verdict == "SKIP"]
                     skip_note = f" (Skipped: {', '.join(skipped)} — API keys not set)" if skipped else ""
 
@@ -424,7 +460,7 @@ async def _advance_pipeline(job_id: str):
                         sender_agent_id="quality-assurance-lead",
                         content=(
                             f"[PRESSURE TEST RESULTS — {job.stage.upper()}]\n\n"
-                            f"Scores: {model_scores}{skip_note}\n"
+                            f"Scores: {scores_display}{skip_note}\n"
                             f"Average: {pt_result.average_score}/10\n"
                             f"Unanimous: {'YES' if pt_result.unanimous else 'NO'}\n"
                             f"Verdict: {'✓ ALL MODELS APPROVED' if pt_result.passed else '✗ REVISION NEEDED'}\n\n"
@@ -436,12 +472,11 @@ async def _advance_pipeline(job_id: str):
                     await db.commit()
 
                 # Record pressure test results in agent memory
-                model_scores = {r.model: r.score for r in pt_result.results if r.verdict not in ("SKIP", "ERROR")}
                 await record_pressure_test_lesson(
                     agent_id=agent_id,
                     stage=job.stage,
                     episode_title=job.title,
-                    model_scores=model_scores,
+                    model_scores=pt_scores_dict,
                     synthesized_feedback=pt_result.synthesized_feedback or "",
                     passed=pt_result.passed,
                 )
@@ -551,7 +586,7 @@ async def _advance_pipeline(job_id: str):
             job.updated_at = datetime.now(timezone.utc)
             await db.commit()
             # Run the approved stage (CEO summary) but DON'T auto-publish
-            await _advance_pipeline(job_id)
+            await _advance_pipeline(job_id, _depth=_depth + 1)
             return
 
         # Auto-advance to next stage
@@ -562,7 +597,7 @@ async def _advance_pipeline(job_id: str):
         print(f"[PRODUCTION] Auto-advancing '{job.title}' to stage: {next_stage}")
 
         # Trigger next stage automatically
-        await _advance_pipeline(job_id)
+        await _advance_pipeline(job_id, _depth=_depth + 1)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -587,7 +622,11 @@ async def list_jobs(db: AsyncSession = Depends(get_db)):
             "make_executions": j.make_executions or [],
             "has_research": bool(j.research_data),
             "has_script": bool(j.script),
+            "has_voiceover": bool(j.voiceover_brief),
+            "has_thumbnail": bool(j.thumbnail_brief),
+            "has_edit_brief": bool(j.edit_brief),
             "has_seo": bool(j.seo_metadata),
+            "has_review": bool(j.review_summary),
         })
     return out
 
@@ -655,7 +694,11 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
         "reviewed_by": job.reviewed_by or [],
         "has_research": bool(job.research_data),
         "has_script": bool(job.script),
+        "has_voiceover": bool(job.voiceover_brief),
+        "has_thumbnail": bool(job.thumbnail_brief),
+        "has_edit_brief": bool(job.edit_brief),
         "has_seo": bool(job.seo_metadata),
+        "has_review": bool(job.review_summary),
         "approved_by": job.approved_by,
         "rejection_notes": job.rejection_notes,
         "quality_history": quality_history,

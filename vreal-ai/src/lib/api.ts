@@ -105,9 +105,17 @@ export const api = {
 
   // Production
   getProductionJobs: () => fetchApi<any[]>('/api/production/jobs'),
+  getProductionJob: (jobId: string) => fetchApi<any>(`/api/production/jobs/${jobId}`),
   createProductionJob: (data: { title: string; channel: string; target_date?: string }) =>
     fetchApi<any>('/api/production/jobs', { method: 'POST', body: JSON.stringify(data) }),
   advanceJob: (jobId: string) => fetchApi<any>(`/api/production/jobs/${jobId}/advance`, { method: 'POST' }),
   approveJob: (jobId: string) => fetchApi<any>(`/api/production/jobs/${jobId}/approve`, { method: 'POST' }),
-  rejectJob: (jobId: string) => fetchApi<any>(`/api/production/jobs/${jobId}/reject`, { method: 'POST' }),
+  rejectJob: (jobId: string, data?: { notes?: string; send_back_to?: string }) =>
+    fetchApi<any>(`/api/production/jobs/${jobId}/reject`, { method: 'POST', body: JSON.stringify(data || {}) }),
+
+  // Skills & Growth
+  getAgentSkills: (agentId: string) => fetchApi<any>(`/api/skills/agent/${agentId}`),
+  getProductionLeaderboard: () => fetchApi<any[]>('/api/skills/leaderboard/production'),
+  getGrowthLeaderboard: () => fetchApi<any[]>('/api/skills/leaderboard/growth'),
+  getCombinedLeaderboard: () => fetchApi<any[]>('/api/skills/leaderboard/combined'),
 };
