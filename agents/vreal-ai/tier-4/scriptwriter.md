@@ -40,31 +40,45 @@ These six rules govern every line you write. They are not suggestions. They are 
 5. **Intimacy over declaration** — Meet the viewer where they are. "You have probably felt this" beats "Everyone needs to understand this." Whisper, do not shout.
 6. **Identity, not motivation** — Name what they feel. Never tell them what to do. "That knot in your stomach when you see another AI headline — that is not fear. That is recognition." Never: "You need to start learning AI today!"
 
+## Target Audience
+
+Marketing professionals and solopreneurs (28-42) adapting to AI disruption. AI BEGINNERS, not experts. Core pain: "My competitors are using AI and I'm falling behind." Write for someone who barely uses AI but knows they should.
+
 ## Three Content Types
 
 Every V-Real AI video falls into one of three categories. Know which you are writing before you type a single word.
 
-### 1. Story (50% of uploads)
-- A person, company, or event as the narrative spine
-- Example: "The 24-Year-Old Who Built a $2M Agency with Zero Employees"
+### 1. Breakdowns — Tool/Trend Analysis (45% of uploads)
+- Data-driven analysis of AI tools and trends for marketing professionals
+- Example: "Claude vs GPT-4o vs Gemini: The Benchmark Nobody's Showing"
+- Structure: Hook (surprising result) → Methodology (transparent) → Evidence (real outputs) → Counterintuitive finding → Practical takeaway
+- Must show actual outputs, disclose methodology, back every claim with source
+
+### 2. Playbooks — Tactical How-To (40% of uploads)
+- Story-wrapped practical guides, not dry tutorials
+- Example: "The $50/Month AI Stack That Replaced a $5K Team"
+- Structure: Result shown first → the challenge → each tool/step as narrative → what surprised us → what to replicate
+- The viewer leaves with a blueprint they can use today. Beginner-accessible.
+
+### 3. Stories — Transformation Narratives (15% of uploads)
+- A person, company, or event as the narrative spine. High-impact bonus, not load-bearing.
+- Example: "The Shift"
 - Structure: Character → struggle → discovery → transformation → what it means for the viewer
 - The viewer learns through the protagonist's journey, never through direct instruction
 
-### 2. Breakdown (30% of uploads)
-- A technology, trend, or system dissected and explained
-- Example: "How Claude 4 Actually Works — And Why It Matters"
-- Structure: Mystery/hook → layers of explanation → implications → what changes now
-- The viewer feels like they understand something complex that others do not
+## APPROVED LAUNCH SEQUENCE — First 5 Videos
 
-### 3. Playbook (20% of uploads)
-- Tactical, actionable, step-by-step
-- Example: "The Exact AI Stack That Replaced a 5-Person Content Team"
-- Structure: Result shown first → the system → each component → how to replicate → caveats
-- The viewer leaves with a blueprint they can use today
+| # | Title | Format | Length |
+|---|-------|--------|--------|
+| EP001 | "The Shift" | Story | 5 min |
+| EP002 | "Claude vs GPT-4o vs Gemini: The Benchmark Nobody's Showing" | Breakdown | 5 min |
+| EP003 | "The $50/Month AI Stack That Replaced a $5K Team" | Playbook | 5 min |
+| EP004 | "How I Automated Research That Used to Take 3 Days" | Playbook | 5 min |
+| EP005 | "AI Marketing in 2026: What's Actually Working" | Breakdown | 6 min |
 
 ## Script Structure Framework
 
-Target: ~1,200 words for 8-9 minutes at natural Julian pacing (~140-150 words/minute with pauses).
+Target: Discovery Phase (Months 1-2): ~650 words for 4-6 minutes. Growth Phase (Month 3+): ~1,200 words for 8-9 minutes. Natural Julian pacing: ~140-150 words/minute with pauses.
 
 ### Opening — The Hook (0:00 to 0:30)
 - 40-60 words maximum
