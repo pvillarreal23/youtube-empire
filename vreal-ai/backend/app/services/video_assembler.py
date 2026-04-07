@@ -147,6 +147,7 @@ class AssemblyProject:
     outro_path: Optional[str] = None       # Pre-rendered brand outro
     end_screen_path: Optional[str] = None  # Pre-rendered end screen
     transition_path: Optional[str] = None  # Transition clip between sections
+    hover_hook_path: Optional[str] = None  # 3s silent visual hook for YouTube hover preview
     enable_retention_editing: bool = True   # Auto zoom punches & pattern interrupts
     output_filename: Optional[str] = None
 
@@ -997,6 +998,17 @@ def assemble_video(project: AssemblyProject) -> str:
     final_output = os.path.join(OUTPUT_DIR, output_name)
 
     parts_to_concat = []
+
+    # Auto-detect hover hook (3s silent visual for YouTube preview)
+    hover_hook = project.hover_hook_path
+    if not hover_hook:
+        auto_hook = os.path.expanduser(f"~/youtube-empire/assets/{project.episode_id}/brand/hover_hook.mp4")
+        if os.path.exists(auto_hook):
+            hover_hook = auto_hook
+
+    if hover_hook and os.path.exists(hover_hook):
+        parts_to_concat.append(hover_hook)
+        print(f"[ASSEMBLER]   + Hover hook (3s silent preview): {hover_hook}")
 
     # Auto-detect brand intro if not specified
     intro = project.intro_path

@@ -376,6 +376,87 @@ def generate_glitch_transition(
     return output_path
 
 
+def generate_hover_hook(
+    line1: str = "HALF HER TEAM.",
+    line2: str = "GONE.",
+    stat: str = "3.2 MILLION",
+    output_path: Optional[str] = None,
+    duration: float = 3.0,
+) -> str:
+    """
+    Generate a 3-second silent visual hook for YouTube hover preview.
+
+    When viewers hover over a thumbnail on desktop or scroll on mobile,
+    YouTube auto-plays the first ~3 seconds with no sound. This clip is
+    designed to be compelling WITHOUT audio:
+
+      0.0-1.0s: Bold text punch — "HALF HER TEAM. GONE." on dark bg
+      1.0-2.0s: Quick flash to cyan accent color, then dark
+      2.0-3.0s: Data stat flash — "3.2 MILLION" in cyan, fades
+
+    After this 3s hook, the voiceover and main content begin.
+    """
+    if output_path is None:
+        output_path = os.path.join(ASSETS_DIR, "hover_hook.mp4")
+
+    line1_escaped = line1.replace("'", "").replace(":", "\\:")
+    line2_escaped = line2.replace("'", "").replace(":", "\\:")
+    stat_escaped = stat.replace("'", "").replace(":", "\\:")
+
+    filter_complex = (
+        # Dark background
+        f"color=c={BRAND_BG}:s={W}x{H}:d={duration}:r={FPS}[bg];"
+
+        # Grain texture
+        f"nullsrc=s={W}x{H}:d={duration}:r={FPS},"
+        f"geq=random(1)*18:128:128,format=yuv420p[grain];"
+
+        f"[bg][grain]blend=all_mode=addition:all_opacity=0.07[textured];"
+
+        # Phase 1 (0-1s): Bold text slam
+        f"[textured]drawtext=text='{line1_escaped}':"
+        f"fontsize=84:fontcolor={BRAND_WHITE}:"
+        f"x=(w-text_w)/2:y=(h/2)-60:"
+        f"alpha='if(lt(t,0.05),0,if(lt(t,0.9),1,max(0,1-(t-0.9)/0.1)))':"
+        f"enable='between(t,0,1.0)',"
+
+        f"drawtext=text='{line2_escaped}':"
+        f"fontsize=96:fontcolor={BRAND_BLUE}:"
+        f"x=(w-text_w)/2:y=(h/2)+40:"
+        f"alpha='if(lt(t,0.15),0,if(lt(t,0.9),1,max(0,1-(t-0.9)/0.1)))':"
+        f"enable='between(t,0,1.0)',"
+
+        # Phase 2 (1-2s): Horizontal cyan accent line flash
+        f"drawbox=x=0:y={H//2 - 1}:w={W}:h=3:"
+        f"color={BRAND_BLUE}@1.0:t=fill:"
+        f"enable='between(t,1.0,1.3)',"
+
+        # Phase 3 (2-3s): Stat number flash
+        f"drawtext=text='{stat_escaped}':"
+        f"fontsize=110:fontcolor={BRAND_BLUE}:"
+        f"x=(w-text_w)/2:y=(h/2)-30:"
+        f"alpha='if(lt(t,2.0),0,if(lt(t,2.2),(t-2.0)/0.2,if(lt(t,2.8),1,max(0,1-(t-2.8)/0.2))))':"
+        f"enable='between(t,1.8,3.0)'"
+        f"[out]"
+    )
+
+    cmd = [
+        "ffmpeg", "-y",
+        "-f", "lavfi", "-i", f"anullsrc=channel_layout=stereo:sample_rate=48000",
+        "-filter_complex", filter_complex,
+        "-map", "[out]", "-map", "0:a",
+        "-c:v", "libx264", "-preset", "fast",
+        "-crf", "18", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k",
+        "-t", str(duration), "-shortest",
+        output_path,
+    ]
+
+    if _run_ffmpeg(cmd, "hover hook"):
+        print(f"[BRAND-GFX] Hover hook generated: {output_path}")
+    return output_path
+
+
 def generate_fade_transition(
     output_path: Optional[str] = None,
     duration: float = 0.8,
@@ -561,7 +642,16 @@ def generate_ep001_assets() -> dict:
         ), accent_color=color)
         assets["data_cards"].append(dc)
 
-    # 4. Transitions
+    # 4. Hover hook (3s silent visual for YouTube preview)
+    print("\n--- Generating hover hook ---")
+    assets["hover_hook"] = generate_hover_hook(
+        line1="HALF HER TEAM.",
+        line2="GONE.",
+        stat="3.2 MILLION",
+        output_path=os.path.join(ep_dir, "hover_hook.mp4"),
+    )
+
+    # 5. Transitions
     print("\n--- Generating transitions ---")
     assets["transition_glitch"] = generate_glitch_transition(
         os.path.join(ep_dir, "transition_glitch.mp4")
