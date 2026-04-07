@@ -11,11 +11,38 @@ No exceptions.
 
 ---
 
+## THE MRBEAST GATE (Pre-Script)
+
+Before writing a SINGLE WORD, these must be locked:
+
+1. **Title** — Under 50 chars. Creates curiosity gap. 20+ variations tested.
+2. **Thumbnail concept** — 3 elements max. Phone-readable. Tells a different story than title.
+3. **Hook sentence** — First 2 seconds hit STAKES, not topic. If you can't write a hook that makes you think "I NEED to click this", kill the concept.
+4. **Re-hook schedule** — Map where re-hooks land every 2-3 minutes through the video.
+5. **"Would I click away?" audit** — Walk through the video at 30-second intervals. Every moment must earn the next.
+
+If ANY of these fail, do NOT proceed to scripting. Go back to concept.
+
+---
+
 ## THE PROCESS
+
+### STEP 0 — CONCEPT VALIDATION (MrBeast 1/10 Rule)
+Title + thumbnail + hook determine 90% of success. Lock these FIRST.
+Run the title through all 4 AI models for CTR prediction.
+The concept must make the team say "I'd click that." Not "that's interesting" — "I'd CLICK that."
 
 ### STEP 1 — FIRST DRAFT
 Write the initial script. Target ~1,200 words / 8–9 min.
 Voice: BBC/Netflix documentary. Cinematic. Rhythmic. NOT hustle content.
+
+**Hook structure (first 30 seconds):**
+- Seconds 0-2: STAKES (not the topic — the consequence)
+- Seconds 2-5: CURIOSITY GAP (tease the answer)
+- Seconds 5-15: CREDIBILITY (specific numbers, research proof)
+- Seconds 15-30: PROMISE (what viewer gets by staying)
+
+**No dull moments rule:** If a 9-minute script only has 7 minutes of content, make it 7 minutes. Never pad. Every sentence must advance the story or hit emotionally. If it does neither, delete it.
 
 ### STEP 2 — 6-AGENT INTERNAL REVIEW
 Run the full internal crew on the draft. Each agent reviews from their specific lens:
