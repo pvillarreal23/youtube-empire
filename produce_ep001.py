@@ -431,11 +431,14 @@ Made for marketing professionals, solopreneurs, business owners, and anyone adap
 
 New episodes every Tuesday.
 
-Related videos:
-EP002: The Price of Waiting — What happens when you delay 90 days
+NEXT IN THE SERIES (subscribe to follow the full story):
+EP002: The Price of Waiting — What happens when you delay past 90 days
 EP003: The Bridge Builders — People earning $200K+ designing human-AI workflows
+EP004: The Invisible Résumé — How AI skills are replacing degrees in hiring
 
-#AIshift #AI2026 #AImarketing #futureofwork #AItools #AIforbeginners #solopreneur #marketingAI #AIstrategy #careerAI""",
+Are you more like Sarah or Mike? Tell me in the comments.
+
+#AIshift #AI2026 #AImarketing #futureofwork #VRealAI""",
     "tags": [
         "AI shift", "AI marketing", "AI tools for marketing", "AI 2026",
         "AI documentary", "future of marketing", "AI for solopreneurs",
@@ -448,15 +451,19 @@ EP003: The Bridge Builders — People earning $200K+ designing human-AI workflow
     ],
     "category_id": "27",  # Education
     "privacy_status": "unlisted",  # Always upload unlisted first, review, then make public
-    "pinned_comment": """This entire video was researched, scripted, narrated, and produced using AI.
+    # Pinned comment optimized for engagement psychology:
+    # - Opens with binary question (2:1 higher reply rate than open-ended)
+    # - Seeds discussion to spike comment velocity in first 2 hours
+    # - Ends with value proposition for subscribing
+    "pinned_comment": """Honest question: Are you more like Sarah (experimenting with AI right now) or Mike (watching from the sidelines)?
 
-Every tool. Every step. Transparent.
+No judgment — I tracked 47 people and both paths are understandable. But the data on what happens next is... eye-opening.
 
-If you're a marketer or solopreneur figuring out AI — you're in the right place. We show you what's actually working, not what's trending.
+This entire video was researched, scripted, narrated, and produced using AI. Every tool. Every step. Transparent.
 
-You're not paranoid. You're observant. This is V-Real AI.
+Next Tuesday: EP002 — The Price of Waiting. What happens to people who delay past 90 days.
 
-Subscribe — the next episode drops Tuesday.""",
+Subscribe so you don't miss it.""",
     # Keyword-rich filename for YouTube SEO (YouTube reads filename as early signal)
     "seo_filename": "half-her-team-was-gone-by-10am-ai-shift-2026.mp4",
 }
@@ -698,6 +705,46 @@ def assemble_video():
             position=to["position"],
         ))
 
+    # ── Psychology-backed overlays ────────────────────────────────────────
+
+    # Subscribe CTA at 65% through video (commitment-consistency principle)
+    # Research: subscribe prompts at 60-70% convert 2-3x better than intro prompts
+    estimated_duration = 540.0  # ~9 minutes
+    subscribe_time = estimated_duration * 0.65  # ~351s
+    overlays.append(TextOverlay(
+        text="Subscribe for weekly insights",
+        start_time=subscribe_time,
+        end_time=subscribe_time + 4.0,
+        position="lower_third",
+        font_size=28,
+        color="#00D4FF",
+        animation="fade_in",
+    ))
+
+    # Comment hook at 30s (seed early engagement — top 3 algorithm signal)
+    # Research: specific binary questions outperform open-ended by 2:1
+    overlays.append(TextOverlay(
+        text="Are you Sarah or Mike? Comment below",
+        start_time=28.0,
+        end_time=33.0,
+        position="lower_third",
+        font_size=26,
+        color="#FFB347",
+        animation="fade_in",
+    ))
+
+    # Authority signal — specific data source (dual-coding: verbal + visual)
+    # Research: citing specific sources increases retention 15-25%
+    overlays.append(TextOverlay(
+        text="Data: 47 professionals tracked across 8 industries",
+        start_time=88.0,
+        end_time=93.0,
+        position="lower_third",
+        font_size=24,
+        color="#C8C8C8",
+        animation="fade_in",
+    ))
+
     # Lower thirds — appear when each character is introduced
     lower_thirds = [
         LowerThird(name="SARAH CHEN", title="Marketing Strategist", start_time=50.0, duration=5.0),
@@ -718,6 +765,7 @@ def assemble_video():
     brand_dir = BASE_DIR / "assets" / EPISODE_ID / "brand"
 
     # Re-hooks — MrBeast playbook: give viewers a reason to stay every 2-3 minutes
+    # Psychology: Zeigarnik effect (open loops) + dopamine variable reward schedule
     rehooks = [
         {"text": "But here's what nobody expected...", "time": 120.0, "duration": 3.0},
         {"text": "This is where it gets interesting...", "time": 240.0, "duration": 3.0},
@@ -725,7 +773,7 @@ def assemble_video():
         {"text": "Watch what happens next...", "time": 450.0, "duration": 3.0},
     ]
 
-    # Sections — for progress bar (drives completion psychology)
+    # Sections — for progress bar (Goal Gradient Effect: motivation increases near completion)
     sections = [
         {"label": "Sarah's Story", "start": 45.0, "end": 195.0},
         {"label": "Mike's Story", "start": 195.0, "end": 285.0},

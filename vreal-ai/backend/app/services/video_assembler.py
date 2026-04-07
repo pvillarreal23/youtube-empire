@@ -855,13 +855,41 @@ def assemble_video(project: AssemblyProject) -> str:
     print(f"[ASSEMBLER] Voice duration: {voice_duration:.1f}s")
     print(f"[ASSEMBLER] Scenes: {len(project.scenes)}")
 
-    # ── Step 1: Normalize voice ──────────────────────────────────────────
-    print("[ASSEMBLER] Step 1/7: Normalizing voice audio to -14 LUFS...")
+    # ── Step 1: Normalize + EQ voice audio ─────────────────────────────
+    # Two-pass LUFS normalization to -14 LUFS (broadcast standard)
+    # Then apply presence EQ optimized for phone speakers (where most YouTube is consumed):
+    #   - High-pass at 80Hz (remove rumble without thinning)
+    #   - Presence boost at 2.5-4kHz (+2dB for clarity on small speakers)
+    #   - De-ess at 5-8kHz (reduce sibilance)
+    # Research: human ear most sensitive at 1-5kHz (Fletcher-Munson curves)
+    print("[ASSEMBLER] Step 1/14: Normalizing + EQ voice audio...")
+    voice_norm_raw = os.path.join(episode_temp, "voice_normalized_raw.wav")
+    normalize_audio(project.voice_audio_path, voice_norm_raw, AUDIO_LEVELS["voice_lufs"])
+
+    # Apply presence EQ for phone speaker clarity
     voice_norm = os.path.join(episode_temp, "voice_normalized.wav")
-    normalize_audio(project.voice_audio_path, voice_norm, AUDIO_LEVELS["voice_lufs"])
+    try:
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", voice_norm_raw,
+                "-af", (
+                    "highpass=f=80,"               # Remove rumble
+                    "equalizer=f=3000:t=q:w=1.5:g=2,"  # Presence boost +2dB at 3kHz
+                    "equalizer=f=6500:t=q:w=2:g=-1"     # Gentle de-ess -1dB at 6.5kHz
+                ),
+                "-ar", str(VIDEO_SPECS["audio_sample_rate"]),
+                voice_norm,
+            ],
+            check=True, capture_output=True,
+        )
+        print("[ASSEMBLER]   Voice EQ applied: 80Hz HP, +2dB@3kHz, -1dB@6.5kHz")
+    except subprocess.CalledProcessError:
+        # Fallback: use raw normalized audio without EQ
+        shutil.copy2(voice_norm_raw, voice_norm)
+        print("[ASSEMBLER]   Voice EQ failed, using raw normalized audio")
 
     # ── Step 2: Prepare scene clips ──────────────────────────────────────
-    print("[ASSEMBLER] Step 2/7: Preparing scene clips...")
+    print("[ASSEMBLER] Step 2/14: Preparing scene clips...")
     prepared_scenes = []
 
     if not project.scenes:
@@ -923,7 +951,7 @@ def assemble_video(project: AssemblyProject) -> str:
             prepared_scenes.append(tail_clip)
 
     # ── Step 3: Concatenate all scene clips ──────────────────────────────
-    print("[ASSEMBLER] Step 3/7: Concatenating scenes...")
+    print("[ASSEMBLER] Step 3/14: Concatenating scenes...")
     concat_list = os.path.join(episode_temp, "concat.txt")
     with open(concat_list, "w") as f:
         for clip_path in prepared_scenes:
@@ -939,7 +967,7 @@ def assemble_video(project: AssemblyProject) -> str:
     )
 
     # ── Step 4: 4-layer audio mix (voice + music + SFX + ambient) ──────
-    print("[ASSEMBLER] Step 4/7: Mixing audio (4-layer broadcast mix)...")
+    print("[ASSEMBLER] Step 4/14: Mixing audio (4-layer broadcast mix)...")
     final_audio = os.path.join(episode_temp, "audio_final.wav")
     mix_audio_layers(
         voice_path=voice_norm,
@@ -951,7 +979,7 @@ def assemble_video(project: AssemblyProject) -> str:
     )
 
     # ── Step 5: Merge video + audio ──────────────────────────────────────
-    print("[ASSEMBLER] Step 5/7: Merging video + audio...")
+    print("[ASSEMBLER] Step 5/14: Merging video + audio...")
     merged = os.path.join(episode_temp, "merged.mp4")
     subprocess.run(
         [
