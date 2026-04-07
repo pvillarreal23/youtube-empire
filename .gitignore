@@ -28,6 +28,10 @@ frontend/node_modules/
 # macOS
 .DS_Store
 
+# Temp build artifacts
+output/*/temp*/
+assets/
+
 # Logs
 *.log
 npm-debug.log*
