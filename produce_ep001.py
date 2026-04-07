@@ -850,7 +850,9 @@ def assemble_video():
 
 def upload_to_youtube():
     """Upload the final video to YouTube with full metadata."""
-    from app.services.youtube_uploader import upload_video, add_comment
+    from app.services.youtube_uploader import (
+        upload_video, VideoMetadata, add_comment, upload_captions as yt_upload_captions,
+    )
 
     seo_name = YOUTUBE_METADATA.get("seo_filename", "ep001-the-shift-final.mp4")
     video_path = Path(os.path.expanduser("~/youtube-empire/output")) / seo_name
@@ -866,24 +868,44 @@ def upload_to_youtube():
         thumbnail_path = None
         print("[UPLOAD] WARNING: No thumbnail found. Upload manually later.")
 
-    print("[UPLOAD] Uploading to YouTube...")
-    video_id = upload_video(
-        video_path=str(video_path),
+    # Build chapters from description timestamps
+    chapters = [
+        {"time": "0:00", "title": "Half Her Team Was Gone"},
+        {"time": "0:30", "title": "The Day Everything Changed — December 15, 2025"},
+        {"time": "1:45", "title": "Pattern 1: Sarah Chen — Immediate Action"},
+        {"time": "3:15", "title": "Pattern 2: Mike Rodriguez — The Cost of Waiting"},
+        {"time": "4:45", "title": "Pattern 3: David Park — The Strategic Architect"},
+        {"time": "6:00", "title": "The 90-Day Rule — Why Timing Is Everything"},
+        {"time": "7:30", "title": "Days 1-30: Immediate Experimentation Framework"},
+        {"time": "8:00", "title": "Days 31-60: Finding Your Irreplaceable Complement"},
+        {"time": "8:20", "title": "Days 61-90: Becoming the Essential Bridge"},
+        {"time": "8:30", "title": "Your Action Plan — What to Do This Week"},
+    ]
+
+    metadata = VideoMetadata(
         title=YOUTUBE_METADATA["title"],
         description=YOUTUBE_METADATA["description"],
         tags=YOUTUBE_METADATA["tags"],
         category_id=YOUTUBE_METADATA["category_id"],
         privacy_status=YOUTUBE_METADATA["privacy_status"],
         thumbnail_path=str(thumbnail_path) if thumbnail_path else None,
+        chapters=chapters,
     )
+
+    print("[UPLOAD] Uploading to YouTube...")
+    result = upload_video(str(video_path), metadata)
+    video_id = result.video_id if result else None
 
     if video_id:
         print(f"[UPLOAD] ✓ Video uploaded: https://youtube.com/watch?v={video_id}")
 
         # Pin comment
         if YOUTUBE_METADATA.get("pinned_comment"):
-            add_comment(video_id, YOUTUBE_METADATA["pinned_comment"])
-            print("[UPLOAD] ✓ Pinned comment added")
+            try:
+                add_comment(video_id, YOUTUBE_METADATA["pinned_comment"])
+                print("[UPLOAD] ✓ Pinned comment added")
+            except Exception as e:
+                print(f"[UPLOAD] WARNING: Could not add pinned comment: {e}")
 
         # Notify Make.com — upload complete (triggers downstream: sheets, social, analytics)
         notify_make("upload", {
@@ -1028,10 +1050,9 @@ def main():
             captions_path = OUTPUT_DIR / f"{EPISODE_ID}-captions.srt"
             if captions_path.exists():
                 try:
-                    from app.services.youtube_uploader import upload_captions
-                    upload_captions(video_id, str(captions_path), language="en")
+                    yt_upload_captions(video_id, str(captions_path), language="en")
                     print(f"[CAPTIONS] Uploaded SRT captions for SEO boost")
-                except (ImportError, Exception) as e:
+                except Exception as e:
                     print(f"[CAPTIONS] WARNING: Caption upload failed: {e}")
                     print(f"[CAPTIONS] Manual upload: {captions_path}")
             else:

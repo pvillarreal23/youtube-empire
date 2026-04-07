@@ -443,6 +443,29 @@ def get_video_comments(video_id: str, max_results: int = 50) -> list[dict]:
     return comments
 
 
+def add_comment(video_id: str, comment_text: str) -> dict:
+    """Add a top-level comment on a video (e.g. for pinned comment)."""
+    youtube = get_youtube_service()
+
+    response = youtube.commentThreads().insert(
+        part="snippet",
+        body={
+            "snippet": {
+                "videoId": video_id,
+                "topLevelComment": {
+                    "snippet": {
+                        "textOriginal": comment_text,
+                    }
+                },
+            }
+        },
+    ).execute()
+
+    comment_id = response["snippet"]["topLevelComment"]["id"]
+    print(f"[UPLOADER] ✓ Comment added: {comment_id}")
+    return {"comment_id": comment_id, "text": comment_text}
+
+
 def reply_to_comment(comment_id: str, reply_text: str) -> dict:
     """Reply to a YouTube comment (requires approval from Community Manager)."""
     youtube = get_youtube_service()
@@ -458,3 +481,32 @@ def reply_to_comment(comment_id: str, reply_text: str) -> dict:
     ).execute()
 
     return {"reply_id": response["id"], "text": reply_text}
+
+
+def upload_captions(video_id: str, captions_path: str, language: str = "en", name: str = "English") -> dict:
+    """
+    Upload an SRT caption file for a video.
+
+    Captions boost SEO — every word becomes searchable by YouTube.
+    Discovery Digital Networks study: +7.32% views from captions.
+    """
+    youtube = get_youtube_service()
+    _, _, _, _, MediaFileUpload = _import_google()
+
+    media = MediaFileUpload(captions_path, mimetype="application/x-subrip")
+
+    response = youtube.captions().insert(
+        part="snippet",
+        body={
+            "snippet": {
+                "videoId": video_id,
+                "language": language,
+                "name": name,
+                "isDraft": False,
+            }
+        },
+        media_body=media,
+    ).execute()
+
+    print(f"[UPLOADER] ✓ Captions uploaded for {video_id} ({language})")
+    return {"caption_id": response["id"], "language": language}

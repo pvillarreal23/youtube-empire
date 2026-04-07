@@ -699,6 +699,68 @@ def add_text_overlay(
     return output_path
 
 
+def _batch_text_overlays(
+    input_path: str,
+    output_path: str,
+    overlays: list[TextOverlay],
+) -> str:
+    """
+    Apply all text overlays in a single ffmpeg pass.
+
+    Instead of N separate encode/decode cycles (one per overlay), this builds
+    a single drawtext filter chain. For 8 overlays this saves ~7 full re-encodes,
+    cutting assembly time significantly.
+    """
+    if not overlays:
+        shutil.copy2(input_path, output_path)
+        return output_path
+
+    filters = []
+    for overlay in overlays:
+        positions = {
+            "center": "x=(w-text_w)/2:y=(h-text_h)/2",
+            "lower_third": "x=(w-text_w)/2:y=h-text_h-80",
+            "upper": "x=(w-text_w)/2:y=80",
+            "full_screen": "x=(w-text_w)/2:y=(h-text_h)/2",
+        }
+        pos = positions.get(overlay.position, positions["center"])
+        escaped_text = overlay.text.replace("'", "\\'").replace(":", "\\:")
+
+        drawtext = (
+            f"drawtext=text='{escaped_text}'"
+            f":fontsize={overlay.font_size}"
+            f":fontcolor={overlay.color}"
+            f":{pos}"
+            f":enable='between(t,{overlay.start_time},{overlay.end_time})'"
+        )
+
+        if overlay.bg_color:
+            drawtext += f":box=1:boxcolor={overlay.bg_color}@0.7:boxborderw=20"
+
+        if overlay.animation == "fade_in":
+            fade_dur = min(0.5, (overlay.end_time - overlay.start_time) / 4)
+            drawtext += (
+                f":alpha='if(lt(t,{overlay.start_time}),0,"
+                f"if(lt(t,{overlay.start_time + fade_dur}),"
+                f"(t-{overlay.start_time})/{fade_dur},"
+                f"if(lt(t,{overlay.end_time - fade_dur}),1,"
+                f"({overlay.end_time}-t)/{fade_dur})))'"
+            )
+
+        filters.append(drawtext)
+
+    filter_chain = ",".join(filters)
+
+    subprocess.run(
+        ["ffmpeg", "-y", "-i", input_path, "-vf", filter_chain,
+         "-c:v", VIDEO_SPECS["codec"], "-preset", "fast",
+         "-c:a", "copy", output_path],
+        check=True, capture_output=True,
+    )
+    print(f"[ASSEMBLER]   Applied {len(overlays)} text overlays in single pass")
+    return output_path
+
+
 def apply_retention_editing(input_path: str, output_path: str, duration: float) -> str:
     """
     Apply retention editing techniques to keep viewers engaged.
@@ -734,9 +796,9 @@ def apply_retention_editing(input_path: str, output_path: str, duration: float) 
         f"z='1+0.04*sin(2*PI*t/{punch_interval})':"
         f"x='iw/2-(iw/zoom/2)':"
         f"y='ih/2-(ih/zoom/2)':"
-        f"d={int(duration * FPS)}:"
+        f"d={int(duration * VIDEO_SPECS['fps'])}:"
         f"s={VIDEO_SPECS['width']}x{VIDEO_SPECS['height']}:"
-        f"fps={FPS}"
+        f"fps={VIDEO_SPECS['fps']}"
     )
 
     subprocess.run(
@@ -995,12 +1057,12 @@ def assemble_video(project: AssemblyProject) -> str:
         check=True, capture_output=True,
     )
 
-    # ── Step 6: Apply text overlays ──────────────────────────────────────
-    print("[ASSEMBLER] Step 6/14: Applying text overlays...")
+    # ── Step 6: Apply text overlays (batched single-pass) ────────────────
+    print(f"[ASSEMBLER] Step 6/14: Applying {len(project.text_overlays)} text overlays...")
     current_video = merged
-    for i, overlay in enumerate(project.text_overlays):
-        overlay_out = os.path.join(episode_temp, f"overlay_{i:03d}.mp4")
-        add_text_overlay(current_video, overlay_out, overlay)
+    if project.text_overlays:
+        overlay_out = os.path.join(episode_temp, "with_overlays.mp4")
+        _batch_text_overlays(current_video, overlay_out, project.text_overlays)
         current_video = overlay_out
 
     # ── Step 7: Apply lower thirds ───────────────────────────────────────

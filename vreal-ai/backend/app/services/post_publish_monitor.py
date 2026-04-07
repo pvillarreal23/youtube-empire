@@ -499,3 +499,55 @@ async def run_monitoring_cycle(video: MonitoredVideo) -> dict:
         "alerts": alerts,
         "debrief": debrief.__dict__ if debrief else None,
     }
+
+
+def start_monitoring(video_id: str, episode_id: str, stage: str = "new_channel") -> MonitoredVideo:
+    """
+    Initialize monitoring for a newly published video.
+
+    Creates a MonitoredVideo record and kicks off the first check.
+    Subsequent checks are driven by the scheduler at intervals defined
+    in CHECK_INTERVALS.
+
+    Args:
+        video_id:   YouTube video ID (e.g. "dQw4w9WgXcQ")
+        episode_id: Internal episode ID (e.g. "ep001")
+        stage:      Benchmark tier — "new_channel", "growing", or "established"
+
+    Returns: MonitoredVideo instance for tracking.
+    """
+    os.makedirs(REPORTS_DIR, exist_ok=True)
+
+    # Get video info
+    try:
+        perf = get_video_performance(video_id)
+        title = perf.title
+    except Exception:
+        title = f"Episode {episode_id}"
+
+    video = MonitoredVideo(
+        video_id=video_id,
+        title=title,
+        episode_id=episode_id,
+        published_at=datetime.now(timezone.utc).isoformat(),
+        stage=stage,
+    )
+
+    # Save initial monitoring state
+    state_path = os.path.join(REPORTS_DIR, f"{episode_id}-monitor.json")
+    with open(state_path, "w") as f:
+        json.dump({
+            "video_id": video_id,
+            "episode_id": episode_id,
+            "title": title,
+            "stage": stage,
+            "published_at": video.published_at,
+            "check_intervals": CHECK_INTERVALS,
+        }, f, indent=2)
+
+    print(f"[MONITOR] Monitoring initialized for {video_id} ({episode_id})")
+    print(f"[MONITOR]   Stage: {stage}")
+    print(f"[MONITOR]   Check schedule: 15m/30m/1h/2h intervals over 48 hours")
+    print(f"[MONITOR]   State saved: {state_path}")
+
+    return video
