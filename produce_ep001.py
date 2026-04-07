@@ -422,19 +422,25 @@ def generate_voiceover():
 
         print(f"[VOICEOVER] Generating: {block['section']}...")
 
-        response = httpx.post(
-            f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}",
-            headers={
-                "xi-api-key": ELEVENLABS_API_KEY,
-                "Content-Type": "application/json",
-            },
-            json={
-                "text": block["text"],
-                "model_id": ELEVENLABS_MODEL,
-                "voice_settings": VOICE_SETTINGS,
-            },
-            timeout=120,
-        )
+        try:
+            response = httpx.post(
+                f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}",
+                headers={
+                    "xi-api-key": ELEVENLABS_API_KEY,
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "text": block["text"],
+                    "model_id": ELEVENLABS_MODEL,
+                    "voice_settings": VOICE_SETTINGS,
+                },
+                timeout=120,
+            )
+        except (httpx.ProxyError, httpx.ConnectError) as e:
+            print(f"[VOICEOVER] ERROR: Cannot reach ElevenLabs API — network blocked by proxy.")
+            print(f"[VOICEOVER] This script must run on a machine with unrestricted internet access.")
+            print(f"[VOICEOVER] Run this on your local machine: python produce_ep001.py --step voiceover")
+            return None
 
         if response.status_code != 200:
             print(f"[VOICEOVER] ERROR: ElevenLabs returned {response.status_code}")
@@ -495,18 +501,23 @@ def download_footage():
         for query in [scene["query"], scene["alt"]]:
             print(f"[FOOTAGE] Searching scene {scene['scene']:02d}: '{query}'...")
 
-            response = httpx.get(
-                "https://api.pexels.com/videos/search",
-                params={
-                    "query": query,
-                    "per_page": 5,
-                    "min_duration": 3,
-                    "min_width": 1920,
-                    "orientation": "landscape",
-                },
-                headers={"Authorization": PEXELS_API_KEY},
-                timeout=30,
-            )
+            try:
+                response = httpx.get(
+                    "https://api.pexels.com/videos/search",
+                    params={
+                        "query": query,
+                        "per_page": 5,
+                        "min_duration": 3,
+                        "min_width": 1920,
+                        "orientation": "landscape",
+                    },
+                    headers={"Authorization": PEXELS_API_KEY},
+                    timeout=30,
+                )
+            except (httpx.ProxyError, httpx.ConnectError):
+                print(f"[FOOTAGE] ERROR: Cannot reach Pexels API — network blocked by proxy.")
+                print(f"[FOOTAGE] Run on your local machine: python produce_ep001.py --step footage")
+                return False
 
             if response.status_code != 200:
                 print(f"[FOOTAGE] Pexels error: {response.status_code}")
