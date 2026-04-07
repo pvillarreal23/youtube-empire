@@ -855,3 +855,227 @@ async def _run_production(job_id: str, step: str):
     else:
         print(f"[PRODUCE] ✗ Production step '{step}' failed")
         print(result.stderr[-500:] if len(result.stderr) > 500 else result.stderr)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAKE.COM INTEGRATION — Trigger production via Make.com webhooks
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# EP001 voiceover blocks for Make.com
+EP001_VOICEOVER_BLOCKS = {
+    1: {
+        "name": "block1-hook-sarah",
+        "text": "Sarah Chen's phone buzzed at nine forty-seven AM.\n\nEmergency meeting.\n\nBy ten AM, half her team was gone.\n\nReplaced by AI tools that cost forty-nine dollars a month.\n\nBut here's what nobody tells you — the people who moved fast saw twenty-eight percent salary increases.\n\nThe people who froze took eight months to recover.\n\nThe difference was a single decision made in the first ninety days.\n\nAnd I tracked exactly what that decision was.\n\nThis happened to three point two million people in 2025.\n\nDecember fifteenth, 2025.\n\nOpenAI released their advanced reasoning model.\n\nSame week, Anthropic launched Claude three point five Sonnet with computer control.\n\nWithin seventy-two hours, AI tools could handle tasks that took human teams weeks.\n\nI tracked forty-seven people through this transformation — across eight industries, four continents, ages twenty-six to fifty-two.\n\nThree survival patterns emerged.\n\nThe first pattern: people who experimented immediately. Sarah Chen is the clearest example.\n\nSarah Chen didn't wait for permission.\n\nDecember eighteenth — three days after the AI announcement — she signed up for everything.\n\nClaude. ChatGPT. Copy dot AI.\n\nHer husband found her at midnight, teaching Claude to analyze competitor campaigns.\n\n\"What are you doing?\"\n\n\"Learning how to survive.\"\n\nJanuary third — breakthrough moment.\n\nA competitive analysis that typically took two days was finished by eleven thirty AM.\n\nBut something was different about the quality.\n\nThe AI handled the data collection.\n\nSarah added the strategic thinking that competitors couldn't replicate.\n\nShe didn't replace herself with AI.\n\nShe became irreplaceable because of AI.\n\nThe second pattern: people who resisted the change. Mike Rodriguez represents this path.",
+    },
+    2: {
+        "name": "block2-mike",
+        "text": "Mike Rodriguez made a different choice.\n\nEighteen years of legal research experience.\n\nWhen his firm introduced Harvey AI, Mike's response was immediate and final.\n\nHis words: \"I don't need a computer to tell me how to practice law.\"\n\nThat wasn't arrogance.\n\nMike believed something true — human judgment in law can't be outsourced.\n\nHe'd built his reputation on finding precedents other lawyers missed.\n\nOn understanding the nuance behind case law.\n\nOn being the guy partners trusted with impossible research.\n\nThe problem?\n\nHarvey AI didn't outsource his judgment. It accelerated it.\n\nAnd he missed the moment when that distinction mattered.\n\nWhile his colleagues learned Harvey AI, Mike doubled down on what made him valuable.\n\nFebruary reality check.\n\nHis research assignments were taking six hours.\n\nHis AI-assisted colleagues were finishing equivalent work in forty-five minutes.\n\nThe partners delivered their verdict.\n\n\"Mike, your efficiency metrics don't justify your position.\"\n\nMarch first — position eliminated.\n\nMike wasn't alone. Forty-three percent of workers who rejected AI training in the first sixty days faced similar outcomes within six months.\n\nThe third pattern: people who saw the shift as strategy. David Park exemplifies this approach.",
+    },
+    3: {
+        "name": "block3-david",
+        "text": "David Park saw what others missed.\n\nWhen his company announced AI customer service integration, David didn't panic.\n\nHe studied the technology for two weeks.\n\nMapped what AI could and couldn't do.\n\nThen he wrote the memo that changed everything.\n\n\"AI can handle eighty percent of our ticket volume perfectly. But the twenty percent it can't handle — furious customers, complex technical issues, executive escalations — that's where we create customer loyalty.\"\n\nInstead of fighting the AI rollout, he designed it.\n\nResult: VP of Customer Experience.\n\nForty-eight percent salary increase.\n\nBut here's what connects these three stories...\n\nEach person had the exact same information on the exact same day.\n\nThe difference wasn't opportunity. It was response speed.",
+    },
+    4: {
+        "name": "block4-framework",
+        "text": "Sarah, Mike, and David weren't unique cases.\n\nI found this same pattern in forty-seven people across eight industries.\n\nThe people who succeeded all did three specific actions within ninety days of their company's AI announcement.\n\nThis is the Ninety-Day Rule.\n\nDays one to thirty: Immediate hands-on experimentation.\n\nWinners signed up for AI tools the day their company announced integration.\n\nNot when training started. Not when it became mandatory.\n\nThe day they heard it was coming.\n\nSarah spent thirty minutes every morning for thirty days testing different AI tools.\n\nShe gave Claude the same tasks she'd normally do manually.\n\nCompared outputs. Found the gaps. Learned the limits.\n\nMike? He never opened a single AI tool.\n\nDays thirty-one to sixty: Identify your irreplaceable complement.\n\nThey mapped what AI handled well versus what broke down.\n\nThen they became experts at the breakdown points.\n\nSarah discovered AI could generate competitive analysis in minutes.\n\nBut it couldn't interpret what that meant for strategy.\n\nCouldn't read between the lines of competitor behavior.\n\nCouldn't predict which insights would actually change business decisions.\n\nSo she became the strategic interpreter.\n\nDavid found AI could resolve eighty percent of customer tickets.\n\nBut it couldn't handle the twenty percent that required emotional intelligence.\n\nThe angry customers. The complex technical problems. The executive escalations.\n\nSo he became the human escalation specialist.\n\nDays sixty-one to ninety: Position yourself as the essential bridge.\n\nThey stopped competing with AI and started designing workflows that combined both.\n\nThey became the person who understood what AI could do and what humans had to do.\n\nSarah pitched herself as the \"AI-Human Strategy Director.\"\n\nNot just a marketer. The person who could harness AI speed and add human wisdom.\n\nDavid positioned himself as the \"Customer Experience Architect.\"\n\nNot just a manager. The designer of human-AI customer service systems.\n\nThey made themselves indispensable by becoming the integration point.\n\nHere's what makes this urgent.\n\nMost industries are already past day sixty of this transformation.\n\nIf you're in marketing, customer service, content creation, research, analysis — your ninety-day window is probably closing.\n\nIf you're watching this today, here's what you do.\n\nQuestion one: What am I doing manually that AI could accelerate?\n\nPick one task. Sign up for one AI tool. Test it for thirty minutes.\n\nQuestion two: What can I do that AI fundamentally cannot?\n\nFind the breakdown points. The judgment calls. The human moments.\n\nQuestion three: How do I become the bridge that makes both work better?\n\nDon't compete with AI. Design the workflow that needs both.\n\nThe question isn't whether this will reach your job.\n\nIt's whether you'll be Sarah or Mike when it does.\n\nThis shift isn't happening to us.\n\nIt's happening through us.\n\nThe question is: which side of it will you choose to be on?",
+    },
+    5: {
+        "name": "block5-close",
+        "text": "If this changed how you see what's coming for your industry, there's more where this came from.\n\nThis is V-Real AI.\n\nWe're here to help you see what's coming — and position yourself correctly — before your ninety days are up.\n\nSubscribe for the insights that determine outcomes.\n\nThe next episode drops Tuesday.",
+    },
+}
+
+EP001_FOOTAGE_SCENES = [
+    {"scene": 1, "query": "neural network dark visualization", "min_duration": 5},
+    {"scene": 2, "query": "data particles accelerating light", "min_duration": 5},
+    {"scene": 3, "query": "person crossroads silhouette decision", "min_duration": 5},
+    {"scene": 4, "query": "woman working laptop night office", "min_duration": 10},
+    {"scene": 5, "query": "phone notification message alert", "min_duration": 5},
+    {"scene": 6, "query": "person using AI tools multiple screens", "min_duration": 10},
+    {"scene": 7, "query": "AI generated digital creativity", "min_duration": 8},
+    {"scene": 8, "query": "hand selecting choosing decision", "min_duration": 8},
+    {"scene": 9, "query": "revenue growth chart data visualization", "min_duration": 10},
+    {"scene": 10, "query": "world map connections global network", "min_duration": 10},
+    {"scene": 11, "query": "chain reaction dominos technology", "min_duration": 8},
+    {"scene": 12, "query": "two paths diverging gap between", "min_duration": 8},
+    {"scene": 13, "query": "sunrise opportunity hope new beginning", "min_duration": 15},
+    {"scene": 14, "query": "person walking forward confident future", "min_duration": 15},
+]
+
+
+class MakeVoiceoverRequest(BaseModel):
+    episode_id: str = "ep001"
+    block: int  # 1-5
+
+
+class MakeFootageRequest(BaseModel):
+    episode_id: str = "ep001"
+    scene: Optional[int] = None  # None = all scenes
+
+
+class MakeAllRequest(BaseModel):
+    episode_id: str = "ep001"
+
+
+@router.post("/make/voiceover")
+async def trigger_voiceover(data: MakeVoiceoverRequest):
+    """Trigger ElevenLabs voiceover generation via Make.com webhook."""
+    from app.services.make_integration import MAKE_WEBHOOKS
+    import httpx
+
+    webhook_url = MAKE_WEBHOOKS.get("voiceover", "")
+    if not webhook_url:
+        raise HTTPException(
+            status_code=400,
+            detail="MAKE_WEBHOOK_VOICEOVER not configured. Set it in .env with your Make.com webhook URL."
+        )
+
+    block_data = EP001_VOICEOVER_BLOCKS.get(data.block)
+    if not block_data:
+        raise HTTPException(status_code=400, detail=f"Invalid block number. Choose 1-5.")
+
+    payload = {
+        "agent_id": "video-editor",
+        "scenario": "voiceover",
+        "episode_id": data.episode_id,
+        "voice_id": "CjK4w2V6sbgFJY05zTGt",
+        "model_id": "eleven_multilingual_v2",
+        "stability": 0.65,
+        "similarity": 0.75,
+        "style": 0.0,
+        "speaker_boost": False,
+        "filename": f"{data.episode_id}-{block_data['name']}.mp3",
+        "text": block_data["text"],
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=120) as client:
+            response = await client.post(webhook_url, json=payload)
+            return {
+                "status": "triggered",
+                "block": data.block,
+                "block_name": block_data["name"],
+                "make_status": response.status_code,
+                "make_response": response.text[:500],
+            }
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Make.com webhook failed: {str(e)[:200]}")
+
+
+@router.post("/make/voiceover/all")
+async def trigger_all_voiceover(data: MakeAllRequest, background_tasks: BackgroundTasks):
+    """Trigger ALL 5 voiceover blocks via Make.com (sequentially in background)."""
+    from app.services.make_integration import MAKE_WEBHOOKS
+
+    webhook_url = MAKE_WEBHOOKS.get("voiceover", "")
+    if not webhook_url:
+        raise HTTPException(
+            status_code=400,
+            detail="MAKE_WEBHOOK_VOICEOVER not configured. Set it in .env with your Make.com webhook URL."
+        )
+
+    background_tasks.add_task(_trigger_all_voiceover_blocks, data.episode_id, webhook_url)
+    return {
+        "status": "started",
+        "message": "Generating all 5 voiceover blocks via Make.com. Check server logs for progress.",
+        "blocks": list(EP001_VOICEOVER_BLOCKS.keys()),
+    }
+
+
+async def _trigger_all_voiceover_blocks(episode_id: str, webhook_url: str):
+    """Background: trigger all voiceover blocks sequentially."""
+    import httpx
+
+    for block_num, block_data in EP001_VOICEOVER_BLOCKS.items():
+        payload = {
+            "agent_id": "video-editor",
+            "scenario": "voiceover",
+            "episode_id": episode_id,
+            "voice_id": "CjK4w2V6sbgFJY05zTGt",
+            "model_id": "eleven_multilingual_v2",
+            "stability": 0.65,
+            "similarity": 0.75,
+            "style": 0.0,
+            "speaker_boost": False,
+            "filename": f"{episode_id}-{block_data['name']}.mp3",
+            "text": block_data["text"],
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=120) as client:
+                response = await client.post(webhook_url, json=payload)
+                print(f"[MAKE] ✓ Block {block_num} ({block_data['name']}): {response.status_code}")
+        except Exception as e:
+            print(f"[MAKE] ✗ Block {block_num} failed: {e}")
+
+        await asyncio.sleep(2)  # Rate limit between blocks
+
+    print(f"[MAKE] All voiceover blocks triggered for {episode_id}")
+
+
+@router.post("/make/footage")
+async def trigger_footage(data: MakeFootageRequest, background_tasks: BackgroundTasks):
+    """Trigger Pexels footage download via Make.com webhook."""
+    from app.services.make_integration import MAKE_WEBHOOKS
+    import httpx
+
+    webhook_url = MAKE_WEBHOOKS.get("video_assembly", "")
+    if not webhook_url:
+        raise HTTPException(
+            status_code=400,
+            detail="MAKE_WEBHOOK_VIDEO not configured. Set it in .env with your Make.com webhook URL."
+        )
+
+    if data.scene:
+        scenes = [s for s in EP001_FOOTAGE_SCENES if s["scene"] == data.scene]
+        if not scenes:
+            raise HTTPException(status_code=400, detail=f"Invalid scene number. Choose 1-14.")
+    else:
+        scenes = EP001_FOOTAGE_SCENES
+
+    background_tasks.add_task(_trigger_footage_downloads, data.episode_id, webhook_url, scenes)
+    return {
+        "status": "started",
+        "message": f"Downloading {len(scenes)} footage clips via Make.com.",
+        "scenes": [s["scene"] for s in scenes],
+    }
+
+
+async def _trigger_footage_downloads(episode_id: str, webhook_url: str, scenes: list):
+    """Background: trigger footage downloads sequentially."""
+    import httpx
+
+    for scene in scenes:
+        payload = {
+            "agent_id": "video-editor",
+            "scenario": "footage",
+            "episode_id": episode_id,
+            "scene_number": f"{scene['scene']:02d}",
+            "query": scene["query"],
+            "min_duration": scene["min_duration"],
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=60) as client:
+                response = await client.post(webhook_url, json=payload)
+                print(f"[MAKE] ✓ Scene {scene['scene']:02d}: {response.status_code}")
+        except Exception as e:
+            print(f"[MAKE] ✗ Scene {scene['scene']:02d} failed: {e}")
+
+        await asyncio.sleep(1)
+
+    print(f"[MAKE] All footage scenes triggered for {episode_id}")
+
+
+@router.get("/make/status")
+async def make_status():
+    """Check which Make.com webhooks are configured."""
+    from app.services.make_integration import MAKE_WEBHOOKS
+
+    return {
+        webhook: {
+            "configured": bool(url),
+            "url_prefix": url[:40] + "..." if url else "NOT SET",
+        }
+        for webhook, url in MAKE_WEBHOOKS.items()
+    }
