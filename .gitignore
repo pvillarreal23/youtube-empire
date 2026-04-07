@@ -25,6 +25,9 @@ frontend/node_modules/
 # Claude Code internals
 .claude/
 
+# Cowork prompts with secrets
+cowork/*-WITH-KEYS*
+
 # macOS
 .DS_Store
 
