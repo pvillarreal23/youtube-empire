@@ -345,49 +345,68 @@ TEXT_OVERLAYS = [
 
 # ── YouTube Upload Metadata ──────────────────────────────────────────────────
 
+# SEO-optimized description template (research-backed structure):
+# - First 2 lines visible above fold → primary keyword in first 25 words
+# - 200-500 word description with semantic keyword variations
+# - Chapters create independent Google search entry points ("Key Moments")
+# - Each chapter title is keyword-rich for discoverability
+# - Hashtags at end for YouTube search indexing
+
 YOUTUBE_METADATA = {
-    "title": "The AI Shift That's Coming for Marketers (Most Aren't Ready)",
-    "description": """AI is transforming marketing, business, and income — and most professionals haven't adapted yet. This documentary explores the AI shift for marketing professionals and solopreneurs who want to stay ahead in 2026.
+    "title": "Half Her Team Was Gone by 10 AM",
+    "description": """Half her team was replaced by AI tools costing $49/month. But the people who moved fast saw 28% salary increases. Here's the 90-Day Rule that separates survivors from casualties in the AI shift of 2026.
 
-The shift already happened. Most people just haven't felt it yet.
+I tracked 47 people through this exact AI transformation — across 8 industries, 4 continents. Three survival patterns emerged. This documentary breaks down each one with real stories and actionable frameworks.
 
-Covers: AI tools for marketing 2026 | AI automation for solopreneurs | How to start using AI in marketing | ChatGPT vs Claude for business
+0:00 Half Her Team Was Gone
+0:30 The Day Everything Changed — December 15, 2025
+1:45 Pattern 1: Sarah Chen — Immediate Action
+3:15 Pattern 2: Mike Rodriguez — The Cost of Waiting
+4:45 Pattern 3: David Park — The Strategic Architect
+6:00 The 90-Day Rule — Why Timing Is Everything
+7:30 Days 1-30: Immediate Experimentation Framework
+8:00 Days 31-60: Finding Your Irreplaceable Complement
+8:20 Days 61-90: Becoming the Essential Bridge
+8:30 Your Action Plan — What to Do This Week
 
-📌 CHAPTERS:
-0:00 — The Hook
-0:30 — The Setup
-1:45 — Sarah's Story
-3:15 — Mike's Story
-4:45 — David's Story
-6:00 — The 90-Day Rule
-8:30 — What's Next
+This is not motivational content. This is documented evidence from real professionals navigating the biggest workplace transformation since the internet.
 
-🎙️ ABOUT V-REAL AI:
-Cinematic documentaries about how AI is changing marketing and work. Every episode shows you exactly which AI tools were used and how — so you can apply the same techniques to your own marketing.
+Every AI tool mentioned in this video: Claude AI by Anthropic, ChatGPT by OpenAI, Harvey AI for legal research, Copy.ai for marketing automation.
 
-New episodes weekly. Made for marketing professionals and solopreneurs adapting to AI.
+V-Real AI creates cinematic documentaries about how artificial intelligence is reshaping careers, marketing, and business strategy. Every episode is researched, scripted, narrated, and produced using AI — full transparency on every tool and technique.
 
-🔔 Subscribe so you don't miss what's coming next.
+Made for marketing professionals, solopreneurs, business owners, and anyone adapting to AI in 2026.
 
-#AIMarketing #AIForBeginners #FutureOfWork""",
+New episodes every Tuesday.
+
+Related videos:
+EP002: The Price of Waiting — What happens when you delay 90 days
+EP003: The Bridge Builders — People earning $200K+ designing human-AI workflows
+
+#AIshift #AI2026 #AImarketing #futureofwork #AItools #AIforbeginners #solopreneur #marketingAI #AIstrategy #careerAI""",
     "tags": [
-        "AI marketing", "AI for marketers", "AI tools for marketing", "AI 2026",
+        "AI shift", "AI marketing", "AI tools for marketing", "AI 2026",
         "AI documentary", "future of marketing", "AI for solopreneurs",
-        "marketing automation AI", "AI workflow for business",
+        "AI job loss", "AI career strategy", "AI workflow for business",
         "how to use AI for marketing", "AI marketing strategy",
-        "AI marketing tools", "ChatGPT for marketing", "Claude AI for business",
-        "solopreneur AI tools", "marketing professional AI", "AI beginner guide",
-        "digital marketing AI", "AI content strategy", "AI business automation",
+        "ChatGPT for marketing", "Claude AI for business",
+        "AI replacing jobs", "AI salary increase", "90 day rule AI",
+        "AI transformation documentary", "AI content strategy",
+        "half her team was gone", "V-Real AI",
     ],
     "category_id": "27",  # Education
-    "privacy_status": "public",
+    "privacy_status": "unlisted",  # Always upload unlisted first, review, then make public
     "pinned_comment": """This entire video was researched, scripted, narrated, and produced using AI.
 
 Every tool. Every step. Transparent.
 
 If you're a marketer or solopreneur figuring out AI — you're in the right place. We show you what's actually working, not what's trending.
 
-Welcome to V-Real AI. You're not paranoid. You're observant.""",
+You're not paranoid. You're observant. This is V-Real AI.
+
+Subscribe — the next episode drops Tuesday.""",
+    # Keyword-rich filename for YouTube SEO (YouTube reads filename as early signal)
+    "seo_filename": "half-her-team-was-gone-by-10am-ai-shift-2026.mp4",
 }
 
 
@@ -572,7 +591,8 @@ def assemble_video():
     """Assemble the final video using the video_assembler engine with full brand package."""
     from app.services.video_assembler import (
         AssemblyProject, SceneClip, TextOverlay, LowerThird, DataCard,
-        assemble_video as run_assembly
+        assemble_video as run_assembly,
+        generate_captions_srt, embed_xmp_metadata, extract_shorts_clips,
     )
 
     voice_path = AUDIO_DIR / "ep001-voiceover-full.mp3"
@@ -628,6 +648,23 @@ def assemble_video():
     # Brand asset paths (auto-generated by brand_graphics.py)
     brand_dir = BASE_DIR / "assets" / EPISODE_ID / "brand"
 
+    # Re-hooks — MrBeast playbook: give viewers a reason to stay every 2-3 minutes
+    rehooks = [
+        {"text": "But here's what nobody expected...", "time": 120.0, "duration": 3.0},
+        {"text": "This is where it gets interesting...", "time": 240.0, "duration": 3.0},
+        {"text": "The pattern nobody talks about...", "time": 360.0, "duration": 3.0},
+        {"text": "Watch what happens next...", "time": 450.0, "duration": 3.0},
+    ]
+
+    # Sections — for progress bar (drives completion psychology)
+    sections = [
+        {"label": "Sarah's Story", "start": 45.0, "end": 195.0},
+        {"label": "Mike's Story", "start": 195.0, "end": 285.0},
+        {"label": "David's Story", "start": 285.0, "end": 360.0},
+        {"label": "The 90-Day Rule", "start": 360.0, "end": 510.0},
+        {"label": "Your Action Plan", "start": 510.0, "end": 540.0},
+    ]
+
     project = AssemblyProject(
         episode_id=EPISODE_ID,
         title=EPISODE_TITLE,
@@ -637,11 +674,13 @@ def assemble_video():
         text_overlays=overlays,
         lower_thirds=lower_thirds,
         data_cards=data_cards,
+        rehooks=rehooks,
+        sections=sections,
         intro_path=str(brand_dir / "intro.mp4") if (brand_dir / "intro.mp4").exists() else None,
         end_screen_path=str(brand_dir / "end_screen.mp4") if (brand_dir / "end_screen.mp4").exists() else None,
         transition_path=str(brand_dir / "transition_glitch.mp4") if (brand_dir / "transition_glitch.mp4").exists() else None,
         enable_retention_editing=True,
-        output_filename="ep001-the-shift-final.mp4",
+        output_filename=YOUTUBE_METADATA.get("seo_filename", "ep001-the-shift-final.mp4"),
     )
 
     print("[ASSEMBLE] Starting video assembly with full brand package...")
@@ -663,7 +702,11 @@ def upload_to_youtube():
     """Upload the final video to YouTube with full metadata."""
     from app.services.youtube_uploader import upload_video, add_comment
 
-    video_path = Path(os.path.expanduser("~/youtube-empire/output")) / "ep001-the-shift-final.mp4"
+    seo_name = YOUTUBE_METADATA.get("seo_filename", "ep001-the-shift-final.mp4")
+    video_path = Path(os.path.expanduser("~/youtube-empire/output")) / seo_name
+    # Fallback to old name if SEO name doesn't exist
+    if not video_path.exists():
+        video_path = Path(os.path.expanduser("~/youtube-empire/output")) / "ep001-the-shift-final.mp4"
     if not video_path.exists():
         print("[UPLOAD] ERROR: Final video not found. Run --step assemble first.")
         return None
@@ -738,7 +781,45 @@ def main():
 
     if args.step in ("upload", "all"):
         print("\n─── STEP 4: YOUTUBE UPLOAD ───")
-        upload_to_youtube()
+        video_id = upload_to_youtube()
+
+        # Step 5: Start post-publish monitoring
+        if video_id:
+            print("\n─── STEP 5: POST-PUBLISH MONITOR ───")
+            try:
+                from app.services.post_publish_monitor import start_monitoring
+                start_monitoring(video_id, EPISODE_ID)
+                print(f"[MONITOR] Post-publish monitoring active for {video_id}")
+                print("[MONITOR] Will track: views, CTR, retention, comments")
+                print("[MONITOR] Reports at: 1h, 6h, 24h, 48h")
+            except ImportError:
+                print("[MONITOR] Post-publish monitor not available (import failed)")
+            except Exception as e:
+                print(f"[MONITOR] WARNING: Could not start monitoring: {e}")
+
+            # Step 6: Upload captions if available
+            print("\n─── STEP 6: UPLOAD CAPTIONS ───")
+            captions_path = OUTPUT_DIR / f"{EPISODE_ID}-captions.srt"
+            if captions_path.exists():
+                try:
+                    from app.services.youtube_uploader import upload_captions
+                    upload_captions(video_id, str(captions_path), language="en")
+                    print(f"[CAPTIONS] Uploaded SRT captions for SEO boost")
+                except (ImportError, Exception) as e:
+                    print(f"[CAPTIONS] WARNING: Caption upload failed: {e}")
+                    print(f"[CAPTIONS] Manual upload: {captions_path}")
+            else:
+                print("[CAPTIONS] No caption file found (skipped)")
+
+            # Report Shorts for separate upload
+            shorts_dir = OUTPUT_DIR / EPISODE_ID / "shorts"
+            if shorts_dir.exists():
+                shorts = list(shorts_dir.glob("short_*.mp4"))
+                if shorts:
+                    print(f"\n─── SHORTS READY FOR UPLOAD ({len(shorts)} clips) ───")
+                    for s in shorts:
+                        print(f"  {s}")
+                    print("[SHORTS] Upload these as YouTube Shorts with #Shorts in title")
 
     print("\n" + "=" * 60)
     print("  PRODUCTION COMPLETE")

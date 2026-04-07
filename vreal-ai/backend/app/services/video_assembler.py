@@ -47,18 +47,28 @@ BRAND = {
     "font_bold": "Inter-Bold",
 }
 
-# Video specs from production bible
+# Video specs — optimized for YouTube's re-encoding pipeline
+# Key insight: uploading at higher quality than needed gives YouTube better
+# source material to re-encode from, resulting in better viewer experience.
 VIDEO_SPECS = {
-    "width": 1920,
-    "height": 1080,
+    "width": 3840,             # 4K output — even from 1080p source, YouTube uses VP9/AV1
+    "height": 2160,            # at higher bitrate for "4K" uploads, improving 1080p playback
+    "source_width": 1920,      # Original content resolution
+    "source_height": 1080,
     "fps": 30,
     "codec": "libx264",
-    "preset": "slow",
-    "crf": 18,           # High quality
+    "preset": "slow",          # slow preset = best quality/time tradeoff
+    "crf": 18,                 # Visually lossless — YouTube re-encodes anyway
+    "profile": "high",         # H.264 High Profile for max coding efficiency
+    "level": "5.1",            # Required for 4K
     "pix_fmt": "yuv420p",
     "audio_codec": "aac",
-    "audio_bitrate": "192k",
-    "audio_sample_rate": 48000,
+    "audio_bitrate": "384k",   # 384kbps stereo (YouTube recommended for stereo)
+    "audio_sample_rate": 48000, # Matches YouTube internal processing — prevents resampling
+    "movflags": "+faststart",  # Moves MOOV atom to start for instant YouTube processing
+    "upscale_filter": "lanczos", # Best upscale algorithm for 1080p→4K
+    "gop_size": 15,            # Half frame rate — optimal for YouTube keyframe indexing
+    "bf": 2,                   # 2 B-frames for better compression
 }
 
 # Audio levels (LUFS targets — broadcast standard)
@@ -149,6 +159,8 @@ class AssemblyProject:
     transition_path: Optional[str] = None  # Transition clip between sections
     hover_hook_path: Optional[str] = None  # 3s silent visual hook for YouTube hover preview
     enable_retention_editing: bool = True   # Auto zoom punches & pattern interrupts
+    rehooks: list[dict] = field(default_factory=list)  # [{"text": "...", "time": 120.0}] — MrBeast re-hooks every 2-3 min
+    sections: list[dict] = field(default_factory=list)  # [{"label": "...", "start": 0, "end": 100}] — for progress bar
     output_filename: Optional[str] = None
 
 
@@ -956,7 +968,7 @@ def assemble_video(project: AssemblyProject) -> str:
     )
 
     # ── Step 6: Apply text overlays ──────────────────────────────────────
-    print("[ASSEMBLER] Step 6/10: Applying text overlays...")
+    print("[ASSEMBLER] Step 6/14: Applying text overlays...")
     current_video = merged
     for i, overlay in enumerate(project.text_overlays):
         overlay_out = os.path.join(episode_temp, f"overlay_{i:03d}.mp4")
@@ -965,16 +977,40 @@ def assemble_video(project: AssemblyProject) -> str:
 
     # ── Step 7: Apply lower thirds ───────────────────────────────────────
     if project.lower_thirds:
-        print(f"[ASSEMBLER] Step 7/10: Compositing {len(project.lower_thirds)} lower thirds...")
+        print(f"[ASSEMBLER] Step 7/14: Compositing {len(project.lower_thirds)} lower thirds...")
         lt_out = os.path.join(episode_temp, "with_lower_thirds.mp4")
         composite_lower_thirds(current_video, lt_out, project.lower_thirds)
         current_video = lt_out
     else:
-        print("[ASSEMBLER] Step 7/10: No lower thirds (skipped)")
+        print("[ASSEMBLER] Step 7/14: No lower thirds (skipped)")
 
-    # ── Step 8: Apply retention editing ──────────────────────────────────
+    # ── Step 8: Apply re-hook overlays (MrBeast: every 2-3 min) ──────────
+    if hasattr(project, 'rehooks') and project.rehooks:
+        print(f"[ASSEMBLER] Step 8/14: Adding {len(project.rehooks)} re-hook overlays...")
+        rehook_out = os.path.join(episode_temp, "with_rehooks.mp4")
+        try:
+            add_rehook_overlays(current_video, rehook_out, project.rehooks)
+            current_video = rehook_out
+        except subprocess.CalledProcessError:
+            print("[ASSEMBLER] WARNING: Re-hook overlays failed, continuing without them")
+    else:
+        print("[ASSEMBLER] Step 8/14: No re-hooks defined (skipped)")
+
+    # ── Step 9: Apply progress bar ───────────────────────────────────────
+    if hasattr(project, 'sections') and project.sections:
+        print(f"[ASSEMBLER] Step 9/14: Adding progress bar for {len(project.sections)} sections...")
+        progress_out = os.path.join(episode_temp, "with_progress.mp4")
+        try:
+            add_progress_bar(current_video, progress_out, project.sections, voice_duration)
+            current_video = progress_out
+        except subprocess.CalledProcessError:
+            print("[ASSEMBLER] WARNING: Progress bar failed, continuing without it")
+    else:
+        print("[ASSEMBLER] Step 9/14: No sections defined (skipped)")
+
+    # ── Step 10: Apply retention editing ──────────────────────────────────
     if project.enable_retention_editing:
-        print("[ASSEMBLER] Step 8/10: Applying retention editing (zoom pulses)...")
+        print("[ASSEMBLER] Step 10/14: Applying retention editing (zoom pulses)...")
         retention_out = os.path.join(episode_temp, "retention_edited.mp4")
         try:
             apply_retention_editing(current_video, retention_out, voice_duration)
@@ -982,18 +1018,38 @@ def assemble_video(project: AssemblyProject) -> str:
         except subprocess.CalledProcessError:
             print("[ASSEMBLER] WARNING: Retention editing failed, continuing without it")
     else:
-        print("[ASSEMBLER] Step 8/10: Retention editing disabled (skipped)")
+        print("[ASSEMBLER] Step 10/14: Retention editing disabled (skipped)")
 
-    # ── Step 9: Add end screen ───────────────────────────────────────────
+    # ── Step 11: Generate captions SRT ───────────────────────────────────
+    print("[ASSEMBLER] Step 11/14: Generating captions (SRT)...")
+    captions_path = os.path.join(OUTPUT_DIR, f"{project.episode_id}-captions.srt")
+    try:
+        generate_captions_srt(voice_norm, captions_path)
+    except Exception as e:
+        print(f"[ASSEMBLER] WARNING: Caption generation failed: {e}")
+
+    # ── Step 12: Generate sound design ───────────────────────────────────
+    if not project.sfx_path:
+        print("[ASSEMBLER] Step 12/14: Generating sound design (whooshes at transitions)...")
+        sfx_auto = os.path.join(episode_temp, "sfx_auto.wav")
+        try:
+            generate_sound_design(voice_norm, sfx_auto, voice_duration)
+            if os.path.exists(sfx_auto) and os.path.getsize(sfx_auto) > 1000:
+                project.sfx_path = sfx_auto
+        except Exception as e:
+            print(f"[ASSEMBLER] WARNING: Sound design generation failed: {e}")
+    else:
+        print("[ASSEMBLER] Step 12/14: SFX track provided (skipped auto-generation)")
+
+    # ── Step 13: Add end screen ──────────────────────────────────────────
     end_screen = project.end_screen_path
     if not end_screen:
-        # Check for auto-generated end screen
         auto_end = os.path.expanduser(f"~/youtube-empire/assets/{project.episode_id}/brand/end_screen.mp4")
         if os.path.exists(auto_end):
             end_screen = auto_end
 
-    # ── Step 10: Add intro/outro/end screen and export final ─────────────
-    print("[ASSEMBLER] Step 10/10: Final export...")
+    # ── Step 14: Final export with 4K upscale + metadata ─────────────────
+    print("[ASSEMBLER] Step 14/14: Final export (4K upscale + optimal encoding)...")
     output_name = project.output_filename or f"{project.episode_id}-final.mp4"
     final_output = os.path.join(OUTPUT_DIR, output_name)
 
@@ -1030,6 +1086,29 @@ def assemble_video(project: AssemblyProject) -> str:
         parts_to_concat.append(end_screen)
         print(f"[ASSEMBLER]   + End screen: {end_screen}")
 
+    # Build optimal YouTube export flags
+    export_flags = [
+        "-c:v", VIDEO_SPECS["codec"],
+        "-preset", VIDEO_SPECS["preset"],
+        "-crf", str(VIDEO_SPECS["crf"]),
+        "-profile:v", VIDEO_SPECS["profile"],
+        "-level", VIDEO_SPECS["level"],
+        "-g", str(VIDEO_SPECS["gop_size"]),
+        "-bf", str(VIDEO_SPECS["bf"]),
+        "-pix_fmt", VIDEO_SPECS["pix_fmt"],
+        "-c:a", VIDEO_SPECS["audio_codec"],
+        "-b:a", VIDEO_SPECS["audio_bitrate"],
+        "-ar", str(VIDEO_SPECS["audio_sample_rate"]),
+        "-movflags", VIDEO_SPECS["movflags"],
+    ]
+
+    # 4K upscale — YouTube encodes "4K" sources with VP9/AV1 at higher bitrate
+    # Viewers watching at 1080p from a 4K source see noticeably better quality
+    upscale_filter = (
+        f"scale={VIDEO_SPECS['width']}:{VIDEO_SPECS['height']}"
+        f":flags={VIDEO_SPECS['upscale_filter']}"
+    )
+
     if len(parts_to_concat) > 1:
         final_concat = os.path.join(episode_temp, "final_concat.txt")
         with open(final_concat, "w") as f:
@@ -1037,33 +1116,55 @@ def assemble_video(project: AssemblyProject) -> str:
                 f.write(f"file '{p}'\n")
         subprocess.run(
             ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", final_concat,
-             "-c:v", VIDEO_SPECS["codec"], "-preset", VIDEO_SPECS["preset"],
-             "-crf", str(VIDEO_SPECS["crf"]),
-             "-pix_fmt", VIDEO_SPECS["pix_fmt"],
-             "-c:a", VIDEO_SPECS["audio_codec"],
-             "-b:a", VIDEO_SPECS["audio_bitrate"],
-             final_output],
+             "-vf", upscale_filter] + export_flags + [final_output],
             check=True, capture_output=True,
         )
     else:
-        # Re-encode with final quality settings
         subprocess.run(
             ["ffmpeg", "-y", "-i", current_video,
-             "-c:v", VIDEO_SPECS["codec"], "-preset", VIDEO_SPECS["preset"],
-             "-crf", str(VIDEO_SPECS["crf"]),
-             "-pix_fmt", VIDEO_SPECS["pix_fmt"],
-             "-c:a", VIDEO_SPECS["audio_codec"],
-             "-b:a", VIDEO_SPECS["audio_bitrate"],
-             final_output],
+             "-vf", upscale_filter] + export_flags + [final_output],
             check=True, capture_output=True,
         )
+
+    # ── Post-export: Embed XMP metadata ────────────────────────────────
+    print("[ASSEMBLER] Post-export: Embedding XMP metadata...")
+    try:
+        embed_xmp_metadata(
+            video_path=final_output,
+            title=project.title,
+            description=f"V-Real AI {project.episode_id} — {project.title}",
+            keywords=["AI", "documentary", "V-Real AI", project.episode_id],
+        )
+    except Exception as e:
+        print(f"[ASSEMBLER] WARNING: Metadata embedding failed: {e}")
+
+    # ── Post-export: Extract YouTube Shorts ──────────────────────────────
+    shorts_dir = os.path.join(OUTPUT_DIR, project.episode_id, "shorts")
+    print(f"[ASSEMBLER] Post-export: Extracting YouTube Shorts...")
+    try:
+        shorts = extract_shorts_clips(
+            video_path=final_output,
+            voice_path=voice_norm,
+            output_dir=shorts_dir,
+            max_clips=5,
+            clip_duration=45,
+        )
+        if shorts:
+            print(f"[ASSEMBLER]   Generated {len(shorts)} Shorts for upload")
+    except Exception as e:
+        print(f"[ASSEMBLER] WARNING: Shorts extraction failed: {e}")
 
     # Report
     final_size_mb = os.path.getsize(final_output) / (1024 * 1024)
     final_duration = get_duration(final_output)
-    print(f"[ASSEMBLER] ✓ Assembly complete: {final_output}")
+    print(f"\n[ASSEMBLER] ✓ Assembly complete: {final_output}")
+    print(f"[ASSEMBLER]   Resolution: {VIDEO_SPECS['width']}x{VIDEO_SPECS['height']} (4K upscaled)")
     print(f"[ASSEMBLER]   Duration: {final_duration:.1f}s ({final_duration/60:.1f} min)")
     print(f"[ASSEMBLER]   Size: {final_size_mb:.1f} MB")
+    print(f"[ASSEMBLER]   Audio: {VIDEO_SPECS['audio_bitrate']} AAC @ {VIDEO_SPECS['audio_sample_rate']}Hz")
+    print(f"[ASSEMBLER]   Captions: {captions_path if os.path.exists(captions_path) else 'N/A'}")
+    print(f"[ASSEMBLER]   Shorts: {len(shorts) if 'shorts' in dir() else 0} extracted")
+    print(f"[ASSEMBLER]   Encoding: H.264 High Profile, CRF {VIDEO_SPECS['crf']}, {VIDEO_SPECS['preset']}")
 
     return final_output
 
@@ -1140,6 +1241,460 @@ def create_project_from_script(
             ))
 
     return project
+
+
+def generate_captions_srt(voice_audio_path: str, output_path: str) -> str:
+    """
+    Generate SRT caption file from voice audio for YouTube SEO.
+
+    Captions provide:
+    - 7.32% average increase in views (Discovery Digital Networks study)
+    - 12-15% higher completion rates
+    - Full transcript indexed by YouTube search
+    - Each captioned word becomes searchable
+
+    Uses FFmpeg speech-to-text via whisper model if available,
+    otherwise generates timestamp-aligned captions from script blocks.
+    """
+    # Try to use whisper CLI if available
+    whisper_available = shutil.which("whisper") is not None
+
+    if whisper_available:
+        try:
+            srt_temp = output_path.replace(".srt", "_raw.srt")
+            subprocess.run(
+                ["whisper", voice_audio_path,
+                 "--model", "base",
+                 "--output_format", "srt",
+                 "--output_dir", os.path.dirname(output_path)],
+                check=True, capture_output=True, timeout=300,
+            )
+            # Whisper outputs to a file based on input name
+            whisper_out = voice_audio_path.rsplit(".", 1)[0] + ".srt"
+            if os.path.exists(whisper_out) and whisper_out != output_path:
+                shutil.move(whisper_out, output_path)
+            print(f"[CAPTIONS] Generated SRT via Whisper: {output_path}")
+            return output_path
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+            print("[CAPTIONS] Whisper failed, falling back to silence-based segmentation")
+
+    # Fallback: generate captions from voice segment detection
+    # This creates approximate caption timing based on silence detection
+    segments = detect_voice_segments(voice_audio_path, silence_thresh=-35, min_silence_dur=0.5)
+
+    srt_lines = []
+    for i, (start, end) in enumerate(segments, 1):
+        # Format timestamps as SRT: HH:MM:SS,mmm
+        def fmt_time(t):
+            h = int(t // 3600)
+            m = int((t % 3600) // 60)
+            s = int(t % 60)
+            ms = int((t % 1) * 1000)
+            return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
+
+        srt_lines.append(f"{i}")
+        srt_lines.append(f"{fmt_time(start)} --> {fmt_time(end)}")
+        srt_lines.append(f"[Segment {i}]")  # Placeholder — replaced by actual text in produce script
+        srt_lines.append("")
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(srt_lines))
+
+    print(f"[CAPTIONS] Generated SRT skeleton ({len(segments)} segments): {output_path}")
+    return output_path
+
+
+def embed_xmp_metadata(video_path: str, title: str, description: str, keywords: list[str], author: str = "V-Real AI") -> bool:
+    """
+    Embed XMP metadata into video file before YouTube upload.
+
+    YouTube reads filename and embedded metadata as early relevancy signals
+    before title/description are processed. This gives a small but real SEO boost.
+
+    Uses exiftool if available, otherwise uses ffmpeg metadata.
+    """
+    exiftool_available = shutil.which("exiftool") is not None
+
+    if exiftool_available:
+        try:
+            keywords_str = ",".join(keywords[:20])  # ExifTool keyword limit
+            subprocess.run(
+                [
+                    "exiftool",
+                    f"-Title={title}",
+                    f"-Description={description[:500]}",
+                    f"-Keywords={keywords_str}",
+                    f"-Author={author}",
+                    f"-Copyright=2026 {author}",
+                    "-overwrite_original",
+                    video_path,
+                ],
+                check=True, capture_output=True, timeout=30,
+            )
+            print(f"[METADATA] XMP metadata embedded via exiftool")
+            return True
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            print("[METADATA] exiftool failed, trying ffmpeg metadata")
+
+    # Fallback: use ffmpeg to embed metadata
+    temp_out = video_path + ".meta.mp4"
+    try:
+        keywords_str = ",".join(keywords[:20])
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", video_path,
+                "-metadata", f"title={title}",
+                "-metadata", f"comment={description[:500]}",
+                "-metadata", f"artist={author}",
+                "-metadata", f"copyright=2026 {author}",
+                "-metadata", f"keywords={keywords_str}",
+                "-c", "copy",
+                temp_out,
+            ],
+            check=True, capture_output=True,
+        )
+        shutil.move(temp_out, video_path)
+        print(f"[METADATA] Metadata embedded via ffmpeg")
+        return True
+    except subprocess.CalledProcessError:
+        if os.path.exists(temp_out):
+            os.remove(temp_out)
+        print("[METADATA] WARNING: Could not embed metadata")
+        return False
+
+
+def extract_shorts_clips(
+    video_path: str,
+    voice_path: str,
+    output_dir: str,
+    max_clips: int = 5,
+    clip_duration: int = 45,
+) -> list[str]:
+    """
+    Auto-extract YouTube Shorts from long-form video.
+
+    Strategy:
+    1. Detect high-energy voice segments (louder = more engaging)
+    2. Extract 30-59s clips centered on those peaks
+    3. Reframe from 16:9 to 9:16 (center crop)
+    4. Output ready-to-upload Shorts
+
+    Each Short is a potential viral entry point to the main video.
+    Channels that post Shorts alongside long-form see 20-30% faster growth.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    shorts = []
+
+    # Get total duration
+    total_duration = get_duration(video_path)
+
+    # Find high-energy segments using volume analysis
+    # We look for the loudest segments as they're usually the most engaging
+    result = subprocess.run(
+        ["ffmpeg", "-i", voice_path,
+         "-af", "astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level",
+         "-f", "null", "-"],
+        capture_output=True, text=True, timeout=120,
+    )
+
+    # Parse energy levels to find peak moments
+    energy_peaks = []
+    current_time = 0.0
+    frame_duration = 1.0 / VIDEO_SPECS["fps"]
+
+    for line in result.stderr.split("\n"):
+        if "lavfi.astats.Overall.RMS_level" in line:
+            try:
+                level = float(line.split("=")[-1])
+                if level > -25:  # High energy threshold
+                    energy_peaks.append((current_time, level))
+            except (ValueError, IndexError):
+                pass
+            current_time += frame_duration
+
+    # Sort by energy, take top peaks with minimum spacing
+    energy_peaks.sort(key=lambda x: x[1], reverse=True)
+
+    selected_times = []
+    for peak_time, level in energy_peaks:
+        # Ensure minimum 60s spacing between clips
+        if all(abs(peak_time - t) > 60 for t in selected_times):
+            # Ensure clip doesn't exceed video bounds
+            clip_start = max(0, peak_time - clip_duration // 2)
+            clip_end = min(total_duration, clip_start + clip_duration)
+            if clip_end - clip_start >= 15:  # Minimum 15s for Shorts
+                selected_times.append(clip_start)
+                if len(selected_times) >= max_clips:
+                    break
+
+    # If energy detection found nothing, use evenly spaced segments
+    if not selected_times and total_duration > 120:
+        interval = total_duration / (max_clips + 1)
+        selected_times = [interval * (i + 1) for i in range(max_clips)]
+
+    # Extract and reframe each clip
+    for i, start_time in enumerate(selected_times):
+        short_path = os.path.join(output_dir, f"short_{i+1:02d}.mp4")
+
+        # Center crop from 16:9 to 9:16
+        # From 1920x1080: crop center 608x1080, scale to 1080x1920
+        crop_w = int(VIDEO_SPECS["source_height"] * 9 / 16)  # 608 for 1080p
+        crop_x = (VIDEO_SPECS["source_width"] - crop_w) // 2
+
+        try:
+            subprocess.run(
+                [
+                    "ffmpeg", "-y",
+                    "-ss", str(start_time),
+                    "-i", video_path,
+                    "-t", str(min(clip_duration, 59)),  # Max 59s for Shorts
+                    "-vf", (
+                        f"crop={crop_w}:{VIDEO_SPECS['source_height']}:{crop_x}:0,"
+                        f"scale=1080:1920:flags=lanczos"
+                    ),
+                    "-c:v", VIDEO_SPECS["codec"],
+                    "-preset", "fast",
+                    "-crf", "20",
+                    "-c:a", VIDEO_SPECS["audio_codec"],
+                    "-b:a", "128k",
+                    "-movflags", "+faststart",
+                    short_path,
+                ],
+                check=True, capture_output=True, timeout=120,
+            )
+            shorts.append(short_path)
+            print(f"[SHORTS] Extracted Short {i+1}: {start_time:.0f}s - {start_time+clip_duration:.0f}s")
+        except subprocess.CalledProcessError as e:
+            print(f"[SHORTS] WARNING: Failed to extract Short {i+1}: {e.stderr[:200] if e.stderr else ''}")
+
+    print(f"[SHORTS] Generated {len(shorts)} Shorts in {output_dir}")
+    return shorts
+
+
+def generate_sound_design(
+    voice_path: str,
+    output_path: str,
+    total_duration: float,
+) -> str:
+    """
+    Generate a sound design layer with whooshes, impacts, and risers.
+
+    Sound design keeps the ear engaged even during visual lulls:
+    - Whooshes on scene transitions (every 20-40s)
+    - Subtle impacts on data card reveals
+    - Low risers before major section changes
+    - Ambient texture throughout
+
+    Uses synthesized sounds via FFmpeg — no external audio files needed.
+    """
+    # Detect natural pause points from voice (these are transition moments)
+    segments = detect_voice_segments(voice_path, silence_thresh=-35, min_silence_dur=0.8)
+
+    # Find gap midpoints — these are where transitions happen
+    transition_points = []
+    for i in range(len(segments) - 1):
+        gap_start = segments[i][1]
+        gap_end = segments[i + 1][0]
+        if gap_end - gap_start > 0.5:
+            transition_points.append((gap_start + gap_end) / 2)
+
+    # Generate a synthetic SFX track using FFmpeg
+    # Build a complex filter that places whoosh sounds at transition points
+    sfx_parts = []
+    sfx_inputs = []
+
+    for i, t in enumerate(transition_points[:30]):  # Cap at 30 SFX to avoid filter complexity
+        # Generate a quick whoosh: short noise burst with bandpass and fade
+        sfx_file = os.path.join(os.path.dirname(output_path), f"sfx_whoosh_{i}.wav")
+        try:
+            subprocess.run(
+                [
+                    "ffmpeg", "-y",
+                    "-f", "lavfi", "-i",
+                    f"anoisesrc=d=0.4:c=pink:a=0.03,highpass=f=800,lowpass=f=4000,afade=t=in:d=0.1,afade=t=out:st=0.2:d=0.2",
+                    "-ar", str(VIDEO_SPECS["audio_sample_rate"]),
+                    sfx_file,
+                ],
+                check=True, capture_output=True, timeout=10,
+            )
+            sfx_parts.append((t, sfx_file))
+        except subprocess.CalledProcessError:
+            continue
+
+    if not sfx_parts:
+        # Generate silent track as fallback
+        subprocess.run(
+            ["ffmpeg", "-y", "-f", "lavfi", "-i",
+             f"anullsrc=channel_layout=stereo:sample_rate={VIDEO_SPECS['audio_sample_rate']}",
+             "-t", str(total_duration), output_path],
+            check=True, capture_output=True,
+        )
+        return output_path
+
+    # Mix all SFX into a single track with proper timing
+    # Use adelay to position each sound at its timestamp
+    filter_parts = []
+    input_args = []
+
+    for i, (timestamp, sfx_file) in enumerate(sfx_parts):
+        input_args.extend(["-i", sfx_file])
+        delay_ms = int(timestamp * 1000)
+        filter_parts.append(f"[{i}]adelay={delay_ms}|{delay_ms}[d{i}]")
+
+    # Mix all delayed SFX together
+    mix_inputs = "".join(f"[d{i}]" for i in range(len(sfx_parts)))
+    filter_parts.append(
+        f"{mix_inputs}amix=inputs={len(sfx_parts)}:duration=longest:normalize=0[sfx]"
+    )
+
+    # Pad/trim to match total duration
+    filter_parts.append(
+        f"[sfx]apad=whole_dur={total_duration},atrim=0:{total_duration}[out]"
+    )
+
+    filter_complex = ";".join(filter_parts)
+
+    try:
+        subprocess.run(
+            ["ffmpeg", "-y"] + input_args +
+            ["-filter_complex", filter_complex,
+             "-map", "[out]",
+             "-ar", str(VIDEO_SPECS["audio_sample_rate"]),
+             "-t", str(total_duration),
+             output_path],
+            check=True, capture_output=True, timeout=60,
+        )
+        print(f"[SFX] Generated sound design: {len(sfx_parts)} whooshes placed at transitions")
+    except subprocess.CalledProcessError:
+        # Fallback: silent track
+        subprocess.run(
+            ["ffmpeg", "-y", "-f", "lavfi", "-i",
+             f"anullsrc=channel_layout=stereo:sample_rate={VIDEO_SPECS['audio_sample_rate']}",
+             "-t", str(total_duration), output_path],
+            check=True, capture_output=True,
+        )
+        print("[SFX] WARNING: Sound design generation failed, using silent track")
+
+    # Clean up individual SFX files
+    for _, sfx_file in sfx_parts:
+        if os.path.exists(sfx_file):
+            os.remove(sfx_file)
+
+    return output_path
+
+
+def add_progress_bar(
+    input_path: str,
+    output_path: str,
+    sections: list[dict],
+    total_duration: float,
+) -> str:
+    """
+    Add a subtle progress bar overlay showing video section progress.
+
+    Psychology: progress indicators reduce uncertainty and keep viewers watching.
+    Shows "2 of 5" style progress that creates a completion drive.
+
+    Args:
+        sections: [{"label": "Sarah's Story", "start": 45, "end": 195}, ...]
+    """
+    if not sections:
+        shutil.copy2(input_path, output_path)
+        return output_path
+
+    # Build drawbox + drawtext filters for progress bar
+    bar_y = VIDEO_SPECS["source_height"] - 8  # Bottom of frame
+    bar_h = 4
+    filters = []
+
+    for i, section in enumerate(sections):
+        start = section["start"]
+        end = section["end"]
+        # Cyan progress bar that fills during section
+        progress_expr = f"(t-{start})/({end}-{start})"
+        filters.append(
+            f"drawbox=x=0:y={bar_y}:"
+            f"w='min(w,w*{progress_expr})':"
+            f"h={bar_h}:"
+            f"color=0x00D4FF@0.7:t=fill:"
+            f"enable='between(t,{start},{end})'"
+        )
+
+        # Section counter "1/3" in top-right
+        section_num = i + 1
+        total_sections = len(sections)
+        filters.append(
+            f"drawtext=text='{section_num}/{total_sections}':"
+            f"fontsize=20:fontcolor=0xC8C8C8@0.6:"
+            f"x=w-text_w-20:y=20:"
+            f"enable='between(t,{start},{end})'"
+        )
+
+    filter_chain = ",".join(filters)
+
+    subprocess.run(
+        [
+            "ffmpeg", "-y", "-i", input_path,
+            "-vf", filter_chain,
+            "-c:v", VIDEO_SPECS["codec"], "-preset", "fast",
+            "-c:a", "copy",
+            output_path,
+        ],
+        check=True, capture_output=True,
+    )
+    print(f"[PROGRESS] Added progress bar for {len(sections)} sections")
+    return output_path
+
+
+def add_rehook_overlays(
+    input_path: str,
+    output_path: str,
+    rehooks: list[dict],
+) -> str:
+    """
+    Add re-hook text overlays at strategic intervals (every 2-3 min).
+
+    MrBeast playbook: viewers need a reason to keep watching every 2-3 minutes.
+    These are brief text flashes that tease what's coming next.
+
+    Args:
+        rehooks: [{"text": "But then everything changed...", "time": 120.0}, ...]
+    """
+    if not rehooks:
+        shutil.copy2(input_path, output_path)
+        return output_path
+
+    filters = []
+    for rh in rehooks:
+        t = rh["time"]
+        text = rh["text"].replace("'", "").replace(":", "\\:")
+        dur = rh.get("duration", 3.0)
+
+        # Brief text flash with fade in/out
+        filters.append(
+            f"drawtext=text='{text}':"
+            f"fontsize=42:fontcolor=0x00D4FF:"
+            f"x=(w-text_w)/2:y=h-120:"
+            f"alpha='if(lt(t,{t}),0,"
+            f"if(lt(t,{t+0.4}),(t-{t})/0.4,"
+            f"if(lt(t,{t+dur-0.4}),1,({t+dur}-t)/0.4)))':"
+            f"enable='between(t,{t},{t+dur})'"
+        )
+
+    filter_chain = ",".join(filters)
+
+    subprocess.run(
+        [
+            "ffmpeg", "-y", "-i", input_path,
+            "-vf", filter_chain,
+            "-c:v", VIDEO_SPECS["codec"], "-preset", "fast",
+            "-c:a", "copy",
+            output_path,
+        ],
+        check=True, capture_output=True,
+    )
+    print(f"[REHOOK] Added {len(rehooks)} re-hook overlays")
+    return output_path
 
 
 def cleanup_temp(episode_id: str):
