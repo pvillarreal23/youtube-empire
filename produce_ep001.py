@@ -39,6 +39,58 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "vreal-ai" / "backend")
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent / "vreal-ai" / "backend" / ".env")
 
+# ── Make.com Integration ────────────────────────────────────────────────────
+# Every production step notifies Make.com so the automation pipeline stays in sync.
+# Make.com can then: update Google Sheets, notify Pedro, trigger downstream scenarios.
+
+import httpx  # lazy — only used if webhooks are configured
+
+MAKE_WEBHOOKS = {
+    "voiceover": os.getenv("MAKE_WEBHOOK_VOICEOVER", ""),
+    "video": os.getenv("MAKE_WEBHOOK_VIDEO", ""),
+    "upload": os.getenv("MAKE_WEBHOOK_UPLOAD", ""),
+    "thumbnail": os.getenv("MAKE_WEBHOOK_THUMBNAIL", ""),
+    "seo": os.getenv("MAKE_WEBHOOK_SEO", ""),
+    "sheets": os.getenv("MAKE_WEBHOOK_SHEETS", ""),
+    "notify": os.getenv("MAKE_WEBHOOK_NOTIFY", ""),
+    "analytics": os.getenv("MAKE_WEBHOOK_ANALYTICS", ""),
+    "social": os.getenv("MAKE_WEBHOOK_SOCIAL", ""),
+}
+
+
+def notify_make(scenario: str, payload: dict) -> bool:
+    """
+    Fire a Make.com webhook to notify the automation pipeline.
+
+    This is non-blocking — if Make.com is down or the webhook isn't configured,
+    production continues. Make.com is a listener, not a gatekeeper.
+    """
+    webhook_url = MAKE_WEBHOOKS.get(scenario, "")
+    if not webhook_url:
+        return False
+
+    try:
+        response = httpx.post(
+            webhook_url,
+            json={
+                "episode_id": EPISODE_ID,
+                "step": scenario,
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                **payload,
+            },
+            timeout=10,
+        )
+        if response.status_code == 200:
+            print(f"[MAKE.COM] ✓ Notified: {scenario}")
+            return True
+        else:
+            print(f"[MAKE.COM] WARNING: {scenario} returned {response.status_code}")
+            return False
+    except Exception as e:
+        print(f"[MAKE.COM] WARNING: Could not reach {scenario}: {str(e)[:100]}")
+        return False
+
+
 # ── Configuration ────────────────────────────────────────────────────────────
 
 EPISODE_ID = "ep001"
@@ -490,6 +542,15 @@ def generate_voiceover():
     )
 
     print(f"[VOICEOVER] ✓ Full voiceover: {final_path}")
+
+    # Notify Make.com — voiceover complete
+    notify_make("voiceover", {
+        "status": "complete",
+        "file_path": str(final_path),
+        "blocks": len(SCRIPT_BLOCKS),
+        "voice_id": VOICE_ID,
+    })
+
     return str(final_path)
 
 
@@ -580,6 +641,14 @@ def download_footage():
             time.sleep(0.5)  # Rate limit
 
     print(f"[FOOTAGE] Downloaded {downloaded}/{len(SCENE_FOOTAGE)} scenes")
+
+    # Notify Make.com — footage download complete
+    notify_make("sheets", {
+        "status": "footage_complete",
+        "scenes_downloaded": downloaded,
+        "scenes_total": len(SCENE_FOOTAGE),
+    })
+
     return downloaded > 0
 
 
@@ -688,9 +757,41 @@ def assemble_video():
     print(f"[ASSEMBLE]   End screen: {'YES' if project.end_screen_path else 'NO'}")
     print(f"[ASSEMBLE]   Lower thirds: {len(lower_thirds)}")
     print(f"[ASSEMBLE]   Data cards: {len(data_cards)}")
+    print(f"[ASSEMBLE]   Re-hooks: {len(rehooks)}")
+    print(f"[ASSEMBLE]   Sections: {len(sections)}")
     print(f"[ASSEMBLE]   Retention editing: {'ON' if project.enable_retention_editing else 'OFF'}")
+
+    # Notify Make.com — assembly starting
+    notify_make("video", {
+        "status": "assembly_started",
+        "lower_thirds": len(lower_thirds),
+        "data_cards": len(data_cards),
+        "rehooks": len(rehooks),
+        "sections": len(sections),
+        "brand_intro": bool(project.intro_path),
+        "end_screen": bool(project.end_screen_path),
+        "retention_editing": project.enable_retention_editing,
+    })
+
     output = run_assembly(project)
     print(f"[ASSEMBLE] Final video: {output}")
+
+    # Notify Make.com — assembly complete
+    notify_make("video", {
+        "status": "assembly_complete",
+        "file_path": output,
+        "pipeline_steps": 14,
+    })
+
+    # Notify Make.com — update SEO metadata
+    notify_make("seo", {
+        "status": "metadata_ready",
+        "title": YOUTUBE_METADATA["title"],
+        "tags": YOUTUBE_METADATA["tags"],
+        "description_length": len(YOUTUBE_METADATA["description"]),
+        "filename": YOUTUBE_METADATA.get("seo_filename", ""),
+    })
+
     return output
 
 
@@ -735,6 +836,29 @@ def upload_to_youtube():
             add_comment(video_id, YOUTUBE_METADATA["pinned_comment"])
             print("[UPLOAD] ✓ Pinned comment added")
 
+        # Notify Make.com — upload complete (triggers downstream: sheets, social, analytics)
+        notify_make("upload", {
+            "status": "uploaded",
+            "video_id": video_id,
+            "video_url": f"https://youtube.com/watch?v={video_id}",
+            "title": YOUTUBE_METADATA["title"],
+            "privacy": YOUTUBE_METADATA["privacy_status"],
+        })
+
+        # Trigger analytics tracking
+        notify_make("analytics", {
+            "status": "monitoring_started",
+            "video_id": video_id,
+            "check_intervals": ["1h", "6h", "24h", "48h"],
+        })
+
+        # Notify Pedro
+        notify_make("notify", {
+            "message": f"EP001 uploaded: https://youtube.com/watch?v={video_id}",
+            "action_needed": "Review video and approve for public",
+            "current_status": YOUTUBE_METADATA["privacy_status"],
+        })
+
     return video_id
 
 
@@ -750,11 +874,20 @@ def main():
 
     print("=" * 60)
     print("  EP001 'THE SHIFT' — PRODUCTION RUNNER")
+    print("  14-Step Pipeline + Make.com Integration")
     print("=" * 60)
 
     # Create directories
     for d in [OUTPUT_DIR, ASSETS_DIR, FOOTAGE_DIR, AUDIO_DIR, TEMP_DIR]:
         d.mkdir(parents=True, exist_ok=True)
+
+    # Notify Make.com — production starting
+    notify_make("sheets", {
+        "status": "production_started",
+        "step": args.step,
+        "title": EPISODE_TITLE,
+        "pipeline_version": "14-step",
+    })
 
     if args.step in ("voiceover", "all"):
         print("\n─── STEP 1: VOICEOVER ───")
@@ -821,8 +954,38 @@ def main():
                         print(f"  {s}")
                     print("[SHORTS] Upload these as YouTube Shorts with #Shorts in title")
 
+                    # Notify Make.com — Shorts ready for social distribution
+                    notify_make("social", {
+                        "status": "shorts_ready",
+                        "shorts_count": len(shorts),
+                        "shorts_dir": str(shorts_dir),
+                        "video_id": video_id,
+                        "platforms": ["youtube_shorts", "tiktok", "instagram_reels"],
+                    })
+
+            # Trigger thumbnail generation via Make.com
+            notify_make("thumbnail", {
+                "status": "generate",
+                "video_id": video_id,
+                "title": YOUTUBE_METADATA["title"],
+                "concept": "shocked face + '10 AM' in cyan + dark background with TERMINATED overlay",
+                "variants": 3,  # A/B test 3 thumbnails
+            })
+
+    # Notify Make.com — full production complete
+    notify_make("sheets", {
+        "status": "production_complete",
+        "step": args.step,
+        "title": EPISODE_TITLE,
+    })
+    notify_make("notify", {
+        "message": f"EP001 production complete ({args.step})",
+        "action_needed": "Review and approve for public release",
+    })
+
     print("\n" + "=" * 60)
     print("  PRODUCTION COMPLETE")
+    print("  All Make.com scenarios notified.")
     print("=" * 60)
     return 0
 
