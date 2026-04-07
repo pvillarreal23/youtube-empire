@@ -785,3 +785,73 @@ async def advance_job(
 
     background_tasks.add_task(_advance_pipeline, job.id)
     return {"id": job.id, "stage": job.stage, "status": "manually_advanced"}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VIDEO PRODUCTION — Trigger actual rendering
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class ProduceRequest(BaseModel):
+    """Request to trigger video production for an approved episode."""
+    step: str = "all"  # "voiceover", "footage", "assemble", "upload", "all"
+
+
+@router.post("/jobs/{job_id}/produce")
+async def produce_video(
+    job_id: str,
+    data: ProduceRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Trigger actual video production for an approved episode.
+
+    This calls the production runner to:
+      1. Generate voiceover via ElevenLabs
+      2. Download b-roll from Pexels
+      3. Assemble video with FFmpeg
+      4. Upload to YouTube
+
+    Requires the episode to be in 'approved' stage or later.
+    """
+    job = await db.get(ProductionJob, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    valid_steps = {"voiceover", "footage", "assemble", "upload", "all"}
+    if data.step not in valid_steps:
+        raise HTTPException(status_code=400, detail=f"Invalid step. Choose from: {valid_steps}")
+
+    background_tasks.add_task(_run_production, job.id, data.step)
+
+    return {
+        "id": job.id,
+        "status": "production_started",
+        "step": data.step,
+        "message": f"Production step '{data.step}' started in background for {job.title}",
+    }
+
+
+async def _run_production(job_id: str, step: str):
+    """Background task: run actual video production."""
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    produce_script = Path(__file__).resolve().parent.parent.parent.parent.parent / "produce_ep001.py"
+
+    if not produce_script.exists():
+        print(f"[PRODUCE] ERROR: Production script not found at {produce_script}")
+        return
+
+    cmd = [sys.executable, str(produce_script), "--step", step]
+    print(f"[PRODUCE] Running: {' '.join(cmd)}")
+
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+
+    if result.returncode == 0:
+        print(f"[PRODUCE] ✓ Production step '{step}' completed successfully")
+        print(result.stdout[-500:] if len(result.stdout) > 500 else result.stdout)
+    else:
+        print(f"[PRODUCE] ✗ Production step '{step}' failed")
+        print(result.stderr[-500:] if len(result.stderr) > 500 else result.stderr)
