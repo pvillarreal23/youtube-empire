@@ -99,7 +99,7 @@ EP001_PAYLOADS = {
     },
     "seo": {
         "episode_id": "ep001",
-        "title": "Half Her Team Was Gone by 10 AM",
+        "title": "Half Her Team Was Gone by 10 AM [AI Documentary 2026]",
         "action": "optimize_metadata",
         "description_words": 500,
         "chapters": 10,

@@ -405,7 +405,8 @@ TEXT_OVERLAYS = [
 # - Hashtags at end for YouTube search indexing
 
 YOUTUBE_METADATA = {
-    "title": "Half Her Team Was Gone by 10 AM",
+    # Title: under 60 chars, primary keyword front-loaded, bracket modifier (+10-15% CTR)
+    "title": "Half Her Team Was Gone by 10 AM [AI Documentary 2026]",
     "description": """Half her team was replaced by AI tools costing $49/month. But the people who moved fast saw 28% salary increases. Here's the 90-Day Rule that separates survivors from casualties in the AI shift of 2026.
 
 I tracked 47 people through this exact AI transformation — across 8 industries, 4 continents. Three survival patterns emerged. This documentary breaks down each one with real stories and actionable frameworks.
@@ -961,6 +962,18 @@ def main():
         assemble_video()
 
     if args.step in ("upload", "all"):
+        # ── Pre-upload: Community tab teaser (12-24h before ideal, but fire now if same-day) ──
+        print("\n─── STEP 3.5: COMMUNITY TAB TEASER ───")
+        notify_make("social", {
+            "status": "community_teaser",
+            "platform": "youtube_community",
+            "post_type": "poll",
+            "question": "Quick poll before tomorrow's video drops: When AI hits YOUR industry, will you be ready?",
+            "options": ["Already adapting", "Starting to learn", "Waiting to see", "What AI?"],
+            "message": "New documentary drops soon. The story of Sarah, Mike, and David will change how you think about the next 90 days.",
+        })
+        print("[COMMUNITY] Teaser poll sent to Make.com for posting")
+
         print("\n─── STEP 4: YOUTUBE UPLOAD ───")
         video_id = upload_to_youtube()
 
@@ -977,6 +990,38 @@ def main():
                 print("[MONITOR] Post-publish monitor not available (import failed)")
             except Exception as e:
                 print(f"[MONITOR] WARNING: Could not start monitoring: {e}")
+
+            # ── First 48 Hours Strategy (research-backed) ────────────────
+            print("\n─── STEP 5.5: FIRST 48 HOURS STRATEGY ───")
+
+            # 1. Heart first comments (sends notification back to commenter = extra views)
+            # 2. Reply to early comments (signals active community to algorithm)
+            # 3. Share to all external platforms within 30 min
+            # 4. If CTR < 4% after 24h, swap thumbnail
+            notify_make("social", {
+                "status": "first_48h_launch",
+                "video_id": video_id,
+                "video_url": f"https://youtube.com/watch?v={video_id}",
+                "actions": [
+                    "Share video link to Twitter, LinkedIn, Instagram within 30 min",
+                    "Heart first 20-30 comments within first hour",
+                    "Reply to every comment in first 2 hours",
+                    "Send to email list within first hour",
+                    "Check CTR at 24h — if below 4%, swap thumbnail",
+                ],
+                "share_text": "Half her team was gone by 10 AM. Replaced by AI tools costing $49/month.\n\nBut the people who moved fast saw 28% salary increases.\n\nI tracked 47 people through this transformation. Full documentary:",
+            })
+
+            # 3. Create series playlist for session time multiplication
+            notify_make("custom", {
+                "status": "create_playlist",
+                "playlist_title": "The AI Shift Series — V-Real AI Documentaries",
+                "playlist_description": "Cinematic documentaries tracking real professionals through the AI transformation of 2025-2026. Each episode follows real people making real decisions about AI in their careers. Start with EP001 and follow the complete arc.",
+                "videos": [video_id],
+                "series": True,
+                "ordering": "sequential",
+            })
+            print("[PLAYLIST] Series playlist creation triggered via Make.com")
 
             # Step 6: Upload captions if available
             print("\n─── STEP 6: UPLOAD CAPTIONS ───")
