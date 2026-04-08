@@ -1,22 +1,30 @@
 """
 Video generation service for V-Real AI.
 
-Style: Documentary — AI voiceover + stock footage + text overlays + captions.
+Style: Documentary — AI voiceover + Kling AI-generated footage + text overlays + captions.
 
 Pipeline:
   1. Parse script for sections, visual cues ([B-ROLL:], [GRAPHIC:], etc.)
   2. Generate voiceover via ElevenLabs
-  3. Source stock footage via Pexels matching B-roll cues
-  4. Assemble video via Creatomate (or Shotstack)
-  5. Return video URL for YouTube upload
+  3. Generate custom video scenes via Kling AI matching visual cues
+  4. Fall back to Pexels stock footage if Kling is unavailable
+  5. Assemble video via Creatomate (or Shotstack)
+  6. Return video URL for YouTube upload
+
+Tools:
+  - ElevenLabs: AI voiceover (deep, documentary narration)
+  - Kling AI: Custom AI-generated video scenes (primary)
+  - Pexels: Stock footage fallback (secondary)
+  - Creatomate: Video assembly + text overlays + captions
+  - Canva: Thumbnails + banner + profile pic (handled separately)
 """
 
 from __future__ import annotations
 
 import re
-import json
+import asyncio
 import httpx
-from app.config import ELEVENLABS_API_KEY, PEXELS_API_KEY, CREATOMATE_API_KEY
+from app.config import ELEVENLABS_API_KEY, PEXELS_API_KEY, CREATOMATE_API_KEY, KLING_API_KEY
 
 
 # --- Script Parser ---
@@ -37,8 +45,6 @@ def parse_script_cues(script: str) -> dict:
         graphic = re.findall(r'\[GRAPHIC:\s*(.+?)\]', line)
         screen = re.findall(r'\[SCREEN RECORD:\s*(.+?)\]', line)
         cut = re.findall(r'\[CUT TO:\s*(.+?)\]', line)
-        sfx = re.findall(r'\[SFX:\s*(.+?)\]', line)
-        music = re.findall(r'\[MUSIC:\s*(.+?)\]', line)
 
         if broll or graphic or screen or cut:
             for cue in broll:
@@ -50,8 +56,13 @@ def parse_script_cues(script: str) -> dict:
             for cue in cut:
                 current_section["visuals"].append({"type": "cut", "description": cue})
 
+        # Also parse scene descriptions in brackets (like the Wake Up script has)
+        scene_desc = re.findall(r'^\[([A-Z][^]]+)\]$', line)
+        if scene_desc and not any(line.startswith(f"[{t}") for t in ["B-ROLL", "GRAPHIC", "SCREEN", "CUT", "SFX", "MUSIC", "SECTION", "ACT", "HOOK", "CONCLUSION"]):
+            current_section["visuals"].append({"type": "scene", "description": scene_desc[0]})
+
         # Section break detection
-        if line.startswith("[SECTION") or line.startswith("[ACT") or line.startswith("[HOOK") or line.startswith("[CONCLUSION"):
+        if line.startswith("[SECTION") or line.startswith("[ACT") or line.startswith("[HOOK") or line.startswith("[CONCLUSION") or line.startswith("## ["):
             if current_section["text"]:
                 sections.append(current_section)
                 current_section = {"text": [], "visuals": []}
@@ -59,7 +70,9 @@ def parse_script_cues(script: str) -> dict:
 
         # Clean line of cue brackets for spoken text
         clean = re.sub(r'\[.+?\]', '', line).strip()
-        if clean and not clean.startswith("#"):
+        # Remove markdown and quote marks for spoken text
+        clean = clean.strip('"').strip('#').strip()
+        if clean and not clean.startswith("#") and len(clean) > 3:
             current_section["text"].append(clean)
 
     if current_section["text"]:
@@ -108,13 +121,107 @@ async def generate_voiceover(text: str, voice_id: str = "pNInz6obpgDQGcFmaJgB") 
         return resp.content
 
 
-# --- Pexels Stock Footage ---
+# --- Kling AI Video Generation ---
 
-async def search_stock_footage(query: str, per_page: int = 3) -> list[dict]:
+async def generate_kling_scene(prompt: str, duration: int = 5) -> dict | None:
     """
-    Search Pexels for stock video clips matching a description.
-    Returns list of {url, width, height, duration} dicts.
+    Generate a video scene using Kling AI.
+
+    Args:
+        prompt: Scene description (e.g. "Person lying in bed, alarm ringing, dark room, gray light through blinds")
+        duration: Clip duration in seconds (5 or 10)
+
+    Returns:
+        {"url": "...", "duration": N} or None if generation fails
     """
+    if not KLING_API_KEY:
+        return None
+
+    async with httpx.AsyncClient(timeout=300) as client:
+        # Create video generation task
+        resp = await client.post(
+            "https://api.klingai.com/v1/videos/text2video",
+            headers={
+                "Authorization": f"Bearer {KLING_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "prompt": prompt,
+                "duration": str(duration),
+                "aspect_ratio": "16:9",
+                "mode": "quality",  # "quality" for best results, "speed" for faster
+            },
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        task_id = data.get("data", {}).get("task_id")
+
+        if not task_id:
+            return None
+
+        # Poll for completion (Kling can take 2-5 minutes per clip)
+        for _ in range(60):
+            await asyncio.sleep(5)
+            status_resp = await client.get(
+                f"https://api.klingai.com/v1/videos/text2video/{task_id}",
+                headers={"Authorization": f"Bearer {KLING_API_KEY}"},
+            )
+            status_data = status_resp.json()
+            task_status = status_data.get("data", {}).get("task_status")
+
+            if task_status == "succeed":
+                videos = status_data.get("data", {}).get("task_result", {}).get("videos", [])
+                if videos:
+                    return {
+                        "url": videos[0]["url"],
+                        "duration": duration,
+                    }
+                return None
+
+            if task_status == "failed":
+                return None
+
+    return None
+
+
+async def generate_scenes_for_cues(visuals: list[dict]) -> list[dict]:
+    """
+    Generate video scenes for each visual cue.
+    Uses Kling AI for custom scenes, falls back to Pexels stock footage.
+    """
+    scenes = []
+
+    for cue in visuals:
+        description = cue["description"]
+
+        # Build a cinematic prompt for Kling
+        kling_prompt = (
+            f"Cinematic documentary style, 4K, moody lighting, shallow depth of field. "
+            f"Scene: {description}. "
+            f"Color grade: dark tones, slight blue/purple tint, high contrast."
+        )
+
+        # Try Kling first
+        scene = await generate_kling_scene(kling_prompt)
+        if scene:
+            scenes.append({**scene, "cue": description, "source": "kling"})
+            continue
+
+        # Fall back to Pexels stock footage
+        stock = await _search_pexels(description)
+        if stock:
+            scenes.append({**stock[0], "cue": description, "source": "pexels"})
+
+    return scenes
+
+
+# --- Pexels Stock Footage (fallback) ---
+
+async def _search_pexels(query: str, per_page: int = 3) -> list[dict]:
+    """Search Pexels for stock video clips. Used as fallback when Kling is unavailable."""
+    if not PEXELS_API_KEY:
+        return []
+
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.get(
             "https://api.pexels.com/videos/search",
@@ -126,7 +233,6 @@ async def search_stock_footage(query: str, per_page: int = 3) -> list[dict]:
 
     clips = []
     for video in data.get("videos", []):
-        # Get the HD file
         for file in video.get("video_files", []):
             if file.get("quality") == "hd":
                 clips.append({
@@ -139,44 +245,29 @@ async def search_stock_footage(query: str, per_page: int = 3) -> list[dict]:
     return clips
 
 
-async def get_footage_for_cues(visuals: list[dict]) -> list[dict]:
-    """Get stock footage for each visual cue in a script section."""
-    footage = []
-    for cue in visuals:
-        if cue["type"] == "b-roll":
-            clips = await search_stock_footage(cue["description"])
-            if clips:
-                footage.append({**clips[0], "cue": cue["description"]})
-    return footage
-
-
 # --- Video Assembly via Creatomate ---
 
 async def assemble_video(
     voiceover_url: str,
-    footage_clips: list[dict],
+    scenes: list[dict],
     title: str,
-    captions: list[dict] | None = None,
 ) -> str:
     """
     Assemble final video using Creatomate API.
 
-    Takes voiceover audio + stock footage clips + text overlays
+    Takes voiceover audio + video scenes (Kling or stock) + text overlays
     and produces a final rendered video.
 
     Returns the URL of the rendered video.
-
-    If you prefer Shotstack, swap the API call — same concept.
     """
-    # Build Creatomate template elements
     elements = []
 
-    # Background footage layer
-    for i, clip in enumerate(footage_clips):
+    # Video scenes layer
+    for scene in scenes:
         elements.append({
             "type": "video",
-            "source": clip["url"],
-            "trim_duration": clip.get("duration", 10),
+            "source": scene["url"],
+            "trim_duration": scene.get("duration", 10),
         })
 
     # Voiceover audio layer
@@ -213,11 +304,9 @@ async def assemble_video(
         resp.raise_for_status()
         data = resp.json()
 
-    # Creatomate returns a render ID — poll for completion
     render_id = data[0]["id"] if isinstance(data, list) else data["id"]
 
     for _ in range(120):
-        import asyncio
         await asyncio.sleep(5)
         async with httpx.AsyncClient(timeout=30) as client:
             status_resp = await client.get(
@@ -239,37 +328,40 @@ async def generate_video_from_script(script: str, title: str) -> dict:
     """
     Full video generation pipeline:
     1. Parse script for spoken text + visual cues
-    2. Generate voiceover
-    3. Source stock footage
-    4. Assemble video
-    Returns {video_url, voiceover_url, footage_used}
+    2. Generate voiceover via ElevenLabs
+    3. Generate custom scenes via Kling AI (fall back to Pexels)
+    4. Assemble video via Creatomate
+    Returns {video_url, scenes_generated, sections_parsed, spoken_word_count}
     """
     parsed = parse_script_cues(script)
 
     # Generate voiceover
     audio_bytes = await generate_voiceover(parsed["full_spoken_text"])
 
-    # For now, save audio and get URL (in production, upload to S3/GCS)
-    # This is a placeholder — in production you'd upload to cloud storage
-    voiceover_url = ""  # Replace with actual upload
+    # In production, upload audio to cloud storage and get URL
+    # For now this is a placeholder
+    voiceover_url = ""  # Replace with S3/GCS upload
 
-    # Get stock footage for all visual cues
+    # Generate scenes for all visual cues
     all_cues = []
     for section in parsed["sections"]:
         all_cues.extend(section["visuals"])
 
-    footage = await get_footage_for_cues(all_cues)
+    scenes = await generate_scenes_for_cues(all_cues)
 
     # Assemble video
     video_url = await assemble_video(
         voiceover_url=voiceover_url,
-        footage_clips=footage,
+        scenes=scenes,
         title=title,
     )
 
     return {
         "video_url": video_url,
-        "footage_used": [f["cue"] for f in footage],
+        "scenes_generated": [
+            {"cue": s["cue"], "source": s.get("source", "unknown")}
+            for s in scenes
+        ],
         "sections_parsed": len(parsed["sections"]),
         "spoken_word_count": len(parsed["full_spoken_text"].split()),
     }
