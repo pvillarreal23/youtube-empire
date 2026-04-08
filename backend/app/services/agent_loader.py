@@ -81,7 +81,12 @@ def parse_agents() -> list[dict]:
     """Parse all agent .md files and return structured data."""
     agents_raw = {}
 
-    for md_file in sorted(AGENTS_DIR.glob("*.md")):
+    for md_file in sorted(AGENTS_DIR.rglob("*.md")):
+        # Skip skill files, READMEs, and archived agents
+        if "/skills/" in str(md_file) or "/archive/" in str(md_file):
+            continue
+        if md_file.name.lower() == "readme.md":
+            continue
         post = frontmatter.load(str(md_file))
         meta = post.metadata
         name = meta.get("name", md_file.stem.replace("_", " ").title())

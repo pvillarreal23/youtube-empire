@@ -63,22 +63,21 @@ VOICE_SETTINGS = {
 FAL_API_KEY = os.getenv("FAL_API_KEY", "")
 
 # YouTube metadata
-YOUTUBE_TITLE = "Half Her Team Was Gone by 10 AM [AI Documentary 2026]"
-YOUTUBE_DESCRIPTION = """Something changed in 2025. Not gradually — overnight.
+YOUTUBE_TITLE = "9 Years of Skill. Replaced in 20 Minutes. [AI Documentary 2026]"
+YOUTUBE_DESCRIPTION = """No one sent an announcement. No one rang a bell. The rules just changed.
 
-Sarah Chen walked into her marketing department on a Tuesday morning. By 10 AM, half her team's roles had been automated. Not because they were bad at their jobs — because the tools got that good, that fast.
+A designer in Austin spent 9 years mastering her craft. Then a client sent one message: "We used an AI tool and got something we're happy with."
 
-This is the story of what happened next. Not just to Sarah — but to millions of professionals who woke up one morning and realized the rules had changed.
+This is what happened next — and why it matters for everyone.
 
 📌 CHAPTERS:
-0:00 — The Morning Everything Changed
-0:45 — What Sarah Saw
-1:30 — The New Rules
-3:15 — Mike's Warning
-4:45 — David's Playbook
-6:00 — The 90-Day Rule
-7:30 — What The Data Says
-8:30 — You're Not Paranoid
+0:00 — The Shift
+0:45 — Mara's Story
+3:00 — Intelligence Without Taste
+4:15 — The New Business Model
+5:00 — It's Happening Everywhere
+6:15 — The Window Is Still Open
+7:30 — This Is V-Real AI
 
 🔗 TOOLS WE USE:
 • AI Video: Kling AI (referral link in pinned comment)
@@ -95,120 +94,136 @@ V-Real AI — You're not paranoid. You're observant.
 
 YOUTUBE_TAGS = [
     "AI", "artificial intelligence", "AI documentary", "future of work",
-    "AI tools", "AI shift 2025", "marketing AI", "AI job loss",
-    "AI transformation", "technology documentary", "faceless youtube",
-    "AI voiceover", "Kling AI", "ElevenLabs", "AI video",
-    "career AI", "AI automation", "AI salary", "early adopters AI",
+    "AI tools", "AI design", "AI replacing jobs", "AI transformation",
+    "technology documentary", "faceless youtube", "AI voiceover",
+    "Kling AI", "ElevenLabs", "AI video", "graphic design AI",
+    "career AI", "AI automation", "AI freelancer", "Midjourney",
     "AI professionals", "AI 2026", "the shift AI", "V-Real AI",
-    "documentary 2026",
+    "documentary 2026", "AI taste", "creative direction AI",
 ]
 
 # ---------------------------------------------------------------------------
 # Script Blocks (EP001 v8-FINAL)
 # ---------------------------------------------------------------------------
 
+# Script blocks from ep001-the-shift-v10.md (LOCKED — Mara's story)
 SCRIPT_BLOCKS = [
     {
         "id": "block_1_hook",
-        "title": "Hook + Setup + Sarah",
-        "timestamp": "0:00-3:15",
+        "title": "Hook + The Shift",
+        "timestamp": "0:00-0:45",
         "text": (
             "No one sent an announcement. No one rang a bell. "
             "The rules just changed. "
-            "And 3.2 million people found out the hard way — "
-            "on an ordinary Tuesday morning, "
-            "in an ordinary office, "
-            "doing ordinary work. "
-            "Sarah Chen ran digital marketing for a mid-size software company. "
-            "Good team. Good numbers. Fourteen people who knew what they were doing. "
-            "Then the platform updated. New tools, overnight. "
-            "Tasks that took her team a full day? Done in eleven minutes. "
-            "Not by replacing them. By making most of what they did... unnecessary. "
-            "By Thursday, leadership had restructured. "
-            "Half the team was reassigned. Two were let go. "
-            "Sarah wasn't one of them. Not because she was lucky. "
-            "Because she'd already been experimenting with the tools — for months. "
-            "She didn't wait for permission. She didn't wait for a mandate. "
-            "She just... started."
+            "Not gradually. Not eventually. All at once. "
+            "Half the tasks that used to take years to master — "
+            "writing, designing, coding, analyzing — "
+            "they no longer require mastery of execution. "
+            "They require taste. "
+            "The barrier to entry didn't just lower. It evaporated."
         ),
     },
     {
-        "id": "block_2_mike",
-        "title": "Mike's Story — The Cost of Waiting",
-        "timestamp": "3:15-4:45",
+        "id": "block_2_mara_intro",
+        "title": "Mara's Story — The Designer",
+        "timestamp": "0:45-3:00",
         "text": (
-            "Mike Rodriguez managed operations at the same company. "
-            "Twenty-two years of experience. Respected. Reliable. "
-            "He watched the tools arrive and thought: this is a phase. "
-            "He wasn't lazy. He wasn't stupid. "
-            "He just believed that deep expertise would always win. "
-            "It used to. "
-            "But the tools didn't care about seniority. "
-            "They didn't care about process knowledge or institutional memory. "
-            "They cared about who could use them. "
-            "And Mike hadn't learned. "
-            "Within ninety days, his role was absorbed into a system "
-            "that required one person and a dashboard."
+            "Six months ago, a designer in Austin — "
+            "let's call her Mara — "
+            "was billing forty hours a week for brand packages. "
+            "Logo. Colors. Typography. Mockups. "
+            "She was good. She'd been doing it for nine years. "
+            "Then one of her clients sent a message. "
+            "Polite. Almost apologetic. "
+            "We used an AI tool and got something we're happy with. "
+            "Nine years of craft. Replaced by a prompt and twenty minutes. "
+            "Now here's where most people think this story goes. "
+            "She panics. She pivots. She learns to code or starts a podcast about reinvention. "
+            "That's not what happened."
         ),
     },
     {
-        "id": "block_3_david",
-        "title": "David's Story — The Early Mover",
-        "timestamp": "4:45-6:00",
+        "id": "block_3_mara_pivot",
+        "title": "Intelligence Without Taste",
+        "timestamp": "3:00-4:15",
         "text": (
-            "David Park worked three floors up. Product strategy. "
-            "Same company. Same Tuesday. Very different outcome. "
-            "David had been testing AI tools since the beta releases. "
-            "Not because he was told to. Because he was curious. "
-            "When the restructuring hit, David wasn't just safe — "
-            "he was promoted. "
-            "He became the person who understood how the new tools "
-            "connected to the old workflows. "
-            "The bridge between what the company was and what it needed to become. "
-            "His salary went up twenty-eight percent in three months. "
-            "Not because he worked harder. "
-            "Because he'd already done the work that mattered."
+            "Mara spent two weeks learning every AI design tool she could find. "
+            "Midjourney. Adobe Firefly. Figma's AI features. Runway. "
+            "Not as replacements. As raw material. "
+            "She realized something that most people still haven't figured out. "
+            "The tools can execute. They have the intelligence. "
+            "But they can't choose. "
+            "They don't have taste. "
+            "They don't have judgment. "
+            "They don't know what actually matters."
         ),
     },
     {
-        "id": "block_4_framework",
-        "title": "The Framework — The 90-Day Rule",
-        "timestamp": "6:00-8:30",
+        "id": "block_4_new_model",
+        "title": "The New Business Model",
+        "timestamp": "4:15-5:00",
         "text": (
-            "Here's what the data actually shows. "
-            "In the first ninety days after a major AI tool enters a field, "
-            "three groups emerge. "
-            "The first group — roughly fifteen percent — adopts immediately. "
-            "They experiment. They break things. They figure it out. "
-            "The second group — about sixty percent — watches. "
-            "They wait for best practices. For training. For permission. "
-            "The third group — the remaining twenty-five percent — resists. "
-            "They argue it's overhyped. That the tools aren't ready. "
-            "That real work requires human judgment. "
-            "Twelve months later, the data is clear. "
-            "Group one captured most of the new value. "
-            "Their salaries increased. Their roles expanded. "
-            "Their skills became the ones that mattered. "
-            "Group two adapted — eventually. But they were playing catch-up. "
-            "Competing for positions that group one had already defined. "
-            "Group three? "
-            "Many of them aren't in the same roles anymore. "
-            "Not because they were bad at their jobs. "
-            "Because the jobs changed, and they didn't. "
-            "The barrier to entry didn't just lower. It evaporated. "
-            "They no longer require mastery of execution. They require taste. "
-            "Taste in what to build. Taste in what to ask. "
-            "Taste in knowing what the tools can't do — and what only you can."
+            "Mara stopped selling forty-hour brand packages. "
+            "She started selling creative direction — powered by AI. "
+            "Same clients. Higher rates. "
+            "A three thousand dollar brand package became a seven thousand five hundred dollar strategy engagement "
+            "that she delivered in a third of the time. "
+            "Not because she worked harder. "
+            "Not because she learned a secret. "
+            "Because she understood the shift before her competition did."
         ),
     },
     {
-        "id": "block_5_close",
-        "title": "Close — Brand Statement",
-        "timestamp": "8:30-9:00",
+        "id": "block_5_everywhere",
+        "title": "It's Happening Everywhere",
+        "timestamp": "5:00-6:15",
         "text": (
-            "You've felt it. That quiet hum in the background. "
-            "The sense that something fundamental shifted — "
-            "and most people haven't caught up yet. "
+            "And this is the part that keeps me up at night. "
+            "Because what happened to Mara? It's happening everywhere. "
+            "To writers. To developers. To marketers. "
+            "To analysts, consultants, and project managers. "
+            "Not in five years. Not in some theoretical future boardroom. "
+            "Right now. This quarter. This month. "
+            "And here's what nobody's saying out loud. "
+            "The gap between people who adapted early "
+            "and people who are just starting to notice? "
+            "It's already enormous. "
+            "Not because the early ones are smarter. "
+            "Not because they work harder. "
+            "Because they adapted sooner. "
+            "And catching up is harder than starting early ever was."
+        ),
+    },
+    {
+        "id": "block_6_window",
+        "title": "The Window Is Still Open",
+        "timestamp": "6:15-7:30",
+        "text": (
+            "But here's the thing about this moment. "
+            "The window is still open. "
+            "Not wide open. Not forever. "
+            "But if you're hearing this — you're early enough. "
+            "The tools that Mara used? They're available to you right now. "
+            "Most of them cost less than your streaming subscriptions. "
+            "A fifty dollar a month stack can do what a five thousand dollar a month team did two years ago. "
+            "The question isn't whether AI will change your work. "
+            "That's already settled. "
+            "The question is whether you'll be the one directing it — "
+            "or the one it replaces."
+        ),
+    },
+    {
+        "id": "block_7_close",
+        "title": "This Is V-Real AI",
+        "timestamp": "7:30-9:00",
+        "text": (
+            "This channel exists for the people who choose to move. "
+            "No fluff. No theory. Just leverage. "
+            "Every week we break down what's actually changing, "
+            "what tools are actually worth your time, "
+            "and how the people who are winning right now are doing it. "
+            "If that's you — subscribe. "
+            "Because next week, we're going deeper. "
             "You're not paranoid. You're observant. "
             "This is V-Real AI."
         ),
@@ -219,104 +234,105 @@ SCRIPT_BLOCKS = [
 # Scene Descriptions (14 Scenes for Kling AI)
 # ---------------------------------------------------------------------------
 
+# Scene descriptions matched to ep001-the-shift-v10.md (14 animation scenes)
 SCENE_FOOTAGE = [
     {
         "scene": 1,
-        "description": "Close-up of smartphone screen lighting up with notification in dark office, blue glow on face",
-        "camera": "Slow dolly in, shallow depth of field",
-        "duration": 10,
-        "mood": "ominous, anticipation",
+        "description": "Black void with neural pathways igniting in darkness, lines of light branching like synapses",
+        "camera": "Slow push in through digital void",
+        "duration": 12,
+        "mood": "ominous, anticipation — opening",
     },
     {
         "scene": 2,
-        "description": "Aerial shot of modern office building at dawn, golden light breaking through clouds",
-        "camera": "Slow ascending crane shot",
+        "description": "Neural pathways accelerating, branching and multiplying exponentially, filling frame with light",
+        "camera": "Camera pulls back as scale becomes overwhelming",
         "duration": 10,
-        "mood": "establishing, contemplative",
+        "mood": "overwhelming, exponential",
     },
     {
         "scene": 3,
-        "description": "Woman (30s) working alone at laptop at midnight, city lights through window behind her",
-        "camera": "Slow orbit around subject",
-        "duration": 12,
-        "mood": "determination, isolation",
-    },
-    {
-        "scene": 4,
-        "description": "Modern boardroom with AI analytics dashboard on large screen, empty chairs",
-        "camera": "Slow push in toward screen",
-        "duration": 8,
-        "mood": "corporate, tension",
-    },
-    {
-        "scene": 5,
-        "description": "Man (50s) sitting alone at desk, colleagues visible through glass wall behind him, blurred",
-        "camera": "Static with slow focus pull from background to subject",
-        "duration": 10,
-        "mood": "isolation, quiet desperation",
-    },
-    {
-        "scene": 6,
-        "description": "Hands typing rapidly on keyboard, holographic data visualizations rising from screen",
-        "camera": "Close-up, shallow depth of field",
-        "duration": 8,
-        "mood": "intensity, innovation",
-    },
-    {
-        "scene": 7,
-        "description": "Executive handshake in corner office with city skyline view, warm sunlight",
-        "camera": "Medium shot, golden hour lighting",
-        "duration": 8,
-        "mood": "achievement, new beginning",
-    },
-    {
-        "scene": 8,
-        "description": "Split screen: left side shows manual work (papers, calculator), right side shows AI dashboard",
-        "camera": "Static, cinematic lighting",
-        "duration": 10,
-        "mood": "contrast, before/after",
-    },
-    {
-        "scene": 9,
-        "description": "Time-lapse of office floor transitioning from busy to half-empty, chairs pulled away",
-        "camera": "Wide establishing shot, fixed position",
-        "duration": 12,
-        "mood": "transformation, loss",
-    },
-    {
-        "scene": 10,
-        "description": "Close-up of bar chart growing on screen, green bars overtaking red bars",
-        "camera": "Slow push in with rack focus",
-        "duration": 8,
-        "mood": "data-driven, revelation",
-    },
-    {
-        "scene": 11,
-        "description": "Person walking through server room with blue LED lighting, reflections on floor",
-        "camera": "Tracking shot, following from behind",
-        "duration": 10,
-        "mood": "technological, awe",
-    },
-    {
-        "scene": 12,
-        "description": "Group of diverse professionals in workshop, AI tools on multiple screens, collaborative energy",
-        "camera": "Handheld, documentary style movement",
-        "duration": 10,
-        "mood": "hope, collaboration",
-    },
-    {
-        "scene": 13,
-        "description": "Single person standing at crossroads in futuristic corridor, one path dark, one bright",
-        "camera": "Wide shot, symmetric composition",
+        "description": "Human figure made of light standing at crossroads, two paths stretching ahead — one bright, one dimming",
+        "camera": "Wide establishing shot, symmetric composition",
         "duration": 10,
         "mood": "choice, metaphorical",
     },
     {
-        "scene": 14,
-        "description": "Cinematic close-up of eye reflecting blue AI interface, pupil dilating",
-        "camera": "Extreme close-up, slow motion",
+        "scene": 4,
+        "description": "Woman designer at desk, 4 AM warm light through window, two monitors, coffee, deeply focused",
+        "camera": "Slow orbit around subject, intimate",
+        "duration": 12,
+        "mood": "determination, warmth — Mara's introduction",
+    },
+    {
+        "scene": 5,
+        "description": "Chat message notification appearing on screen, glowing softly against dark interface",
+        "camera": "Close-up push in on screen, shallow depth of field",
         "duration": 8,
-        "mood": "intimate, revelatory — closing shot",
+        "mood": "tension, loss — the message",
+    },
+    {
+        "scene": 6,
+        "description": "Time-lapse of designer's screen filling with AI experiments, tools and designs flowing across monitors",
+        "camera": "Slow orbit, accelerating time-lapse",
+        "duration": 12,
+        "mood": "transformation, intensity — Mara learning AI",
+    },
+    {
+        "scene": 7,
+        "description": "Abstract visualization: rivers of AI output being shaped and directed by human hands, curating the exceptional",
+        "camera": "Cinematic slow motion, depth layers",
+        "duration": 10,
+        "mood": "empowerment, revelation — taste over execution",
+    },
+    {
+        "scene": 8,
+        "description": "Hands reaching into streams of AI output, selecting only exceptional pieces and discarding mediocre ones",
+        "camera": "Close-up with shallow depth of field",
+        "duration": 8,
+        "mood": "decisive, quality — creative direction",
+    },
+    {
+        "scene": 9,
+        "description": "Animated bar chart: old revenue ($3K) vs new revenue ($7.5K), time bar shrinking to one-third",
+        "camera": "Data visualization, clean motion graphics",
+        "duration": 10,
+        "mood": "proof, data-driven — the results",
+    },
+    {
+        "scene": 10,
+        "description": "Dark map with thousands of glowing nodes, each representing someone at the AI crossroads, most standing still",
+        "camera": "Slow pull back revealing massive scale",
+        "duration": 12,
+        "mood": "vast, sobering — the global picture",
+    },
+    {
+        "scene": 11,
+        "description": "Chain reaction across the map: clusters lighting up as each profession is named — writers, developers, marketers",
+        "camera": "Dynamic tracking across the map surface",
+        "duration": 10,
+        "mood": "urgent, spreading — it's everywhere",
+    },
+    {
+        "scene": 12,
+        "description": "Two nodes side by side: one moving forward growing brighter, one frozen dimming — the gap widening",
+        "camera": "Split focus, contrast composition",
+        "duration": 10,
+        "mood": "contrast, warning — the enormous gap",
+    },
+    {
+        "scene": 13,
+        "description": "Dimming nodes re-brightening slowly, one by one, ripple of light spreading — hope returning",
+        "camera": "Wide shot with slow push in as light spreads",
+        "duration": 10,
+        "mood": "hope, possibility — the window is open",
+    },
+    {
+        "scene": 14,
+        "description": "Figure from opening steps forward onto bright path, dissolves into particles that reform as V-Real AI logo",
+        "camera": "Cinematic wide to close, particle transformation",
+        "duration": 10,
+        "mood": "resolution, brand — closing shot",
     },
 ]
 
@@ -325,30 +341,28 @@ SCENE_FOOTAGE = [
 # ---------------------------------------------------------------------------
 
 TEXT_OVERLAYS = [
-    {"text": "3.2 million people experienced this in 2025", "timestamp": "0:08"},
-    {"text": "Done in 11 minutes", "timestamp": "1:15"},
-    {"text": "28% salary increase for early adopters", "timestamp": "5:30"},
-    {"text": "90 DAYS — the window that determines your outcome", "timestamp": "6:15"},
-    {"text": "You're not paranoid. You're observant.", "timestamp": "8:40"},
+    {"text": "The barrier evaporated.", "timestamp": "0:30"},
+    {"text": "9 years. 20 minutes.", "timestamp": "1:45"},
+    {"text": "Intelligence without taste is noise.", "timestamp": "3:30"},
+    {"text": "$3,000 → $7,500 | One-third the time", "timestamp": "4:30"},
+    {"text": "The gap is already enormous.", "timestamp": "5:45"},
+    {"text": "$50/month = what $5,000/month bought in 2024", "timestamp": "6:45"},
+    {"text": "You're not paranoid. You're observant.", "timestamp": "8:15"},
 ]
 
 LOWER_THIRDS = [
-    {"name": "SARAH CHEN", "title": "VP of Marketing, Nexus Corp", "timestamp": "0:45"},
-    {"name": "MIKE RODRIGUEZ", "title": "Operations Manager, 22 Years", "timestamp": "3:20"},
-    {"name": "DAVID PARK", "title": "Product Strategy, Nexus Corp", "timestamp": "4:50"},
+    # v10 uses "Mara" as a pseudonym — no formal lower third needed
+    # but adding subtle context text for key moments
 ]
 
 CHAPTERS = [
-    {"time": "0:00", "title": "The Morning Everything Changed"},
-    {"time": "0:45", "title": "Sarah Chen's Story"},
-    {"time": "1:30", "title": "The New Rules"},
-    {"time": "3:15", "title": "Mike's Warning"},
-    {"time": "4:45", "title": "David's Playbook"},
-    {"time": "6:00", "title": "The 90-Day Rule"},
-    {"time": "6:30", "title": "Three Groups Emerge"},
-    {"time": "7:30", "title": "What The Data Says"},
-    {"time": "8:15", "title": "Taste Over Mastery"},
-    {"time": "8:30", "title": "You're Not Paranoid"},
+    {"time": "0:00", "title": "The Shift"},
+    {"time": "0:45", "title": "Mara's Story"},
+    {"time": "3:00", "title": "Intelligence Without Taste"},
+    {"time": "4:15", "title": "The New Business Model"},
+    {"time": "5:00", "title": "It's Happening Everywhere"},
+    {"time": "6:15", "title": "The Window Is Still Open"},
+    {"time": "7:30", "title": "This Is V-Real AI"},
 ]
 
 

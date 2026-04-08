@@ -328,8 +328,9 @@ def assemble_video(config: AssemblyConfig) -> str | None:
     if config.burn_captions and config.srt_path and Path(config.srt_path).exists():
         captioned_output = str(TEMP_DIR / f"{config.episode_id}_captioned.mp4")
         style = config.caption_style
+        escaped_srt = config.srt_path.replace("\\", "\\\\").replace("'", "\\'").replace(":", "\\:")
         subtitle_filter = (
-            f"subtitles={config.srt_path}:force_style='"
+            f"subtitles='{escaped_srt}':force_style='"
             f"FontName={style.font},FontSize={style.font_size},"
             f"PrimaryColour={style.primary_color},"
             f"OutlineColour={style.outline_color},"
@@ -381,29 +382,32 @@ def assemble_video(config: AssemblyConfig) -> str | None:
 
     mixed_audio = str(TEMP_DIR / f"{config.episode_id}_audio_mixed.wav")
     if audio_idx > 0:
-        # Simple mix using amix filter
-        mix_inputs = f"[voice]" if normalized_voice else ""
-        for i in range(1, audio_idx):
-            for prefix in ["music", "sfx", "ambient"]:
-                tag = f"{prefix}{i}"
-                if any(tag in p for p in amix_parts):
-                    mix_inputs += f"[{tag}]"
-
         if audio_idx == 1 and normalized_voice:
             # Only voice, just copy
             mixed_audio = normalized_voice
         else:
-            audio_filter = ";".join(amix_parts)
-            all_tags = "[voice]" if normalized_voice else ""
-            for part in amix_parts:
-                if "[voice]" not in part:
-                    tag = part.split("]")[-1] if "]" in part.split("[")[-1] else ""
-                    # Just use amix with all inputs
-            # Simplified: merge all audio inputs with amix
+            # Build proper filter graph: apply volume to each input, then amix all
+            filter_parts = []
+            output_tags = []
+            for i, part in enumerate(amix_parts):
+                filter_parts.append(part)
+                # Extract the output tag from the filter part (e.g., [voice], [music1])
+                tag = part.split("]")[-1]  # empty if tag is at end
+                # Re-extract: part looks like "[0:a]volume=0dB[voice]"
+                out_tag = part[part.rfind("["):]  # e.g., "[voice]"
+                output_tags.append(out_tag)
+
+            # Combine all output tags into amix
+            amix_input = "".join(output_tags)
+            filter_parts.append(
+                f"{amix_input}amix=inputs={audio_idx}:duration=longest:normalize=0[aout]"
+            )
+            filter_complex = ";".join(filter_parts)
+
             if not _run_ffmpeg(
                 audio_inputs + [
-                    "-filter_complex",
-                    f"amix=inputs={audio_idx}:duration=longest:normalize=0",
+                    "-filter_complex", filter_complex,
+                    "-map", "[aout]",
                     mixed_audio,
                 ],
                 "audio mixing",

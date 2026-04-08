@@ -86,17 +86,38 @@ def _fal_headers() -> dict[str, str]:
     }
 
 
-async def _fal_submit(model_id: str, payload: dict) -> str:
-    """Submit a generation job to fal.ai and return the request ID."""
+async def _fal_submit(model_id: str, payload: dict, max_retries: int = 3) -> str:
+    """Submit a generation job to fal.ai and return the request ID.
+
+    Retries on rate limits (429) and transient errors (5xx) with exponential backoff.
+    """
     async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.post(
-            f"{FAL_BASE_URL}/{model_id}",
-            headers=_fal_headers(),
-            json=payload,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        return data["request_id"]
+        for attempt in range(max_retries):
+            try:
+                resp = await client.post(
+                    f"{FAL_BASE_URL}/{model_id}",
+                    headers=_fal_headers(),
+                    json=payload,
+                )
+                if resp.status_code == 429:
+                    retry_after = int(resp.headers.get("retry-after", 2 ** (attempt + 1)))
+                    logger.warning(f"Rate limited by fal.ai, retrying in {retry_after}s (attempt {attempt + 1}/{max_retries})")
+                    await asyncio.sleep(retry_after)
+                    continue
+                if resp.status_code >= 500:
+                    logger.warning(f"fal.ai server error {resp.status_code}, retrying in {2 ** (attempt + 1)}s")
+                    await asyncio.sleep(2 ** (attempt + 1))
+                    continue
+                resp.raise_for_status()
+                data = resp.json()
+                return data["request_id"]
+            except httpx.ConnectError:
+                if attempt < max_retries - 1:
+                    logger.warning(f"Connection error, retrying in {2 ** (attempt + 1)}s")
+                    await asyncio.sleep(2 ** (attempt + 1))
+                    continue
+                raise
+        raise RuntimeError(f"fal.ai submit failed after {max_retries} retries")
 
 
 async def _fal_poll(model_id: str, request_id: str, max_wait: int = 300) -> dict:
@@ -108,7 +129,21 @@ async def _fal_poll(model_id: str, request_id: str, max_wait: int = 300) -> dict
 
     async with httpx.AsyncClient(timeout=30) as client:
         while elapsed < max_wait:
-            resp = await client.get(status_url, headers=_fal_headers())
+            try:
+                resp = await client.get(status_url, headers=_fal_headers())
+            except httpx.ConnectError:
+                logger.warning("Connection error during poll, retrying...")
+                await asyncio.sleep(wait)
+                elapsed += wait
+                continue
+
+            if resp.status_code == 429:
+                retry_after = int(resp.headers.get("retry-after", wait))
+                logger.warning(f"Rate limited during poll, waiting {retry_after}s")
+                await asyncio.sleep(retry_after)
+                elapsed += retry_after
+                continue
+
             resp.raise_for_status()
             status = resp.json()
 

@@ -26,7 +26,7 @@ import argparse
 from pathlib import Path
 
 from dotenv import load_dotenv
-load_dotenv(Path(__file__).resolve().parent / "vreal-ai" / "backend" / ".env")
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 try:
     import httpx
