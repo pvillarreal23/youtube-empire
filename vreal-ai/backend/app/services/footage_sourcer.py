@@ -235,7 +235,7 @@ async def generate_kling_clip(
                 "prompt": prompt,
                 "duration": str(int(duration)),
                 "aspect_ratio": aspect_ratio,
-                "model": "kling-v1",
+                "model": "kling-v2.0",
             },
         )
 

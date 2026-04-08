@@ -924,7 +924,7 @@ def assemble_video(project: AssemblyProject) -> str:
     #   - Presence boost at 2.5-4kHz (+2dB for clarity on small speakers)
     #   - De-ess at 5-8kHz (reduce sibilance)
     # Research: human ear most sensitive at 1-5kHz (Fletcher-Munson curves)
-    print("[ASSEMBLER] Step 1/14: Normalizing + EQ voice audio...")
+    print("[ASSEMBLER] Step 1/18: Normalizing + EQ voice audio...")
     voice_norm_raw = os.path.join(episode_temp, "voice_normalized_raw.wav")
     normalize_audio(project.voice_audio_path, voice_norm_raw, AUDIO_LEVELS["voice_lufs"])
 
@@ -951,7 +951,7 @@ def assemble_video(project: AssemblyProject) -> str:
         print("[ASSEMBLER]   Voice EQ failed, using raw normalized audio")
 
     # ── Step 2: Prepare scene clips ──────────────────────────────────────
-    print("[ASSEMBLER] Step 2/14: Preparing scene clips...")
+    print("[ASSEMBLER] Step 2/18: Preparing scene clips...")
     prepared_scenes = []
 
     if not project.scenes:
@@ -1012,24 +1012,33 @@ def assemble_video(project: AssemblyProject) -> str:
             create_color_clip(voice_duration - last_end, tail_clip)
             prepared_scenes.append(tail_clip)
 
-    # ── Step 3: Concatenate all scene clips ──────────────────────────────
-    print("[ASSEMBLER] Step 3/14: Concatenating scenes...")
-    concat_list = os.path.join(episode_temp, "concat.txt")
-    with open(concat_list, "w") as f:
-        for clip_path in prepared_scenes:
-            f.write(f"file '{clip_path}'\n")
-
+    # ── Step 3: Concatenate scenes with crossfade transitions ─────────────
+    print("[ASSEMBLER] Step 3/18: Concatenating scenes with crossfade dissolves...")
     video_concat = os.path.join(episode_temp, "video_concat.mp4")
-    subprocess.run(
-        ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_list,
-         "-c:v", VIDEO_SPECS["codec"], "-preset", "fast",
-         "-pix_fmt", VIDEO_SPECS["pix_fmt"],
-         "-an", video_concat],
-        check=True, capture_output=True,
-    )
+
+    if len(prepared_scenes) > 1:
+        try:
+            apply_crossfade_transitions(prepared_scenes, video_concat, fade_duration=0.5)
+        except Exception as e:
+            print(f"[ASSEMBLER] WARNING: Crossfade failed ({e}), using hard cuts")
+            concat_list = os.path.join(episode_temp, "concat.txt")
+            with open(concat_list, "w") as f:
+                for clip_path in prepared_scenes:
+                    f.write(f"file '{clip_path}'\n")
+            subprocess.run(
+                ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_list,
+                 "-c:v", VIDEO_SPECS["codec"], "-preset", "fast",
+                 "-pix_fmt", VIDEO_SPECS["pix_fmt"],
+                 "-an", video_concat],
+                check=True, capture_output=True,
+            )
+    elif prepared_scenes:
+        shutil.copy2(prepared_scenes[0], video_concat)
+    else:
+        create_color_clip(voice_duration, video_concat)
 
     # ── Step 4: 4-layer audio mix (voice + music + SFX + ambient) ──────
-    print("[ASSEMBLER] Step 4/14: Mixing audio (4-layer broadcast mix)...")
+    print("[ASSEMBLER] Step 4/18: Mixing audio (4-layer broadcast mix)...")
     final_audio = os.path.join(episode_temp, "audio_final.wav")
     mix_audio_layers(
         voice_path=voice_norm,
@@ -1041,7 +1050,7 @@ def assemble_video(project: AssemblyProject) -> str:
     )
 
     # ── Step 5: Merge video + audio ──────────────────────────────────────
-    print("[ASSEMBLER] Step 5/14: Merging video + audio...")
+    print("[ASSEMBLER] Step 5/18: Merging video + audio...")
     merged = os.path.join(episode_temp, "merged.mp4")
     subprocess.run(
         [
@@ -1058,7 +1067,7 @@ def assemble_video(project: AssemblyProject) -> str:
     )
 
     # ── Step 6: Apply text overlays (batched single-pass) ────────────────
-    print(f"[ASSEMBLER] Step 6/14: Applying {len(project.text_overlays)} text overlays...")
+    print(f"[ASSEMBLER] Step 6/18: Applying {len(project.text_overlays)} text overlays...")
     current_video = merged
     if project.text_overlays:
         overlay_out = os.path.join(episode_temp, "with_overlays.mp4")
@@ -1067,16 +1076,16 @@ def assemble_video(project: AssemblyProject) -> str:
 
     # ── Step 7: Apply lower thirds ───────────────────────────────────────
     if project.lower_thirds:
-        print(f"[ASSEMBLER] Step 7/14: Compositing {len(project.lower_thirds)} lower thirds...")
+        print(f"[ASSEMBLER] Step 7/18: Compositing {len(project.lower_thirds)} lower thirds...")
         lt_out = os.path.join(episode_temp, "with_lower_thirds.mp4")
         composite_lower_thirds(current_video, lt_out, project.lower_thirds)
         current_video = lt_out
     else:
-        print("[ASSEMBLER] Step 7/14: No lower thirds (skipped)")
+        print("[ASSEMBLER] Step 7/18: No lower thirds (skipped)")
 
     # ── Step 8: Apply re-hook overlays (MrBeast: every 2-3 min) ──────────
     if hasattr(project, 'rehooks') and project.rehooks:
-        print(f"[ASSEMBLER] Step 8/14: Adding {len(project.rehooks)} re-hook overlays...")
+        print(f"[ASSEMBLER] Step 8/18: Adding {len(project.rehooks)} re-hook overlays...")
         rehook_out = os.path.join(episode_temp, "with_rehooks.mp4")
         try:
             add_rehook_overlays(current_video, rehook_out, project.rehooks)
@@ -1084,11 +1093,11 @@ def assemble_video(project: AssemblyProject) -> str:
         except subprocess.CalledProcessError:
             print("[ASSEMBLER] WARNING: Re-hook overlays failed, continuing without them")
     else:
-        print("[ASSEMBLER] Step 8/14: No re-hooks defined (skipped)")
+        print("[ASSEMBLER] Step 8/18: No re-hooks defined (skipped)")
 
     # ── Step 9: Apply progress bar ───────────────────────────────────────
     if hasattr(project, 'sections') and project.sections:
-        print(f"[ASSEMBLER] Step 9/14: Adding progress bar for {len(project.sections)} sections...")
+        print(f"[ASSEMBLER] Step 9/18: Adding progress bar for {len(project.sections)} sections...")
         progress_out = os.path.join(episode_temp, "with_progress.mp4")
         try:
             add_progress_bar(current_video, progress_out, project.sections, voice_duration)
@@ -1096,11 +1105,29 @@ def assemble_video(project: AssemblyProject) -> str:
         except subprocess.CalledProcessError:
             print("[ASSEMBLER] WARNING: Progress bar failed, continuing without it")
     else:
-        print("[ASSEMBLER] Step 9/14: No sections defined (skipped)")
+        print("[ASSEMBLER] Step 9/18: No sections defined (skipped)")
 
-    # ── Step 10: Apply retention editing ──────────────────────────────────
+    # ── Step 10: Cinematic color grading ────────────────────────────────
+    print("[ASSEMBLER] Step 10/18: Applying cinematic color grading...")
+    graded_out = os.path.join(episode_temp, "color_graded.mp4")
+    try:
+        apply_color_grading(current_video, graded_out)
+        current_video = graded_out
+    except subprocess.CalledProcessError:
+        print("[ASSEMBLER] WARNING: Color grading failed, continuing without it")
+
+    # ── Step 11: Zoom punch emphasis at key moments ──────────────────────
+    print("[ASSEMBLER] Step 11/18: Applying zoom punch emphasis...")
+    punch_out = os.path.join(episode_temp, "zoom_punched.mp4")
+    try:
+        apply_zoom_punches(current_video, punch_out, voice_duration, project.data_cards)
+        current_video = punch_out
+    except (subprocess.CalledProcessError, Exception) as e:
+        print(f"[ASSEMBLER] WARNING: Zoom punches failed: {e}")
+
+    # ── Step 12: Apply retention editing ──────────────────────────────────
     if project.enable_retention_editing:
-        print("[ASSEMBLER] Step 10/14: Applying retention editing (zoom pulses)...")
+        print("[ASSEMBLER] Step 12/18: Applying retention editing (zoom pulses)...")
         retention_out = os.path.join(episode_temp, "retention_edited.mp4")
         try:
             apply_retention_editing(current_video, retention_out, voice_duration)
@@ -1108,19 +1135,28 @@ def assemble_video(project: AssemblyProject) -> str:
         except subprocess.CalledProcessError:
             print("[ASSEMBLER] WARNING: Retention editing failed, continuing without it")
     else:
-        print("[ASSEMBLER] Step 10/14: Retention editing disabled (skipped)")
+        print("[ASSEMBLER] Step 12/18: Retention editing disabled (skipped)")
 
-    # ── Step 11: Generate captions SRT ───────────────────────────────────
-    print("[ASSEMBLER] Step 11/14: Generating captions (SRT)...")
+    # ── Step 13: Film grain overlay ──────────────────────────────────────
+    print("[ASSEMBLER] Step 13/18: Adding film grain texture...")
+    grain_out = os.path.join(episode_temp, "with_grain.mp4")
+    try:
+        apply_film_grain(current_video, grain_out)
+        current_video = grain_out
+    except subprocess.CalledProcessError:
+        print("[ASSEMBLER] WARNING: Film grain failed, continuing without it")
+
+    # ── Step 14: Generate captions SRT ───────────────────────────────────
+    print("[ASSEMBLER] Step 14/18: Generating captions (SRT)...")
     captions_path = os.path.join(OUTPUT_DIR, f"{project.episode_id}-captions.srt")
     try:
         generate_captions_srt(voice_norm, captions_path)
     except Exception as e:
         print(f"[ASSEMBLER] WARNING: Caption generation failed: {e}")
 
-    # ── Step 12: Generate sound design ───────────────────────────────────
+    # ── Step 15: Generate sound design ───────────────────────────────────
     if not project.sfx_path:
-        print("[ASSEMBLER] Step 12/14: Generating sound design (whooshes at transitions)...")
+        print("[ASSEMBLER] Step 15/18: Generating sound design (whooshes at transitions)...")
         sfx_auto = os.path.join(episode_temp, "sfx_auto.wav")
         try:
             generate_sound_design(voice_norm, sfx_auto, voice_duration)
@@ -1129,17 +1165,36 @@ def assemble_video(project: AssemblyProject) -> str:
         except Exception as e:
             print(f"[ASSEMBLER] WARNING: Sound design generation failed: {e}")
     else:
-        print("[ASSEMBLER] Step 12/14: SFX track provided (skipped auto-generation)")
+        print("[ASSEMBLER] Step 15/18: SFX track provided (skipped auto-generation)")
 
-    # ── Step 13: Add end screen ──────────────────────────────────────────
+    # ── Step 16: Add end screen ──────────────────────────────────────────
     end_screen = project.end_screen_path
     if not end_screen:
         auto_end = os.path.expanduser(f"~/youtube-empire/assets/{project.episode_id}/brand/end_screen.mp4")
         if os.path.exists(auto_end):
             end_screen = auto_end
 
-    # ── Step 14: Final export with 4K upscale + metadata ─────────────────
-    print("[ASSEMBLER] Step 14/14: Final export (4K upscale + optimal encoding)...")
+    # ── Step 17: Generate brand intro if missing ─────────────────────────
+    intro = project.intro_path
+    if not intro:
+        auto_intro = os.path.expanduser(f"~/youtube-empire/assets/{project.episode_id}/brand/intro.mp4")
+        if not os.path.exists(auto_intro):
+            print("[ASSEMBLER] Step 17/18: Generating brand intro...")
+            try:
+                from app.services.brand_graphics import generate_intro
+                os.makedirs(os.path.dirname(auto_intro), exist_ok=True)
+                generate_intro(auto_intro)
+                intro = auto_intro
+                print(f"[ASSEMBLER]   + Brand intro generated: {auto_intro}")
+            except Exception as e:
+                print(f"[ASSEMBLER] WARNING: Brand intro generation failed: {e}")
+        else:
+            intro = auto_intro
+    else:
+        print("[ASSEMBLER] Step 17/18: Brand intro provided")
+
+    # ── Step 18: Final export with 4K upscale + metadata ─────────────────
+    print("[ASSEMBLER] Step 18/18: Final export (4K upscale + cinematic grade + optimal encoding)...")
     output_name = project.output_filename or f"{project.episode_id}-final.mp4"
     final_output = os.path.join(OUTPUT_DIR, output_name)
 
@@ -1156,13 +1211,7 @@ def assemble_video(project: AssemblyProject) -> str:
         parts_to_concat.append(hover_hook)
         print(f"[ASSEMBLER]   + Hover hook (3s silent preview): {hover_hook}")
 
-    # Auto-detect brand intro if not specified
-    intro = project.intro_path
-    if not intro:
-        auto_intro = os.path.expanduser(f"~/youtube-empire/assets/{project.episode_id}/brand/intro.mp4")
-        if os.path.exists(auto_intro):
-            intro = auto_intro
-
+    # Brand intro (already resolved in Step 17)
     if intro and os.path.exists(intro):
         parts_to_concat.append(intro)
         print(f"[ASSEMBLER]   + Brand intro: {intro}")
@@ -1784,6 +1833,271 @@ def add_rehook_overlays(
         check=True, capture_output=True,
     )
     print(f"[REHOOK] Added {len(rehooks)} re-hook overlays")
+    return output_path
+
+
+def apply_color_grading(input_path: str, output_path: str) -> str:
+    """
+    Apply cinematic color grading — teal shadows + warm highlights.
+
+    This is what makes ColdFusion, Vox, and high-end documentaries look cinematic.
+    The teal-orange/complementary grade is the industry standard for drama.
+
+    Filter chain:
+      1. Lift shadows toward teal (blue-green in dark areas)
+      2. Push highlights toward warm amber
+      3. Increase contrast slightly (S-curve via curves)
+      4. Desaturate slightly for documentary feel
+      5. Add subtle vignette (darken edges, focus center)
+    """
+    grade_filter = (
+        # Teal shadows + warm highlights (the "Hollywood" look)
+        "colorbalance="
+        "rs=-0.08:gs=0.02:bs=0.10:"   # Shadows → teal (less red, more blue)
+        "rm=0.0:gm=0.0:bm=0.0:"       # Midtones → neutral
+        "rh=0.06:gh=0.02:bh=-0.04,"    # Highlights → warm amber
+        # Slight contrast boost via curves (S-curve)
+        "curves=m='0/0 0.15/0.10 0.5/0.52 0.85/0.92 1/1',"
+        # Slight desaturation for documentary tone (not music video vivid)
+        "eq=saturation=0.85:contrast=1.05:brightness=0.02,"
+        # Subtle vignette — darken edges to guide eye to center
+        "vignette=PI/4"
+    )
+
+    subprocess.run(
+        [
+            "ffmpeg", "-y", "-i", input_path,
+            "-vf", grade_filter,
+            "-c:v", VIDEO_SPECS["codec"], "-preset", "fast",
+            "-crf", str(VIDEO_SPECS["crf"]),
+            "-c:a", "copy",
+            output_path,
+        ],
+        check=True, capture_output=True,
+    )
+    print("[GRADE] Cinematic color grade applied: teal shadows + warm highlights + vignette")
+    return output_path
+
+
+def apply_zoom_punches(
+    input_path: str,
+    output_path: str,
+    duration: float,
+    data_cards: list = None,
+) -> str:
+    """
+    Apply aggressive zoom punches at key emphasis moments.
+
+    Unlike the gentle retention editing sine wave, these are sharp 20-30%
+    zooms that last 0.5-1s, triggered at data card reveals and section changes.
+    This is what ColdFusion and Veritasium use for emphasis.
+
+    If data_cards are provided, punches happen at those timestamps.
+    Otherwise, punches occur every 30-45s.
+    """
+    # Determine punch timestamps
+    punch_times = []
+    if data_cards:
+        for dc in data_cards:
+            t = dc.insert_at if hasattr(dc, 'insert_at') else dc.get('insert_at', 0)
+            punch_times.append(float(t))
+
+    # Fill gaps — add punches every ~35s where there isn't one already
+    for t in range(30, int(duration), 35):
+        t_f = float(t)
+        if all(abs(t_f - pt) > 10 for pt in punch_times):
+            punch_times.append(t_f)
+
+    punch_times.sort()
+
+    if not punch_times:
+        shutil.copy2(input_path, output_path)
+        return output_path
+
+    # Build a zoom expression that creates sharp punches
+    # Each punch: zoom from 1.0 to 1.2 over 0.3s, hold 0.2s, zoom back over 0.3s
+    zoom_parts = []
+    for pt in punch_times:
+        # Triangular pulse: ramp up 0.3s, hold 0.2s, ramp down 0.3s
+        zoom_parts.append(
+            f"0.2*if(between(t,{pt},{pt+0.3}),(t-{pt})/0.3,"
+            f"if(between(t,{pt+0.3},{pt+0.5}),1,"
+            f"if(between(t,{pt+0.5},{pt+0.8}),({pt+0.8}-t)/0.3,0)))"
+        )
+
+    zoom_expr = "+".join(zoom_parts)
+    # Final zoom = 1.0 + sum of all punch contributions
+    full_zoom = f"1+{zoom_expr}"
+
+    filter_expr = (
+        f"scale=2*iw:2*ih,"
+        f"zoompan="
+        f"z='{full_zoom}':"
+        f"x='iw/2-(iw/zoom/2)':"
+        f"y='ih/2-(ih/zoom/2)':"
+        f"d={int(duration * VIDEO_SPECS['fps'])}:"
+        f"s={VIDEO_SPECS['width']}x{VIDEO_SPECS['height']}:"
+        f"fps={VIDEO_SPECS['fps']}"
+    )
+
+    subprocess.run(
+        [
+            "ffmpeg", "-y", "-i", input_path,
+            "-vf", filter_expr,
+            "-c:v", VIDEO_SPECS["codec"], "-preset", "fast",
+            "-crf", str(VIDEO_SPECS["crf"]),
+            "-an", output_path,
+        ],
+        check=True, capture_output=True,
+    )
+
+    # Re-attach audio
+    punch_with_audio = output_path + ".tmp.mp4"
+    subprocess.run(
+        [
+            "ffmpeg", "-y",
+            "-i", output_path,
+            "-i", input_path,
+            "-map", "0:v", "-map", "1:a",
+            "-c:v", "copy", "-c:a", "copy",
+            "-shortest",
+            punch_with_audio,
+        ],
+        check=True, capture_output=True,
+    )
+    shutil.move(punch_with_audio, output_path)
+
+    print(f"[PUNCH] Applied {len(punch_times)} zoom punches at key moments")
+    return output_path
+
+
+def apply_film_grain(input_path: str, output_path: str, intensity: float = 0.06) -> str:
+    """
+    Add subtle film grain texture for cinematic feel.
+
+    ColdFusion and high-end docs add a fine grain layer that:
+    - Hides compression artifacts
+    - Adds organic texture to digital footage
+    - Creates a premium "shot on cinema camera" feel
+
+    Uses FFmpeg noise filter at 6-8% opacity.
+    """
+    # Noise filter: temporal noise for grain feel
+    grain_filter = (
+        f"noise=alls={int(intensity * 100)}:allf=t+u,"  # Temporal + uniform noise
+        f"eq=contrast=1.0"  # Preserve contrast
+    )
+
+    subprocess.run(
+        [
+            "ffmpeg", "-y", "-i", input_path,
+            "-vf", grain_filter,
+            "-c:v", VIDEO_SPECS["codec"], "-preset", "fast",
+            "-crf", str(VIDEO_SPECS["crf"]),
+            "-c:a", "copy",
+            output_path,
+        ],
+        check=True, capture_output=True,
+    )
+    print(f"[GRAIN] Film grain applied at {intensity:.0%} intensity")
+    return output_path
+
+
+def apply_crossfade_transitions(
+    scene_clips: list[str],
+    output_path: str,
+    fade_duration: float = 0.5,
+) -> str:
+    """
+    Apply crossfade dissolve transitions between scene clips.
+
+    Instead of hard cuts (concat demuxer), this uses xfade filter
+    for smooth dissolves between every pair of consecutive clips.
+    This is what separates professional docs from slideshow presentations.
+
+    Args:
+        scene_clips: List of video file paths in order
+        output_path: Output file path
+        fade_duration: Duration of each crossfade in seconds (0.3-0.8 is typical)
+    """
+    if len(scene_clips) <= 1:
+        if scene_clips:
+            shutil.copy2(scene_clips[0], output_path)
+        return output_path
+
+    # Build xfade filter chain
+    # For N clips, we need N-1 xfade transitions
+    input_args = []
+    for clip in scene_clips:
+        input_args.extend(["-i", clip])
+
+    # Get durations of each clip for offset calculation
+    durations = []
+    for clip in scene_clips:
+        try:
+            durations.append(get_duration(clip))
+        except Exception:
+            durations.append(5.0)  # fallback
+
+    # Build the xfade filter chain
+    # Each xfade takes 2 inputs, outputs 1
+    # Offset = cumulative duration - cumulative fades
+    filter_parts = []
+    cumulative = 0.0
+
+    for i in range(len(scene_clips) - 1):
+        if i == 0:
+            input_a = "[0:v]"
+        else:
+            input_a = f"[v{i}]"
+
+        input_b = f"[{i+1}:v]"
+        output_label = f"[v{i+1}]" if i < len(scene_clips) - 2 else "[vout]"
+
+        offset = cumulative + durations[i] - fade_duration
+        if offset < 0:
+            offset = cumulative + durations[i] * 0.8
+
+        # Alternate between fade and wipeleft for variety
+        transition = "fade" if i % 3 != 2 else "wipeleft"
+
+        filter_parts.append(
+            f"{input_a}{input_b}xfade=transition={transition}:"
+            f"duration={fade_duration}:offset={offset:.3f}{output_label}"
+        )
+
+        cumulative = offset
+
+    filter_complex = ";".join(filter_parts)
+
+    try:
+        subprocess.run(
+            ["ffmpeg", "-y"] + input_args +
+            ["-filter_complex", filter_complex,
+             "-map", "[vout]",
+             "-c:v", VIDEO_SPECS["codec"], "-preset", "fast",
+             "-crf", str(VIDEO_SPECS["crf"]),
+             "-pix_fmt", VIDEO_SPECS["pix_fmt"],
+             "-an", output_path],
+            check=True, capture_output=True,
+        )
+        print(f"[TRANSITION] Applied crossfade dissolves between {len(scene_clips)} clips")
+    except subprocess.CalledProcessError:
+        # Fallback to concat if xfade fails (older ffmpeg)
+        print("[TRANSITION] WARNING: xfade failed, falling back to concat")
+        concat_list = output_path + ".concat.txt"
+        with open(concat_list, "w") as f:
+            for clip in scene_clips:
+                f.write(f"file '{clip}'\n")
+        subprocess.run(
+            ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_list,
+             "-c:v", VIDEO_SPECS["codec"], "-preset", "fast",
+             "-pix_fmt", VIDEO_SPECS["pix_fmt"],
+             "-an", output_path],
+            check=True, capture_output=True,
+        )
+        os.remove(concat_list)
+
     return output_path
 
 
