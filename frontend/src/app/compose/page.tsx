@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, AgentSummary } from "@/lib/api";
 import { getInitials, departmentLabel } from "@/lib/utils";
+import { useToast } from "@/components/Toast";
 
 export default function ComposePage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [subject, setSubject] = useState("");
@@ -50,6 +52,7 @@ export default function ComposePage() {
       router.push(`/thread?id=${thread.id}`);
     } catch (e) {
       console.error(e);
+      toast("Failed to send message. Is the backend running?", "error");
       setSending(false);
     }
   };

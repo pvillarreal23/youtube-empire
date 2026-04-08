@@ -4,9 +4,11 @@ import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { api, ThreadDetail, AgentSummary } from "@/lib/api";
 import { getInitials, timeAgo } from "@/lib/utils";
+import { useToast } from "@/components/Toast";
 
 function ThreadContent() {
   const searchParams = useSearchParams();
+  const { toast } = useToast();
   const threadId = searchParams.get("id");
   const [thread, setThread] = useState<ThreadDetail | null>(null);
   const [agents, setAgents] = useState<Record<string, AgentSummary>>({});
@@ -46,6 +48,7 @@ function ThreadContent() {
       await fetchThread();
     } catch (e) {
       console.error(e);
+      toast("Failed to send reply", "error");
     } finally {
       setSending(false);
     }

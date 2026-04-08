@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
-
-const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+import { ToastProvider } from "@/components/Toast";
 
 export const metadata: Metadata = {
   title: "YouTube Empire",
@@ -12,12 +10,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geist.variable} dark`}>
+    <html lang="en" className="dark">
       <body className="h-screen overflow-hidden font-sans">
-        <div className="flex h-full">
-          <Sidebar />
-          <main className="flex-1 overflow-hidden">{children}</main>
-        </div>
+        <ToastProvider>
+          <div className="flex h-full">
+            <Sidebar />
+            <main className="flex-1 overflow-hidden">{children}</main>
+          </div>
+        </ToastProvider>
       </body>
     </html>
   );
