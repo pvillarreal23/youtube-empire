@@ -281,6 +281,9 @@ async def _generate_and_upload_video(thread_id: str):
             db.add(yt_msg)
             await db.commit()
 
+            # Send review package notification
+            await _send_review_notification(thread_id, yt_result.get("url"))
+
         except Exception as e:
             # YouTube upload failed — save video URL anyway
             note = Message(
@@ -294,6 +297,36 @@ async def _generate_and_upload_video(thread_id: str):
             )
             db.add(note)
             await db.commit()
+
+
+async def _send_review_notification(thread_id: str, youtube_url: str | None = None):
+    """Send the review package (script, thumbnail, SEO, etc.) to all notification channels."""
+    from app.services.notification_service import send_review_package
+
+    async with async_session() as db:
+        result = await db.execute(
+            select(Message).where(Message.thread_id == thread_id).order_by(Message.created_at)
+        )
+        messages = list(result.scalars().all())
+
+        agent_outputs = {}
+        for m in messages:
+            if m.sender_type == "agent" and m.status == "complete" and m.sender_agent_id:
+                agent_outputs[m.sender_agent_id] = m.content
+
+        thread = await db.get(Thread, thread_id)
+        title = thread.subject if thread else "V-Real AI Video"
+
+        await send_review_package(
+            title=title,
+            script=agent_outputs.get("scriptwriter-agent", "No script generated"),
+            seo_package=agent_outputs.get("seo-specialist-agent"),
+            thumbnail_brief=agent_outputs.get("thumbnail-designer-agent"),
+            shorts_scripts=agent_outputs.get("shorts-clips-agent"),
+            youtube_url=youtube_url,
+            social_posts=agent_outputs.get("social-media-manager-agent"),
+            newsletter_draft=agent_outputs.get("newsletter-strategist-agent"),
+        )
 
 
 @router.post("/autopilot")
