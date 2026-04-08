@@ -1392,15 +1392,16 @@ def generate_captions_srt(voice_audio_path: str, output_path: str) -> str:
     - Full transcript indexed by YouTube search
     - Each captioned word becomes searchable
 
-    Uses FFmpeg speech-to-text via whisper model if available,
-    otherwise generates timestamp-aligned captions from script blocks.
+    Priority order:
+      1. Whisper CLI (local, free, best quality)
+      2. OpenAI Whisper API (uses OPENAI_API_KEY, $0.006/min)
+      3. Silence-based segmentation (fallback skeleton)
     """
-    # Try to use whisper CLI if available
+    # Try 1: Whisper CLI (local install)
     whisper_available = shutil.which("whisper") is not None
 
     if whisper_available:
         try:
-            srt_temp = output_path.replace(".srt", "_raw.srt")
             subprocess.run(
                 ["whisper", voice_audio_path,
                  "--model", "base",
@@ -1408,22 +1409,49 @@ def generate_captions_srt(voice_audio_path: str, output_path: str) -> str:
                  "--output_dir", os.path.dirname(output_path)],
                 check=True, capture_output=True, timeout=300,
             )
-            # Whisper outputs to a file based on input name
             whisper_out = voice_audio_path.rsplit(".", 1)[0] + ".srt"
             if os.path.exists(whisper_out) and whisper_out != output_path:
                 shutil.move(whisper_out, output_path)
-            print(f"[CAPTIONS] Generated SRT via Whisper: {output_path}")
+            print(f"[CAPTIONS] Generated SRT via Whisper CLI: {output_path}")
             return output_path
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
-            print("[CAPTIONS] Whisper failed, falling back to silence-based segmentation")
+            print("[CAPTIONS] Whisper CLI failed, trying OpenAI API...")
 
-    # Fallback: generate captions from voice segment detection
-    # This creates approximate caption timing based on silence detection
+    # Try 2: OpenAI Whisper API (cloud, costs $0.006/min)
+    openai_key = os.getenv("OPENAI_API_KEY", "")
+    if openai_key:
+        try:
+            import httpx
+            # Convert to supported format if needed (Whisper API accepts mp3, mp4, wav, etc.)
+            with open(voice_audio_path, "rb") as audio_file:
+                response = httpx.post(
+                    "https://api.openai.com/v1/audio/transcriptions",
+                    headers={"Authorization": f"Bearer {openai_key}"},
+                    files={"file": (os.path.basename(voice_audio_path), audio_file)},
+                    data={
+                        "model": "whisper-1",
+                        "response_format": "srt",
+                        "language": "en",
+                    },
+                    timeout=300,
+                )
+
+            if response.status_code == 200:
+                with open(output_path, "w", encoding="utf-8") as f:
+                    f.write(response.text)
+                print(f"[CAPTIONS] Generated SRT via OpenAI Whisper API: {output_path}")
+                return output_path
+            else:
+                print(f"[CAPTIONS] OpenAI API returned {response.status_code}, falling back...")
+        except Exception as e:
+            print(f"[CAPTIONS] OpenAI Whisper API failed: {e}")
+
+    # Try 3: Silence-based segmentation (fallback skeleton)
+    print("[CAPTIONS] Falling back to silence-based segmentation...")
     segments = detect_voice_segments(voice_audio_path, silence_thresh=-35, min_silence_dur=0.5)
 
     srt_lines = []
     for i, (start, end) in enumerate(segments, 1):
-        # Format timestamps as SRT: HH:MM:SS,mmm
         def fmt_time(t):
             h = int(t // 3600)
             m = int((t % 3600) // 60)
@@ -1433,7 +1461,7 @@ def generate_captions_srt(voice_audio_path: str, output_path: str) -> str:
 
         srt_lines.append(f"{i}")
         srt_lines.append(f"{fmt_time(start)} --> {fmt_time(end)}")
-        srt_lines.append(f"[Segment {i}]")  # Placeholder — replaced by actual text in produce script
+        srt_lines.append(f"[Segment {i}]")
         srt_lines.append("")
 
     with open(output_path, "w", encoding="utf-8") as f:

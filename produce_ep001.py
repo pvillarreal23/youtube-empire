@@ -368,21 +368,58 @@ The next episode drops Tuesday.""",
 
 # ── B-Roll Scene Definitions ────────────────────────────────────────────────
 
+# Scene footage definitions — dual prompts for Kling AI (primary) and Pexels (fallback)
+# Kling prompts are cinematic AI generation prompts (ColdFusion style)
+# Pexels queries are search terms for stock footage fallback
 SCENE_FOOTAGE = [
-    {"scene": 1, "query": "neural network dark visualization", "alt": "AI brain digital", "duration": 12, "start": 0},
-    {"scene": 2, "query": "data particles accelerating light", "alt": "technology light trails", "duration": 12, "start": 12},
-    {"scene": 3, "query": "person crossroads silhouette decision", "alt": "fork in road dramatic", "duration": 21, "start": 24},
-    {"scene": 4, "query": "woman working laptop night office", "alt": "professional late night computer", "duration": 37, "start": 45},
-    {"scene": 5, "query": "phone notification message alert", "alt": "smartphone notification close", "duration": 23, "start": 82},
-    {"scene": 6, "query": "person using AI tools multiple screens", "alt": "programmer multiple monitors", "duration": 40, "start": 105},
-    {"scene": 7, "query": "AI generated digital creativity", "alt": "abstract digital art creation", "duration": 35, "start": 145},
-    {"scene": 8, "query": "hand selecting choosing decision", "alt": "choosing path strategic", "duration": 30, "start": 180},
-    {"scene": 9, "query": "revenue growth chart data visualization", "alt": "business analytics dashboard", "duration": 45, "start": 210},
-    {"scene": 10, "query": "world map connections global network", "alt": "global digital connections", "duration": 45, "start": 255},
-    {"scene": 11, "query": "chain reaction dominos technology", "alt": "ripple effect spreading", "duration": 40, "start": 300},
-    {"scene": 12, "query": "two paths diverging gap between", "alt": "contrast inequality divide", "duration": 35, "start": 340},
-    {"scene": 13, "query": "sunrise opportunity hope new beginning", "alt": "dawn light through clouds", "duration": 75, "start": 375},
-    {"scene": 14, "query": "person walking forward confident future", "alt": "silhouette walking toward light", "duration": 90, "start": 450},
+    # HOOK — Dark, moody, tension-building
+    {"scene": 1, "duration": 12, "start": 0,
+     "kling_prompt": "Extreme close-up of a smartphone screen buzzing with notification, dark office background, blue light illuminating fingers, shallow depth of field, cinematic, 4K, dramatic lighting",
+     "query": "phone notification dark office", "alt": "smartphone alert close up"},
+    {"scene": 2, "duration": 12, "start": 12,
+     "kling_prompt": "Sweeping aerial shot of modern glass office building at dawn, lights flickering on floor by floor, teal-orange color palette, cinematic drone movement, 4K film grain",
+     "query": "modern office building aerial dawn", "alt": "corporate building morning"},
+    {"scene": 3, "duration": 21, "start": 24,
+     "kling_prompt": "Empty office cubicles with monitors still glowing, personal items left on desks, one chair slowly spinning, eerie silence, dark cinematic lighting, 4K shallow depth of field",
+     "query": "empty office cubicles abandoned", "alt": "vacant office workspace"},
+    # SARAH'S STORY — Determined, late-night hustle
+    {"scene": 4, "duration": 37, "start": 45,
+     "kling_prompt": "Young professional woman typing intensely on laptop at midnight, blue screen glow on her face, coffee cup beside her, determined expression, dark room with city lights through window, cinematic close-up, 4K",
+     "query": "woman working laptop midnight", "alt": "professional woman computer night"},
+    {"scene": 5, "duration": 23, "start": 82,
+     "kling_prompt": "Split screen effect: left side shows AI tool interface with data flowing, right side shows woman's eyes scanning intently, cyan blue digital reflections in her pupils, cinematic macro shot, 4K",
+     "query": "person analyzing data screens", "alt": "data analysis close up"},
+    {"scene": 6, "duration": 40, "start": 105,
+     "kling_prompt": "Woman presenting to boardroom with holographic AI dashboard floating above table, colleagues leaning forward impressed, warm golden lighting mixing with cool blue tech glow, cinematic wide shot, 4K",
+     "query": "business presentation AI dashboard", "alt": "boardroom presentation technology"},
+    {"scene": 7, "duration": 35, "start": 145,
+     "kling_prompt": "Hands typing on keyboard as lines of AI-generated analysis appear on screen, camera slowly pushing in, data visualizations morphing and evolving, dark office ambient lighting, cinematic, 4K",
+     "query": "AI tools generating content screen", "alt": "artificial intelligence interface"},
+    # MIKE'S STORY — Resistance, consequences
+    {"scene": 8, "duration": 30, "start": 180,
+     "kling_prompt": "Middle-aged man in suit sitting alone at desk, arms crossed, colleagues visible through glass wall using AI tools behind him, isolation feeling, cool blue lighting, cinematic medium shot, 4K",
+     "query": "man alone office colleagues background", "alt": "isolated professional workplace"},
+    {"scene": 9, "duration": 45, "start": 210,
+     "kling_prompt": "Close-up of hands placing personal items into a cardboard box on a desk, family photo being picked up last, shallow depth of field, warm lamp light, emotional, cinematic, 4K",
+     "query": "packing desk leaving job", "alt": "personal items box office"},
+    # DAVID'S STORY — Strategy, rise
+    {"scene": 10, "duration": 45, "start": 255,
+     "kling_prompt": "Man writing on glass whiteboard mapping AI capabilities vs human strengths, camera tracking his hand drawing connecting lines, futuristic office space, cyan accent lighting, cinematic, 4K",
+     "query": "strategy whiteboard planning", "alt": "business strategy mapping"},
+    {"scene": 11, "duration": 40, "start": 300,
+     "kling_prompt": "Man shaking hands with executives in corner office, city skyline behind them through floor-to-ceiling windows, golden hour light streaming in, triumphant moment, cinematic wide shot, 4K",
+     "query": "business handshake promotion office", "alt": "executive promotion celebration"},
+    # 90-DAY RULE — Framework, urgency
+    {"scene": 12, "duration": 35, "start": 340,
+     "kling_prompt": "Dramatic time-lapse of digital clock counting from Day 1 to Day 90, each number transition creates ripple effect, dark background with cyan numbers, sense of urgency, cinematic, 4K",
+     "query": "countdown timer digital urgent", "alt": "time running out clock"},
+    {"scene": 13, "duration": 75, "start": 375,
+     "kling_prompt": "Split screen: three panels showing Sarah thriving at modern desk, Mike scrolling job listings on phone, David presenting to large audience, camera slowly pulling back to reveal all three, cinematic color grading, 4K",
+     "query": "three professionals different outcomes", "alt": "career paths comparison"},
+    # CLOSE — Hope, action, future
+    {"scene": 14, "duration": 90, "start": 450,
+     "kling_prompt": "Person walking forward through corridor of floating holographic screens showing AI tools, light building ahead of them, each step more confident, camera tracking behind then sweeping to front reveal, warm hopeful lighting mixing with cool tech blue, epic cinematic shot, 4K",
+     "query": "person walking toward future light", "alt": "silhouette walking forward hopeful"},
 ]
 
 # ── Text Overlays ────────────────────────────────────────────────────────────
@@ -563,19 +600,98 @@ def generate_voiceover():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 2: B-ROLL FOOTAGE (Pexels)
+# STEP 2: B-ROLL FOOTAGE (Kling AI → Pexels fallback)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def download_footage():
-    """Download b-roll footage from Pexels for all 14 scenes."""
+KLING_API_KEY = os.getenv("KLING_API_KEY", "")
+
+
+def generate_kling_clip(scene: dict, output_path: str) -> bool:
+    """Generate a cinematic AI clip via Kling AI v2.0 API."""
     import httpx
 
-    if not PEXELS_API_KEY:
-        print("[FOOTAGE] ERROR: PEXELS_API_KEY not set in .env")
+    if not KLING_API_KEY:
         return False
+
+    prompt = scene.get("kling_prompt", "")
+    if not prompt:
+        return False
+
+    try:
+        print(f"[KLING] Generating scene {scene['scene']:02d} via Kling AI v2.0...")
+        response = httpx.post(
+            "https://api.klingai.com/v1/videos/generations",
+            headers={
+                "Authorization": f"Bearer {KLING_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "prompt": prompt,
+                "duration": str(min(int(scene.get("duration", 10)), 10)),
+                "aspect_ratio": "16:9",
+                "model": "kling-v2.0",
+            },
+            timeout=120,
+        )
+
+        if response.status_code != 200:
+            print(f"[KLING] API returned {response.status_code}: {response.text[:200]}")
+            return False
+
+        data = response.json()
+        video_url = data.get("data", {}).get("video_url") or data.get("video_url", "")
+
+        if not video_url:
+            # Kling may return a task ID for async generation
+            task_id = data.get("data", {}).get("task_id") or data.get("task_id", "")
+            if task_id:
+                print(f"[KLING] Task queued: {task_id} — polling for result...")
+                for attempt in range(30):  # Poll for up to 5 minutes
+                    time.sleep(10)
+                    status_resp = httpx.get(
+                        f"https://api.klingai.com/v1/videos/generations/{task_id}",
+                        headers={"Authorization": f"Bearer {KLING_API_KEY}"},
+                        timeout=30,
+                    )
+                    if status_resp.status_code == 200:
+                        status_data = status_resp.json()
+                        state = status_data.get("data", {}).get("status", "")
+                        if state == "completed":
+                            video_url = status_data.get("data", {}).get("video_url", "")
+                            break
+                        elif state == "failed":
+                            print(f"[KLING] Generation failed for scene {scene['scene']:02d}")
+                            return False
+
+            if not video_url:
+                print(f"[KLING] No video URL returned for scene {scene['scene']:02d}")
+                return False
+
+        # Download the generated video
+        dl = httpx.get(video_url, timeout=120, follow_redirects=True)
+        if dl.status_code == 200:
+            with open(output_path, "wb") as f:
+                f.write(dl.content)
+            size_mb = len(dl.content) / (1024 * 1024)
+            print(f"[KLING] ✓ Scene {scene['scene']:02d} generated ({size_mb:.1f} MB)")
+            return True
+
+    except (httpx.ProxyError, httpx.ConnectError):
+        print(f"[KLING] Cannot reach Kling AI API — network blocked")
+    except Exception as e:
+        print(f"[KLING] Error: {str(e)[:200]}")
+
+    return False
+
+
+def download_footage():
+    """Download b-roll: Kling AI first (cinematic), Pexels fallback (stock)."""
+    import httpx
 
     FOOTAGE_DIR.mkdir(parents=True, exist_ok=True)
     downloaded = 0
+    kling_count = 0
+    pexels_count = 0
 
     for scene in SCENE_FOOTAGE:
         scene_path = FOOTAGE_DIR / f"scene_{scene['scene']:02d}.mp4"
@@ -585,9 +701,20 @@ def download_footage():
             downloaded += 1
             continue
 
-        # Try primary query, then alt
+        # Priority 1: Kling AI (cinematic AI-generated footage)
+        if generate_kling_clip(scene, str(scene_path)):
+            downloaded += 1
+            kling_count += 1
+            time.sleep(2)  # Rate limit
+            continue
+
+        # Priority 2: Pexels (stock footage fallback)
+        if not PEXELS_API_KEY:
+            print(f"[FOOTAGE] No Kling or Pexels key — scene {scene['scene']:02d} skipped")
+            continue
+
         for query in [scene["query"], scene["alt"]]:
-            print(f"[FOOTAGE] Searching scene {scene['scene']:02d}: '{query}'...")
+            print(f"[FOOTAGE] Pexels fallback scene {scene['scene']:02d}: '{query}'...")
 
             try:
                 response = httpx.get(
@@ -642,22 +769,107 @@ def download_footage():
                     with open(scene_path, "wb") as f:
                         f.write(dl.content)
                     size_mb = len(dl.content) / (1024 * 1024)
-                    print(f"[FOOTAGE] ✓ Scene {scene['scene']:02d} ({size_mb:.1f} MB)")
+                    print(f"[FOOTAGE] ✓ Scene {scene['scene']:02d} ({size_mb:.1f} MB) [Pexels]")
                     downloaded += 1
+                    pexels_count += 1
                     break
 
             time.sleep(0.5)  # Rate limit
 
     print(f"[FOOTAGE] Downloaded {downloaded}/{len(SCENE_FOOTAGE)} scenes")
+    print(f"[FOOTAGE]   Kling AI (cinematic): {kling_count}")
+    print(f"[FOOTAGE]   Pexels (stock fallback): {pexels_count}")
 
     # Notify Make.com — footage download complete
     notify_make("sheets", {
         "status": "footage_complete",
         "scenes_downloaded": downloaded,
         "scenes_total": len(SCENE_FOOTAGE),
+        "kling_generated": kling_count,
+        "pexels_fallback": pexels_count,
     })
 
     return downloaded > 0
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 2.5: BACKGROUND MUSIC (Pixabay free library)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def download_music():
+    """Download cinematic background music from Pixabay (free, no attribution)."""
+    import httpx
+
+    AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+    music_path = AUDIO_DIR / "background-music.mp3"
+
+    if music_path.exists():
+        print(f"[MUSIC] Already exists: {music_path}")
+        return str(music_path)
+
+    # Pixabay Music API — free, no attribution required
+    # Search for dark cinematic documentary tracks
+    search_queries = [
+        "dark cinematic documentary",
+        "tension ambient documentary",
+        "dramatic orchestral dark",
+    ]
+
+    for query in search_queries:
+        try:
+            print(f"[MUSIC] Searching Pixabay: '{query}'...")
+            response = httpx.get(
+                "https://pixabay.com/api/",
+                params={
+                    "key": os.getenv("PIXABAY_API_KEY", ""),
+                    "q": query,
+                    "media_type": "music",
+                    "per_page": 5,
+                    "min_duration": 120,  # At least 2 minutes
+                    "category": "cinematic",
+                },
+                timeout=30,
+            )
+
+            if response.status_code == 200:
+                hits = response.json().get("hits", [])
+                if hits:
+                    audio_url = hits[0].get("audio", "") or hits[0].get("previewURL", "")
+                    if audio_url:
+                        dl = httpx.get(audio_url, timeout=60, follow_redirects=True)
+                        if dl.status_code == 200:
+                            with open(music_path, "wb") as f:
+                                f.write(dl.content)
+                            size_mb = len(dl.content) / (1024 * 1024)
+                            print(f"[MUSIC] ✓ Downloaded: {music_path} ({size_mb:.1f} MB)")
+                            return str(music_path)
+        except Exception as e:
+            print(f"[MUSIC] Pixabay search failed: {str(e)[:100]}")
+
+    # If Pixabay fails, generate a simple ambient pad with FFmpeg
+    print("[MUSIC] Pixabay unavailable — generating synthetic ambient pad...")
+    try:
+        # Generate a dark ambient drone: low sine waves with reverb-like characteristics
+        subprocess.run(
+            [
+                "ffmpeg", "-y",
+                "-f", "lavfi", "-i",
+                "sine=frequency=65:duration=600,lowpass=f=200,volume=0.3",
+                "-f", "lavfi", "-i",
+                "sine=frequency=98:duration=600,lowpass=f=300,volume=0.2",
+                "-filter_complex",
+                "[0][1]amix=inputs=2:duration=first:normalize=0,"
+                "afade=t=in:d=5,afade=t=out:st=595:d=5",
+                "-ar", "48000",
+                str(music_path),
+            ],
+            check=True, capture_output=True, timeout=30,
+        )
+        print(f"[MUSIC] ✓ Generated synthetic ambient pad: {music_path}")
+        return str(music_path)
+    except subprocess.CalledProcessError:
+        print("[MUSIC] WARNING: Could not generate music. Assembly will continue without it.")
+        return None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -968,11 +1180,14 @@ def main():
             return 1
 
     if args.step in ("footage", "all"):
-        print("\n─── STEP 2: B-ROLL FOOTAGE ───")
+        print("\n─── STEP 2: B-ROLL FOOTAGE (Kling AI → Pexels) ───")
         download_footage()
 
+        print("\n─── STEP 2.5: BACKGROUND MUSIC ───")
+        download_music()
+
     if args.step in ("assemble", "all"):
-        print("\n─── STEP 2.5: GENERATE BRAND ASSETS ───")
+        print("\n─── STEP 2.7: GENERATE BRAND ASSETS ───")
         try:
             from app.services.brand_graphics import generate_ep001_assets
             generate_ep001_assets()
