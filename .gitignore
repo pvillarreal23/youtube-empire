@@ -9,6 +9,7 @@ backend/.venv/
 **/__pycache__/
 *.pyc
 *.pyo
+*.egg-info/
 
 # Next.js build output
 frontend/.next/
