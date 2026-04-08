@@ -7,6 +7,9 @@ load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
+PEXELS_API_KEY = os.getenv("PEXELS_API_KEY", "")
+CREATOMATE_API_KEY = os.getenv("CREATOMATE_API_KEY", "")
 DATABASE_URL = "sqlite+aiosqlite:///./data/empire.db"
 AGENTS_DIR = Path(__file__).resolve().parent.parent.parent / "agents"
 CLAUDE_MODEL = "claude-sonnet-4-20250514"

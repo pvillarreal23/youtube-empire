@@ -193,6 +193,108 @@ async def _run_autopilot(config: AutopilotConfig, callback_url: str | None = Non
     remaining_agents = [a for a in CONTENT_PIPELINE_AGENTS if a not in ("trend-researcher-agent",)]
     await _run_pipeline_sequential(thread.id, remaining_agents, callback_url)
 
+    # Video generation + YouTube upload (if API keys are configured)
+    from app.config import ELEVENLABS_API_KEY, CREATOMATE_API_KEY
+    if ELEVENLABS_API_KEY and CREATOMATE_API_KEY:
+        try:
+            await _generate_and_upload_video(thread.id)
+        except Exception as e:
+            async with async_session() as db:
+                note = Message(
+                    id=str(uuid.uuid4()), thread_id=thread.id, sender_type="user",
+                    sender_agent_id=None,
+                    content=f"[Video generation skipped: {str(e)[:200]}]",
+                )
+                db.add(note)
+                await db.commit()
+
+
+async def _generate_and_upload_video(thread_id: str):
+    """After agents finish, generate video and upload to YouTube as private."""
+    from app.services.video_service import generate_video_from_script
+    from app.services.youtube_service import upload_video
+
+    async with async_session() as db:
+        result = await db.execute(
+            select(Message).where(Message.thread_id == thread_id).order_by(Message.created_at)
+        )
+        messages = list(result.scalars().all())
+
+        # Find the scriptwriter output
+        script_text = None
+        seo_text = None
+        for m in messages:
+            if m.sender_agent_id == "scriptwriter-agent" and m.status == "complete":
+                script_text = m.content
+            if m.sender_agent_id == "seo-specialist-agent" and m.status == "complete":
+                seo_text = m.content
+
+        if not script_text:
+            return
+
+        thread = await db.get(Thread, thread_id)
+        title = thread.subject.replace("Autopilot: ", "").replace("Pipeline: ", "") if thread else "V-Real AI"
+
+        # Parse SEO output for title/description/tags
+        video_title = title
+        video_description = ""
+        video_tags = ["V-Real AI", "AI agents", "automation"]
+
+        if seo_text:
+            # Try to extract optimized title from SEO output
+            import re
+            title_match = re.search(r'(?:TITLE|Title)[^:]*:\s*(.+)', seo_text)
+            if title_match:
+                video_title = title_match.group(1).strip().strip('"').strip("'")[:100]
+
+            desc_match = re.search(r'DESCRIPTION:\s*\n([\s\S]+?)(?=\nTAGS:|\nHASHTAGS:|\nCHAPTERS:|\Z)', seo_text)
+            if desc_match:
+                video_description = desc_match.group(1).strip()
+
+            tags_match = re.search(r'TAGS:\s*\n(.+)', seo_text)
+            if tags_match:
+                video_tags = [t.strip() for t in tags_match.group(1).split(",")][:15]
+
+        # Generate video
+        video_result = await generate_video_from_script(script_text, video_title)
+
+        # Upload to YouTube as PRIVATE
+        try:
+            yt_result = await upload_video(
+                video_url=video_result["video_url"],
+                title=video_title,
+                description=video_description or f"V-Real AI\n\n{script_text[:500]}",
+                tags=video_tags,
+                privacy="private",
+            )
+
+            # Save YouTube link in thread
+            yt_msg = Message(
+                id=str(uuid.uuid4()), thread_id=thread_id, sender_type="user",
+                sender_agent_id=None,
+                content=(
+                    f"VIDEO UPLOADED (PRIVATE)\n"
+                    f"YouTube: {yt_result['url']}\n"
+                    f"Status: Private — review in YouTube Studio and set to public when ready."
+                ),
+            )
+            db.add(yt_msg)
+            await db.commit()
+
+        except Exception as e:
+            # YouTube upload failed — save video URL anyway
+            note = Message(
+                id=str(uuid.uuid4()), thread_id=thread_id, sender_type="user",
+                sender_agent_id=None,
+                content=(
+                    f"VIDEO GENERATED — YouTube upload failed: {str(e)[:200]}\n"
+                    f"Video URL: {video_result.get('video_url', 'N/A')}\n"
+                    f"Upload manually to YouTube as private."
+                ),
+            )
+            db.add(note)
+            await db.commit()
+
 
 @router.post("/autopilot")
 async def start_autopilot(
