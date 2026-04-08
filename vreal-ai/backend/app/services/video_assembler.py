@@ -1397,6 +1397,63 @@ def generate_captions_srt(voice_audio_path: str, output_path: str) -> str:
       2. OpenAI Whisper API (uses OPENAI_API_KEY, $0.006/min)
       3. Silence-based segmentation (fallback skeleton)
     """
+    # Try 0: AssemblyAI (best accuracy — 8.4% WER, word-level timing)
+    assemblyai_key = os.getenv("ASSEMBLYAI_API_KEY", "")
+    if assemblyai_key:
+        try:
+            import httpx
+            print("[CAPTIONS] Using AssemblyAI (best accuracy)...")
+
+            # Upload audio
+            upload_resp = httpx.post(
+                "https://api.assemblyai.com/v2/upload",
+                headers={"Authorization": assemblyai_key},
+                data=open(voice_audio_path, "rb"),
+                timeout=120,
+            )
+            if upload_resp.status_code == 200:
+                audio_url = upload_resp.json()["upload_url"]
+
+                # Request transcription with SRT
+                transcript_resp = httpx.post(
+                    "https://api.assemblyai.com/v2/transcript",
+                    headers={"Authorization": assemblyai_key, "Content-Type": "application/json"},
+                    json={"audio_url": audio_url, "language_code": "en"},
+                    timeout=30,
+                )
+                if transcript_resp.status_code == 200:
+                    transcript_id = transcript_resp.json()["id"]
+
+                    # Poll for completion
+                    for _ in range(60):
+                        import time as _time
+                        _time.sleep(5)
+                        status_resp = httpx.get(
+                            f"https://api.assemblyai.com/v2/transcript/{transcript_id}",
+                            headers={"Authorization": assemblyai_key},
+                            timeout=15,
+                        )
+                        if status_resp.status_code == 200:
+                            status = status_resp.json().get("status", "")
+                            if status == "completed":
+                                # Get SRT format
+                                srt_resp = httpx.get(
+                                    f"https://api.assemblyai.com/v2/transcript/{transcript_id}/srt",
+                                    headers={"Authorization": assemblyai_key},
+                                    timeout=15,
+                                )
+                                if srt_resp.status_code == 200:
+                                    with open(output_path, "w", encoding="utf-8") as f:
+                                        f.write(srt_resp.text)
+                                    print(f"[CAPTIONS] ✓ Generated SRT via AssemblyAI: {output_path}")
+                                    return output_path
+                                break
+                            elif status == "error":
+                                print("[CAPTIONS] AssemblyAI transcription failed")
+                                break
+        except Exception as e:
+            print(f"[CAPTIONS] AssemblyAI failed: {e}")
+
     # Try 1: Whisper CLI (local install)
     whisper_available = shutil.which("whisper") is not None
 
