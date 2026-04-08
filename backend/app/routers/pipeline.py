@@ -22,6 +22,16 @@ class AutopilotConfig(BaseModel):
     channel: str = "V-Real AI"
     niche: str = "AI agents, automation, and building income with AI"
     num_ideas: int = 3
+    quality_threshold: int = 8  # Minimum score (out of 10) to pass QA
+    max_retries: int = 2  # Max times to revise before sending to you anyway
+
+
+# Quality gate agents — run after the content pipeline
+QUALITY_GATE_AGENTS = [
+    "qa-lead-agent",
+    "reflection-council-agent",
+    "content-vp-agent",
+]
 
 
 # --- Autopilot: Trend Research -> Pick Best -> Run Full Pipeline ---
@@ -193,7 +203,23 @@ async def _run_autopilot(config: AutopilotConfig, callback_url: str | None = Non
     remaining_agents = [a for a in CONTENT_PIPELINE_AGENTS if a not in ("trend-researcher-agent",)]
     await _run_pipeline_sequential(thread.id, remaining_agents, callback_url)
 
-    # Video generation + YouTube upload (if API keys are configured)
+    # Step 4: Quality gate — QA Lead + Reflection Council pressure test
+    passed = await _run_quality_gate(thread.id, config.quality_threshold, config.max_retries)
+
+    if not passed:
+        async with async_session() as db:
+            note = Message(
+                id=str(uuid.uuid4()), thread_id=thread.id, sender_type="user",
+                sender_agent_id=None,
+                content=(
+                    "QUALITY GATE: Content did not reach the quality threshold after retries. "
+                    "Sending to you for manual review. Check the QA notes above."
+                ),
+            )
+            db.add(note)
+            await db.commit()
+
+    # Step 5: Video generation + YouTube upload (if API keys are configured)
     from app.config import ELEVENLABS_API_KEY, CREATOMATE_API_KEY
     if ELEVENLABS_API_KEY and CREATOMATE_API_KEY:
         try:
@@ -207,6 +233,130 @@ async def _run_autopilot(config: AutopilotConfig, callback_url: str | None = Non
                 )
                 db.add(note)
                 await db.commit()
+
+    # Step 6: Send review notification regardless
+    await _send_review_notification(thread.id)
+
+
+async def _run_quality_gate(thread_id: str, threshold: int, max_retries: int) -> bool:
+    """
+    Run QA Lead + Reflection Council on the content.
+    If score < threshold, send feedback to Scriptwriter for revision.
+    Retry up to max_retries times.
+    Returns True if quality passed, False if it didn't after all retries.
+    """
+    import re
+
+    for attempt in range(max_retries + 1):
+        async with async_session() as db:
+            # Run QA Lead
+            qa_agent = await db.get(Agent, "qa-lead-agent")
+            if not qa_agent:
+                return True  # Skip if agent doesn't exist
+
+            # Get all messages
+            result = await db.execute(
+                select(Message).where(Message.thread_id == thread_id).order_by(Message.created_at)
+            )
+            messages = list(result.scalars().all())
+            thread_msgs = []
+            for m in messages:
+                sender = await db.get(Agent, m.sender_agent_id) if m.sender_agent_id else None
+                thread_msgs.append({
+                    "id": m.id, "thread_id": m.thread_id,
+                    "sender_type": m.sender_type, "sender_agent_id": m.sender_agent_id,
+                    "sender_name": sender.name if sender else None,
+                    "content": m.content,
+                    "created_at": m.created_at.isoformat() if m.created_at else None,
+                    "status": m.status,
+                })
+
+            qa_prompt = (
+                "Review ALL the content produced in this thread. Score it 1-10 on overall quality. "
+                "Use your full QA checklist. Be brutally honest — this is MrBeast-level quality bar. "
+                "If the score is below 8, list SPECIFIC issues that must be fixed. "
+                "End your review with exactly this format on its own line: SCORE: X/10"
+            )
+
+            thread_msgs.append({
+                "id": str(uuid.uuid4()), "thread_id": thread_id,
+                "sender_type": "user", "sender_agent_id": None, "sender_name": None,
+                "content": qa_prompt,
+                "created_at": datetime.now(timezone.utc).isoformat(), "status": "sent",
+            })
+
+            try:
+                qa_response = generate_agent_response(
+                    system_prompt=qa_agent.system_prompt,
+                    thread_messages=thread_msgs,
+                    agent_id="qa-lead-agent",
+                )
+            except Exception:
+                return True  # Don't block pipeline on QA error
+
+            qa_msg = Message(
+                id=str(uuid.uuid4()), thread_id=thread_id, sender_type="agent",
+                sender_agent_id="qa-lead-agent", content=qa_response, status="complete",
+            )
+            db.add(qa_msg)
+            await db.commit()
+
+            # Parse the score
+            score_match = re.search(r'SCORE:\s*(\d+)/10', qa_response)
+            score = int(score_match.group(1)) if score_match else 0
+
+            if score >= threshold:
+                # Passed! Run Reflection Council for a final sanity check
+                reflection = await db.get(Agent, "reflection-council-agent")
+                if reflection:
+                    reflection_msgs = thread_msgs + [{
+                        "id": qa_msg.id, "thread_id": thread_id,
+                        "sender_type": "agent", "sender_agent_id": "qa-lead-agent",
+                        "sender_name": "QA Lead Agent", "content": qa_response,
+                        "created_at": qa_msg.created_at.isoformat(), "status": "complete",
+                    }]
+                    try:
+                        reflection_response = generate_agent_response(
+                            system_prompt=reflection.system_prompt,
+                            thread_messages=reflection_msgs,
+                            agent_id="reflection-council-agent",
+                        )
+                        ref_msg = Message(
+                            id=str(uuid.uuid4()), thread_id=thread_id, sender_type="agent",
+                            sender_agent_id="reflection-council-agent",
+                            content=reflection_response, status="complete",
+                        )
+                        db.add(ref_msg)
+                        await db.commit()
+                    except Exception:
+                        pass
+                return True
+
+            # Score below threshold — send feedback to Scriptwriter for revision
+            if attempt < max_retries:
+                revision_prompt = (
+                    f"QA REVISION REQUIRED (Attempt {attempt + 1}/{max_retries})\n\n"
+                    f"QA Score: {score}/10 (need {threshold}/10 minimum)\n\n"
+                    f"QA Feedback:\n{qa_response}\n\n"
+                    f"Revise the script addressing ALL issues listed above. "
+                    f"This needs to be 10/10 quality. No shortcuts."
+                )
+
+                revision_msg = Message(
+                    id=str(uuid.uuid4()), thread_id=thread_id, sender_type="user",
+                    sender_agent_id=None, content=revision_prompt,
+                )
+                db.add(revision_msg)
+                await db.commit()
+
+                # Re-run scriptwriter, then SEO, then QA again
+                await _run_pipeline_sequential(
+                    thread_id,
+                    ["scriptwriter-agent", "seo-specialist-agent", "hook-specialist-agent"],
+                    None,
+                )
+
+    return False
 
 
 async def _generate_and_upload_video(thread_id: str):

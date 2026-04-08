@@ -62,6 +62,7 @@ CONTENT_PIPELINE_AGENTS = [
     "shorts-clips-agent",
     "social-media-manager-agent",
     "newsletter-strategist-agent",
+    "qa-lead-agent",
 ]
 
 
