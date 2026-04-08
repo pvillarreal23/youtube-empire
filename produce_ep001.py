@@ -1041,7 +1041,7 @@ def assemble_video():
     notify_make("video", {
         "status": "assembly_complete",
         "file_path": output,
-        "pipeline_steps": 14,
+        "pipeline_steps": 18,
     })
 
     # Notify Make.com — update SEO metadata
@@ -1157,7 +1157,7 @@ def main():
 
     print("=" * 60)
     print("  EP001 'THE SHIFT' — PRODUCTION RUNNER")
-    print("  14-Step Pipeline + Make.com Integration")
+    print("  18-Step Cinematic Pipeline + Make.com Integration")
     print("=" * 60)
 
     # Create directories
@@ -1169,7 +1169,7 @@ def main():
         "status": "production_started",
         "step": args.step,
         "title": EPISODE_TITLE,
-        "pipeline_version": "14-step",
+        "pipeline_version": "18-step-cinematic",
     })
 
     if args.step in ("voiceover", "all"):
