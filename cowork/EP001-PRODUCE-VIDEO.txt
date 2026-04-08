@@ -1,0 +1,485 @@
+EP001 "THE SHIFT" — FULL VIDEO PRODUCTION PROMPT FOR COWORK
+
+You are producing the first episode of V-Real AI (@VRealAI), a faceless documentary YouTube channel. EP001 "The Shift" is fully approved — script, voiceover brief, assembly config, SEO metadata all done. Your job is to produce the actual video files and upload to YouTube.
+
+====================================================================
+TASK 1: GENERATE VOICEOVER AUDIO WITH ELEVENLABS
+====================================================================
+
+Go to https://elevenlabs.io/app/speech-synthesis
+
+Voice Settings:
+- Voice: Julian (Voice ID: CjK4w2V6sbgFJY05zTGt)
+- Model: Multilingual v2
+- Stability: 0.65
+- Similarity: 0.75
+- Style: 0.00
+- Speaker Boost: OFF
+
+Generate in 5 blocks (paste each block separately, download each MP3):
+
+--- BLOCK 1: HOOK + SETUP + SARAH (0:00-3:15) ---
+Paste this text:
+
+Sarah Chen's phone buzzed at nine forty-seven AM.
+
+Emergency meeting.
+
+By ten AM, half her team was gone.
+
+Replaced by AI tools that cost forty-nine dollars a month.
+
+But here's what nobody tells you — the people who moved fast saw twenty-eight percent salary increases.
+
+The people who froze took eight months to recover.
+
+The difference was a single decision made in the first ninety days.
+
+And I tracked exactly what that decision was.
+
+This happened to three point two million people in 2025.
+
+December fifteenth, 2025.
+
+OpenAI released their advanced reasoning model.
+
+Same week, Anthropic launched Claude three point five Sonnet with computer control.
+
+Within seventy-two hours, AI tools could handle tasks that took human teams weeks.
+
+I tracked forty-seven people through this transformation — across eight industries, four continents, ages twenty-six to fifty-two.
+
+Three survival patterns emerged.
+
+The first pattern: people who experimented immediately. Sarah Chen is the clearest example.
+
+Sarah Chen didn't wait for permission.
+
+December eighteenth — three days after the AI announcement — she signed up for everything.
+
+Claude. ChatGPT. Copy dot AI.
+
+Her husband found her at midnight, teaching Claude to analyze competitor campaigns.
+
+"What are you doing?"
+
+"Learning how to survive."
+
+January third — breakthrough moment.
+
+A competitive analysis that typically took two days was finished by eleven thirty AM.
+
+But something was different about the quality.
+
+The AI handled the data collection.
+
+Sarah added the strategic thinking that competitors couldn't replicate.
+
+She didn't replace herself with AI.
+
+She became irreplaceable because of AI.
+
+The second pattern: people who resisted the change. Mike Rodriguez represents this path.
+
+--- END BLOCK 1 ---
+Save as: ep001-block1-hook-sarah.mp3
+
+--- BLOCK 2: MIKE'S STORY (3:15-4:45) ---
+Paste this text:
+
+Mike Rodriguez made a different choice.
+
+Eighteen years of legal research experience.
+
+When his firm introduced Harvey AI, Mike's response was immediate and final.
+
+His words: "I don't need a computer to tell me how to practice law."
+
+That wasn't arrogance.
+
+Mike believed something true — human judgment in law can't be outsourced.
+
+He'd built his reputation on finding precedents other lawyers missed.
+
+On understanding the nuance behind case law.
+
+On being the guy partners trusted with impossible research.
+
+The problem?
+
+Harvey AI didn't outsource his judgment. It accelerated it.
+
+And he missed the moment when that distinction mattered.
+
+While his colleagues learned Harvey AI, Mike doubled down on what made him valuable.
+
+February reality check.
+
+His research assignments were taking six hours.
+
+His AI-assisted colleagues were finishing equivalent work in forty-five minutes.
+
+The partners delivered their verdict.
+
+"Mike, your efficiency metrics don't justify your position."
+
+March first — position eliminated.
+
+Mike wasn't alone. Forty-three percent of workers who rejected AI training in the first sixty days faced similar outcomes within six months.
+
+The third pattern: people who saw the shift as strategy. David Park exemplifies this approach.
+
+--- END BLOCK 2 ---
+Save as: ep001-block2-mike.mp3
+
+--- BLOCK 3: DAVID'S STORY (4:45-6:00) ---
+Paste this text:
+
+David Park saw what others missed.
+
+When his company announced AI customer service integration, David didn't panic.
+
+He studied the technology for two weeks.
+
+Mapped what AI could and couldn't do.
+
+Then he wrote the memo that changed everything.
+
+"AI can handle eighty percent of our ticket volume perfectly. But the twenty percent it can't handle — furious customers, complex technical issues, executive escalations — that's where we create customer loyalty."
+
+Instead of fighting the AI rollout, he designed it.
+
+Result: VP of Customer Experience.
+
+Forty-eight percent salary increase.
+
+But here's what connects these three stories...
+
+Each person had the exact same information on the exact same day.
+
+The difference wasn't opportunity. It was response speed.
+
+--- END BLOCK 3 ---
+Save as: ep001-block3-david.mp3
+
+--- BLOCK 4: FRAMEWORK REVELATION (6:00-8:30) ---
+Paste this text:
+
+Sarah, Mike, and David weren't unique cases.
+
+I found this same pattern in forty-seven people across eight industries.
+
+The people who succeeded all did three specific actions within ninety days of their company's AI announcement.
+
+This is the Ninety-Day Rule.
+
+Days one to thirty: Immediate hands-on experimentation.
+
+Winners signed up for AI tools the day their company announced integration.
+
+Not when training started. Not when it became mandatory.
+
+The day they heard it was coming.
+
+Sarah spent thirty minutes every morning for thirty days testing different AI tools.
+
+She gave Claude the same tasks she'd normally do manually.
+
+Compared outputs. Found the gaps. Learned the limits.
+
+Mike? He never opened a single AI tool.
+
+Days thirty-one to sixty: Identify your irreplaceable complement.
+
+They mapped what AI handled well versus what broke down.
+
+Then they became experts at the breakdown points.
+
+Sarah discovered AI could generate competitive analysis in minutes.
+
+But it couldn't interpret what that meant for strategy.
+
+Couldn't read between the lines of competitor behavior.
+
+Couldn't predict which insights would actually change business decisions.
+
+So she became the strategic interpreter.
+
+David found AI could resolve eighty percent of customer tickets.
+
+But it couldn't handle the twenty percent that required emotional intelligence.
+
+The angry customers. The complex technical problems. The executive escalations.
+
+So he became the human escalation specialist.
+
+Days sixty-one to ninety: Position yourself as the essential bridge.
+
+They stopped competing with AI and started designing workflows that combined both.
+
+They became the person who understood what AI could do and what humans had to do.
+
+Sarah pitched herself as the "AI-Human Strategy Director."
+
+Not just a marketer. The person who could harness AI speed and add human wisdom.
+
+David positioned himself as the "Customer Experience Architect."
+
+Not just a manager. The designer of human-AI customer service systems.
+
+They made themselves indispensable by becoming the integration point.
+
+Here's what makes this urgent.
+
+Most industries are already past day sixty of this transformation.
+
+If you're in marketing, customer service, content creation, research, analysis — your ninety-day window is probably closing.
+
+If you're watching this today, here's what you do.
+
+Question one: What am I doing manually that AI could accelerate?
+
+Pick one task. Sign up for one AI tool. Test it for thirty minutes.
+
+Question two: What can I do that AI fundamentally cannot?
+
+Find the breakdown points. The judgment calls. The human moments.
+
+Question three: How do I become the bridge that makes both work better?
+
+Don't compete with AI. Design the workflow that needs both.
+
+The question isn't whether this will reach your job.
+
+It's whether you'll be Sarah or Mike when it does.
+
+This shift isn't happening to us.
+
+It's happening through us.
+
+The question is: which side of it will you choose to be on?
+
+--- END BLOCK 4 ---
+Save as: ep001-block4-framework.mp3
+
+--- BLOCK 5: BRAND CLOSE (8:30-9:00) ---
+Paste this text:
+
+If this changed how you see what's coming for your industry, there's more where this came from.
+
+This is V-Real AI.
+
+We're here to help you see what's coming — and position yourself correctly — before your ninety days are up.
+
+Subscribe for the insights that determine outcomes.
+
+The next episode drops Tuesday.
+
+--- END BLOCK 5 ---
+Save as: ep001-block5-close.mp3
+
+After generating all 5 blocks, concatenate them into one file:
+Open terminal and run:
+ffmpeg -i "concat:ep001-block1-hook-sarah.mp3|ep001-block2-mike.mp3|ep001-block3-david.mp3|ep001-block4-framework.mp3|ep001-block5-close.mp3" -acodec copy ep001-voiceover-raw.mp3
+
+Or if that doesn't work:
+Create a file called files.txt with:
+file 'ep001-block1-hook-sarah.mp3'
+file 'ep001-block2-mike.mp3'
+file 'ep001-block3-david.mp3'
+file 'ep001-block4-framework.mp3'
+file 'ep001-block5-close.mp3'
+
+Then run:
+ffmpeg -f concat -safe 0 -i files.txt -c copy ep001-voiceover-raw.mp3
+
+====================================================================
+TASK 2: SOURCE B-ROLL FOOTAGE FROM PEXELS
+====================================================================
+
+Go to https://www.pexels.com/videos/ and download these clips (all FREE, no watermark):
+
+Search for each and download the highest quality (1080p or 4K):
+
+Scene 1 (0:00-0:12) — Search "neural network dark" or "AI brain visualization"
+Scene 2 (0:12-0:24) — Search "data particles accelerating" or "technology light trails"
+Scene 3 (0:24-0:45) — Search "person crossroads silhouette" or "fork in road"
+Scene 4 (0:45-1:22) — Search "woman working laptop night" or "office late night"
+Scene 5 (1:22-1:45) — Search "phone notification" or "chat message screen"
+Scene 6 (1:45-2:25) — Search "person using multiple screens" or "AI tools on computer"
+Scene 7 (2:25-3:00) — Search "AI generated art" or "digital creativity"
+Scene 8 (3:00-3:30) — Search "hand selecting choosing" or "decision making"
+Scene 9 (3:30-4:15) — Search "revenue growth chart" or "business data visualization"
+Scene 10 (4:15-5:00) — Search "world map connections" or "global network"
+Scene 11 (5:00-5:40) — Search "chain reaction dominos" or "technology spreading"
+Scene 12 (5:40-6:15) — Search "two paths diverging" or "gap between two sides"
+Scene 13 (6:15-7:30) — Search "hope light returning" or "sunrise opportunity"
+Scene 14 (7:30-9:00) — Search "person walking forward confident" or "documentary logo reveal"
+
+Save all clips in a folder called "ep001-footage" with names:
+scene_01_opening.mp4
+scene_02_accelerate.mp4
+scene_03_crossroads.mp4
+scene_04_mara_office.mp4
+scene_05_message.mp4
+scene_06_mara_studying.mp4
+scene_07_raw_material.mp4
+scene_08_selection.mp4
+scene_09_revenue.mp4
+scene_10_global_map.mp4
+scene_11_chain_reaction.mp4
+scene_12_diverging.mp4
+scene_13_rebrightening.mp4
+scene_14_final.mp4
+
+====================================================================
+TASK 3: FIND BACKGROUND MUSIC
+====================================================================
+
+Go to https://pixabay.com/music/ (free, no attribution required)
+
+Search "cinematic documentary" — download ONE track that:
+- Is 3-5 minutes long (it will loop)
+- Has a piano intro
+- Builds to strings/orchestra
+- Feels like BBC documentary background
+
+Save as: ep001-music-main.mp3
+
+====================================================================
+TASK 4: ASSEMBLE THE VIDEO WITH FFMPEG
+====================================================================
+
+Create a working directory and put all files in it:
+mkdir ep001-assembly
+cp ep001-voiceover-raw.mp3 ep001-assembly/
+cp ep001-music-main.mp3 ep001-assembly/
+cp ep001-footage/*.mp4 ep001-assembly/
+
+Run this FFmpeg command to assemble (adjust scene durations based on actual clip lengths):
+
+Step 1 — Normalize voiceover to -14 LUFS:
+ffmpeg -i ep001-voiceover-raw.mp3 -af loudnorm=I=-14:TP=-1:LRA=11 ep001-voice-normalized.mp3
+
+Step 2 — Scale all footage to 1920x1080 and trim to needed duration:
+For each scene file, run:
+ffmpeg -i scene_XX_name.mp4 -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2" -t DURATION scene_XX_scaled.mp4
+
+Scene durations (seconds): 12, 12, 21, 37, 23, 40, 35, 30, 45, 45, 40, 35, 75, 90
+
+Step 3 — Concatenate all scaled scenes:
+Create scenes.txt:
+file 'scene_01_scaled.mp4'
+file 'scene_02_scaled.mp4'
+... (all 14 scenes)
+
+ffmpeg -f concat -safe 0 -i scenes.txt -c:v libx264 -crf 18 ep001-video-concat.mp4
+
+Step 4 — Mix voice + music (music ducked to -28 LUFS under voice):
+ffmpeg -i ep001-voice-normalized.mp3 -i ep001-music-main.mp3 -filter_complex "[1:a]loudnorm=I=-28:TP=-1[music];[0:a][music]amix=inputs=2:duration=first:weights=1 0.3[out]" -map "[out]" ep001-audio-mixed.mp3
+
+Step 5 — Merge video + audio:
+ffmpeg -i ep001-video-concat.mp4 -i ep001-audio-mixed.mp3 -c:v copy -c:a aac -b:a 192k -shortest ep001-the-shift-final.mp4
+
+Step 6 — Add text overlays (optional but recommended):
+At 0:40 add "The barrier evaporated." (lower third, white, fade in/out)
+At 1:25 add "9 years. 20 minutes." (center, large, white)
+At 2:25 add "Intelligence without taste is noise." (center, white)
+At 3:30 add "$3,000 → $7,500 | One-third the time" (lower third)
+At 5:40 add "The gap is already enormous." (center)
+At 6:15 add "$50/month = what $5,000/month bought in 2024" (lower third)
+
+For each overlay:
+ffmpeg -i input.mp4 -vf "drawtext=text='YOUR TEXT':fontsize=56:fontcolor=white:x=(w-text_w)/2:y=h-100:enable='between(t,START,END)':alpha='if(lt(t-START,0.5),(t-START)*2,if(lt(END-t,0.5),(END-t)*2,1))'" -c:a copy output.mp4
+
+====================================================================
+TASK 5: CREATE THUMBNAIL
+====================================================================
+
+Go to Canva (canva.com) or use the brand colors:
+- Background: Dark (#0A0E17) with subtle cyan glow
+- Main text: "THE SHIFT" in bold white/cyan, large
+- Subtext: "AI Changed Everything. Most Weren't Ready." in smaller white
+- Add a silhouette of a person at a crossroads
+- Dimensions: 1280x720
+
+Brand colors:
+- Primary: #00D4FF (cyan)
+- Secondary: #FF6B35 (orange accent)
+- Dark: #0A0E17
+- Font: Inter or Montserrat, bold
+
+Save as: ep001-thumbnail.jpg (or .png)
+
+====================================================================
+TASK 6: UPLOAD TO YOUTUBE
+====================================================================
+
+Go to https://studio.youtube.com (logged into @VRealAI account)
+
+Upload: ep001-the-shift-final.mp4
+Thumbnail: ep001-thumbnail.jpg
+
+Title: The AI Shift That's Coming for Marketers (Most Aren't Ready)
+
+Description (copy exactly):
+AI is transforming marketing, business, and income — and most professionals haven't adapted yet. This documentary explores the AI shift for marketing professionals and solopreneurs who want to stay ahead in 2026.
+
+The shift already happened. Most people just haven't felt it yet.
+
+Covers: AI tools for marketing 2026 | AI automation for solopreneurs | How to start using AI in marketing | ChatGPT vs Claude for business
+
+📌 CHAPTERS:
+0:00 — The Hook
+0:30 — The Setup
+1:45 — Sarah's Story
+3:15 — Mike's Story
+4:45 — David's Story
+6:00 — The 90-Day Rule
+8:30 — What's Next
+
+🎙️ ABOUT V-REAL AI:
+Cinematic documentaries about how AI is changing marketing and work. Every episode shows you exactly which AI tools were used and how — so you can apply the same techniques to your own marketing.
+
+New episodes weekly. Made for marketing professionals and solopreneurs adapting to AI.
+
+🔔 Subscribe so you don't miss what's coming next.
+
+#AIMarketing #AIForBeginners #FutureOfWork
+
+Tags (paste into tags field):
+AI marketing, AI for marketers, AI tools for marketing, AI 2026, AI documentary, future of marketing, AI for solopreneurs, marketing automation AI, AI workflow for business, how to use AI for marketing, AI marketing strategy, AI marketing tools, ChatGPT for marketing, Claude AI for business, solopreneur AI tools, marketing professional AI, AI beginner guide, digital marketing AI, AI content strategy, AI business automation
+
+Settings:
+- Category: Education
+- Language: English
+- Visibility: Public
+- Made for kids: No
+- Age restriction: No
+- Allow comments: Yes
+- Allow embedding: Yes
+- Notify subscribers: Yes
+
+IMMEDIATELY AFTER UPLOAD — Post this pinned comment:
+This entire video was researched, scripted, narrated, and produced using AI.
+
+Every tool. Every step. Transparent.
+
+If you're a marketer or solopreneur figuring out AI — you're in the right place. We show you what's actually working, not what's trending.
+
+Welcome to V-Real AI. You're not paranoid. You're observant.
+
+====================================================================
+TASK 7: POST-UPLOAD CHECKLIST
+====================================================================
+
+After uploading:
+1. Pin the comment above
+2. Set end screen (last 20 seconds): Subscribe button + playlist link
+3. Add to playlist "V-Real AI" (create if doesn't exist)
+4. Share the YouTube link in the Discord #announcements channel
+5. Reply to me with the YouTube video URL
+
+====================================================================
+DONE! EP001 "The Shift" is live.
+====================================================================

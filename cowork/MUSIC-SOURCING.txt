@@ -1,0 +1,35 @@
+V-Real AI needs background music for documentary episodes. The music creates the emotional foundation — without it, the video is just a voice over stock footage.
+
+REQUIREMENTS:
+- Royalty-free / copyright-safe for YouTube monetization
+- Dark, cinematic, documentary tone
+- Low BPM (70-90) — thoughtful, not energetic
+- No lyrics
+- Minimum 3 minutes (gets looped to fill episode)
+- Downloadable as MP3 or WAV
+
+SOURCES TO TRY (in order):
+1. Pixabay Music (pixabay.com/music) — 100% free, no attribution needed
+   Search: "dark cinematic documentary" or "ambient technology"
+   Download the best match
+
+2. YouTube Audio Library (studio.youtube.com → Audio Library)
+   Filter: Genre = Cinematic, Mood = Dark/Dramatic
+   These are pre-cleared for YouTube use
+
+3. Uppbeat (uppbeat.io) — free tier available
+   Search: "documentary" or "cinematic dark"
+
+WHAT TO DOWNLOAD FOR EP001:
+- 1 main background track (dark, cinematic, building tension)
+- 1 emotional/reflective track (for Sarah/Mike/David stories)
+- 1 hopeful/rising track (for the framework/solution section)
+
+SAVE FILES TO:
+Upload to Google Drive folder: VReal-AI/music/
+Name them:
+- ep001-bg-main.mp3
+- ep001-bg-emotional.mp3
+- ep001-bg-hopeful.mp3
+
+The video assembler will automatically duck the music under the voiceover (drops from -28 LUFS to -35 LUFS when voice is active).

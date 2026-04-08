@@ -1,10 +1,11 @@
-# CEO Agent — Skill Portfolio
+# ceo-agent — Skill Folder
 
-Skills are automatically tracked as the agent completes work. Each `.md` file represents a skill with level, XP, and evidence.
+Skills are automatically added here as the agent completes work.
+Each .md file represents a skill with level, XP, and evidence.
 
 ## Skill Levels
-- 🟢 Novice (Level 1) — 0-99 XP
-- 🔵 Apprentice (Level 2) — 100-249 XP
-- 🟣 Skilled (Level 3) — 250-379 XP
-- 🟠 Expert (Level 4) — 380-699 XP
-- 🔴 Master (Level 5) — 700+ XP
+- 🟢 Novice (Lv1)
+- 🔵 Apprentice (Lv2)
+- 🟣 Skilled (Lv3)
+- 🟠 Expert (Lv4)
+- 🔴 Master (Lv5)

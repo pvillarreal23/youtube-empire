@@ -1,0 +1,35 @@
+I need you to take full control of my computer and complete these tasks for V-Real AI. Do them in order. I will watch and approve anything that needs my login or password.
+
+CONTEXT: We have a YouTube channel called V-Real AI (@VRealAI). We have a cloud server running the AI pipeline. We have Make.com scenarios set up. Some things are blocked on the cloud server (403 errors) so we need to do them from this computer or through Make.com.
+
+TASK 1: UPLOAD BRANDING TO YOUTUBE
+Open YouTube Studio (studio.youtube.com). Go to Customization then Branding. Upload vreal-ai-profile.png from my Downloads folder as the profile picture. Upload vreal-ai-banner.png from my Downloads folder as the banner. Upload vreal-ai-profile.png as the video watermark. Go to Basic Info and set the category to Science and Technology. Update the channel description to: "You're not paranoid. You're observant. V-Real AI is an AI-powered documentary channel exploring how artificial intelligence is reshaping work, business, and daily life. New episodes every Tuesday and Thursday at 2PM EST. Built transparently with AI. Every tool, every workflow, every mistake — documented." Set channel keywords to: AI tools, artificial intelligence, AI for business, AI documentary, AI marketing, AI automation, solopreneur AI, faceless YouTube. Go to Settings then Upload defaults. Set the default description to: "You're not paranoid. You're observant. Subscribe for new AI documentaries every Tuesday and Thursday. V-Real AI — exploring how AI is reshaping everything. #AI #ArtificialIntelligence #AITools" Set default tags to: AI, artificial intelligence, AI tools, AI documentary, AI for business. Set default category to Science and Technology. Set comments to Allow all comments. Save everything.
+
+TASK 2: GET GEMINI API KEY
+Open browser and go to aistudio.google.com/app/apikey. Sign in with my Google account if needed (I will enter the password). Click Create API key. Select or create a Google Cloud project. Copy the API key and save it in a text file on my desktop called "api-keys.txt". The key starts with AI.
+
+TASK 3: GET GROK API KEY
+Open browser and go to console.x.ai. Sign in (I will enter credentials if needed). Go to API Keys section. Create a new key and name it "V-Real AI Pressure Test". Copy the key and add it to the same api-keys.txt file on my desktop. The key starts with xai-.
+
+TASK 4: FIX GROK IN MAKE.COM
+Open Make.com and sign in. Go to scenario 4654272 (Pressure Test Grok). Click the HTTP module. Find where it says "Bearer REPLACE_WITH_GROK_KEY" in the Authorization header. Replace REPLACE_WITH_GROK_KEY with the real Grok key from api-keys.txt. Save the scenario. Do not activate it yet (free plan only allows 2 active).
+
+TASK 5: COPY ALL 3 PRESSURE TEST WEBHOOK URLS FROM MAKE.COM
+Open Make.com scenario 4654010 (Pressure Test OpenAI). Click the webhook module (the first module in the scenario). Copy the webhook URL. Add it to api-keys.txt labeled as OPENAI_WEBHOOK. Open Make.com scenario 4654109 (Pressure Test Gemini). Click the webhook module. Copy the URL. Add it to api-keys.txt labeled as GEMINI_WEBHOOK. Open Make.com scenario 4654272 (Pressure Test Grok). Click the webhook module. Copy the URL. Add it to api-keys.txt labeled as GROK_WEBHOOK.
+
+TASK 6: CREATE MAKE.COM VOICEOVER SCENARIO
+We need a new Make.com scenario because the cloud server cannot reach ElevenLabs directly (403 blocked). This scenario will proxy voiceover requests through Make.com. Create a new scenario in Make.com called "Voiceover — ElevenLabs". Step 1: Add a Webhook trigger (Custom webhook), click Add to create a new webhook. Step 2: Add an HTTP module (Make a request). URL: https://api.elevenlabs.io/v1/text-to-speech/CjK4w2V6sbgFJY05zTGt Method: POST. Headers: xi-api-key: sk_09ea908f52bbf89daaf97e48cbb0599153b1cf16a3e47529 and Content-Type: application/json and Accept: audio/mpeg. Body type: Raw, JSON. Body content: {"text": "{{1.text}}", "model_id": "eleven_multilingual_v2", "voice_settings": {"stability": 0.65, "similarity_boost": 0.75, "style": 0.00, "use_speaker_boost": false}}. Step 3: The HTTP module will return audio binary data. Add a Webhook response module that returns the audio data with Content-Type audio/mpeg. Save the scenario. Copy the webhook URL and add it to api-keys.txt labeled as VOICEOVER_WEBHOOK. Note: This scenario needs to be active to work. You may need to deactivate one of the other scenarios (deactivate Grok since we do not have the key yet) or upgrade to Make.com Core ($9/mo) to have more active scenarios.
+
+TASK 7: ADD ALL KEYS AND URLS TO THE CLOUD SERVER
+Open a terminal. SSH into the cloud server or connect however we normally do. Navigate to the project: cd /home/user/youtube-empire. Open the file vreal-ai/.env in a text editor. Find GEMINI_API_KEY= (it is blank) and paste the Gemini key from api-keys.txt after the equals sign. Find GROK_API_KEY= (it is blank) and paste the Grok key. Find MAKE_WEBHOOK_PRESSURE_OPENAI= and paste the OpenAI webhook URL. Find MAKE_WEBHOOK_PRESSURE_GEMINI= and paste the Gemini webhook URL. Find MAKE_WEBHOOK_PRESSURE_GROK= and paste the Grok webhook URL. Find MAKE_WEBHOOK_VOICEOVER= and paste the voiceover webhook URL. Save the file. Now do the exact same thing for vreal-ai/backend/.env (same keys, same values, same fields). Save that file too. Now restart the backend: Run these commands: pkill -f uvicorn then wait 3 seconds then run: cd /home/user/youtube-empire/vreal-ai/backend && nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > /tmp/backend.log 2>&1 & then wait 5 seconds and verify by running: curl http://127.0.0.1:8000/api/health which should return {"status":"ok"}.
+
+TASK 8: PUSH EP001 ASSETS FROM THIS COMPUTER TO GITHUB
+If there are EP001 asset files on this computer (check ~/Downloads/ or wherever Pedro keeps them — look for folders with mp3, mp4, wav, png files related to EP001 The Shift), push them to the GitHub repo. Open terminal. cd to the youtube-empire project folder. Run: git checkout claude/improve-video-editing-mDM2y then git pull origin claude/improve-video-editing-mDM2y. Copy any EP001 assets into output/ep001/ folder. Run: git add output/ep001/ then git commit -m "Add EP001 assets from local machine" then git push origin claude/improve-video-editing-mDM2y. If the push fails because files are too large, run: git lfs install then git lfs track "*.mp3" "*.mp4" "*.wav" "*.png" "*.jpg" then git add .gitattributes then git add output/ep001/ then git commit -m "Add EP001 assets via LFS" then git push origin claude/improve-video-editing-mDM2y.
+
+WHEN ALL DONE, SEND ME A MESSAGE WITH:
+1. Confirmation YouTube branding is uploaded (screenshot if possible)
+2. The full contents of api-keys.txt (all keys and webhook URLs)
+3. Confirmation the .env files on the server are updated and backend is running
+4. Confirmation EP001 assets are pushed (or if there were no assets on this computer)
+5. Which Make.com scenarios are currently active vs saved
+6. The Discord invite link (should be https://discord.gg/66pD57PPkH)

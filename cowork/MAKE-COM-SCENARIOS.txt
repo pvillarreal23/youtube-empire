@@ -1,0 +1,402 @@
+You are setting up Make.com automation scenarios for V-Real AI, a YouTube documentary channel. This is the COMPLETE production pipeline — every scenario the system needs to run fully automated.
+
+You have access to Pedro's computer with a browser. Do everything in Make.com (https://us2.make.com). The team ID is 2078612.
+
+API KEYS (get from ~/youtube-empire/vreal-ai/backend/.env):
+- Make.com API Key: (use MAKE_API_KEY from .env)
+- ElevenLabs API Key: (use ELEVENLABS_API_KEY from .env)
+- Pexels API Key: (use PEXELS_API_KEY from .env)
+- Anthropic API Key: (use ANTHROPIC_API_KEY from .env)
+
+CREATE ALL 16 SCENARIOS BELOW. For each one:
+- Create the scenario in Make.com
+- Add the modules in order
+- Activate the scenario
+- Copy the webhook URL
+- Test it with the provided test payload
+
+====================================================================
+SCENARIO 1: "VReal - Voiceover" (ElevenLabs TTS)
+====================================================================
+Purpose: Receives text, generates voiceover audio via ElevenLabs, saves MP3 to Google Drive.
+
+Modules:
+1. Webhooks > Custom webhook (name: "VReal - Voiceover")
+2. HTTP > Make a request
+   - URL: https://api.elevenlabs.io/v1/text-to-speech/{{1.voice_id}}
+   - Method: POST
+   - Headers:
+     xi-api-key: [ELEVENLABS_API_KEY from .env]
+     Content-Type: application/json
+     Accept: audio/mpeg
+   - Body type: Raw, Content type: JSON
+   - Body: {"text":"{{1.text}}","model_id":"{{1.model_id}}","voice_settings":{"stability":{{1.stability}},"similarity_boost":{{1.similarity}},"style":{{1.style}},"use_speaker_boost":{{1.speaker_boost}}}}
+   - Parse response: No
+   - Download file: YES
+3. Google Drive > Upload a File
+   - Folder: VReal-AI/audio
+   - File name: {{1.filename}}
+   - Data: from Module 2
+4. Webhooks > Webhook response
+   - Body: {"status":"success","file_url":"{{3.webContentLink}}","file_id":"{{3.id}}","filename":"{{1.filename}}"}
+
+Test payload:
+{"voice_id":"CjK4w2V6sbgFJY05zTGt","model_id":"eleven_multilingual_v2","stability":0.65,"similarity":0.75,"style":0.0,"speaker_boost":false,"filename":"test-voiceover.mp3","text":"This is a test of V-Real AI voiceover. If you hear this, automation works."}
+
+Label: MAKE_WEBHOOK_VOICEOVER
+
+====================================================================
+SCENARIO 2: "VReal - Footage" (Pexels Video)
+====================================================================
+Purpose: Searches Pexels for stock footage, downloads best HD clip, saves to Google Drive.
+
+Modules:
+1. Webhooks > Custom webhook (name: "VReal - Footage")
+2. HTTP > Make a request
+   - URL: https://api.pexels.com/videos/search
+   - Method: GET
+   - Headers:
+     Authorization: [PEXELS_API_KEY from .env]
+   - Query string: query={{1.query}}, per_page=3, min_duration={{1.min_duration}}, min_width=1920, orientation=landscape
+   - Parse response: Yes
+3. Set variable
+   - Name: video_url
+   - Value: {{2.body.videos[1].video_files[1].link}}
+4. HTTP > Get a file
+   - URL: {{3.video_url}}
+5. Google Drive > Upload a File
+   - Folder: VReal-AI/footage
+   - File name: scene_{{1.scene_number}}_pexels.mp4
+   - Data: from Module 4
+6. Webhooks > Webhook response
+   - Body: {"status":"success","file_url":"{{5.webContentLink}}","scene":"{{1.scene_number}}"}
+
+Test payload:
+{"scene_number":"01","query":"neural network dark visualization","min_duration":5}
+
+Label: MAKE_WEBHOOK_VIDEO
+
+====================================================================
+SCENARIO 3: "VReal - YouTube Upload"
+====================================================================
+Purpose: Uploads a video from Google Drive to YouTube with full metadata.
+
+Modules:
+1. Webhooks > Custom webhook (name: "VReal - YouTube Upload")
+2. Google Drive > Download a File
+   - File ID: {{1.drive_file_id}}
+3. YouTube > Upload a Video
+   - Connect @VRealAI YouTube account
+   - Title: {{1.title}}
+   - Description: {{1.description}}
+   - Tags: {{1.tags}}
+   - Category ID: {{1.category_id}}
+   - Privacy: {{1.privacy}}
+   - File: from Module 2
+4. YouTube > Create a Comment
+   - Video ID: {{3.id}}
+   - Text: {{1.pinned_comment}}
+5. Webhooks > Webhook response
+   - Body: {"status":"success","video_id":"{{3.id}}","url":"https://youtube.com/watch?v={{3.id}}"}
+
+Label: MAKE_WEBHOOK_UPLOAD
+
+====================================================================
+SCENARIO 4: "VReal - Thumbnail" (Image Generation)
+====================================================================
+Purpose: Generates a thumbnail image from a prompt, saves to Google Drive.
+
+Modules:
+1. Webhooks > Custom webhook (name: "VReal - Thumbnail")
+2. HTTP > Make a request
+   - URL: https://api.openai.com/v1/images/generations
+   - Method: POST
+   - Headers:
+     Authorization: Bearer {{1.openai_key}}
+     Content-Type: application/json
+   - Body: {"model":"dall-e-3","prompt":"{{1.prompt}}","n":1,"size":"1792x1024","quality":"hd"}
+   - Parse response: Yes
+3. HTTP > Get a file
+   - URL: {{2.body.data[1].url}}
+4. Google Drive > Upload a File
+   - Folder: VReal-AI/thumbnails
+   - File name: {{1.filename}}
+   - Data: from Module 3
+5. Webhooks > Webhook response
+   - Body: {"status":"success","file_url":"{{4.webContentLink}}","file_id":"{{4.id}}"}
+
+Label: MAKE_WEBHOOK_THUMBNAIL
+
+====================================================================
+SCENARIO 5: "VReal - SEO Optimization"
+====================================================================
+Purpose: Takes video metadata, optimizes it with Claude, returns improved title/description/tags.
+
+Modules:
+1. Webhooks > Custom webhook (name: "VReal - SEO")
+2. HTTP > Make a request
+   - URL: https://api.anthropic.com/v1/messages
+   - Method: POST
+   - Headers:
+     x-api-key: [ANTHROPIC_API_KEY from .env]
+     Content-Type: application/json
+     anthropic-version: 2023-06-01
+   - Body: {"model":"claude-sonnet-4-20250514","max_tokens":2000,"messages":[{"role":"user","content":"You are a YouTube SEO expert. Optimize the following video metadata for maximum discoverability. Return JSON with optimized title, description, and tags.\n\nCurrent title: {{1.title}}\nCurrent description: {{1.description}}\nCurrent tags: {{1.tags}}\nTarget audience: {{1.audience}}"}]}
+   - Parse response: Yes
+3. Webhooks > Webhook response
+   - Body: {"status":"success","optimized":"{{2.body.content[1].text}}"}
+
+Label: MAKE_WEBHOOK_SEO
+
+====================================================================
+SCENARIO 6: "VReal - Research"
+====================================================================
+Purpose: Takes a research topic, uses Claude to do deep research, returns findings.
+
+Modules:
+1. Webhooks > Custom webhook (name: "VReal - Research")
+2. HTTP > Make a request
+   - URL: https://api.anthropic.com/v1/messages
+   - Method: POST
+   - Headers:
+     x-api-key: [ANTHROPIC_API_KEY from .env]
+     Content-Type: application/json
+     anthropic-version: 2023-06-01
+   - Body: {"model":"claude-sonnet-4-20250514","max_tokens":4000,"messages":[{"role":"user","content":"{{1.prompt}}"}]}
+   - Parse response: Yes
+3. Webhooks > Webhook response
+   - Body: {"status":"success","research":"{{2.body.content[1].text}}"}
+
+Label: MAKE_WEBHOOK_RESEARCH
+
+====================================================================
+SCENARIO 7: "VReal - Script to Sheets"
+====================================================================
+Purpose: Takes a completed script and saves it to Google Sheets for tracking.
+
+Modules:
+1. Webhooks > Custom webhook (name: "VReal - Script")
+2. Google Sheets > Add a Row
+   - Connect Pedro's Google account
+   - Spreadsheet: "VReal AI Content Pipeline" (create if needed)
+   - Sheet: "Scripts"
+   - Columns: Episode ID | Title | Status | Script Text | Word Count | Created Date
+   - Values: {{1.episode_id}} | {{1.title}} | {{1.status}} | {{1.script}} | {{1.word_count}} | {{1.date}}
+3. Webhooks > Webhook response
+   - Body: {"status":"success","row":"added"}
+
+Label: MAKE_WEBHOOK_SCRIPT
+
+====================================================================
+SCENARIO 8: "VReal - Sheets Update"
+====================================================================
+Purpose: General purpose Google Sheets update (any sheet, any data).
+
+Modules:
+1. Webhooks > Custom webhook (name: "VReal - Sheets")
+2. Google Sheets > Add a Row
+   - Spreadsheet: {{1.spreadsheet}}
+   - Sheet: {{1.sheet}}
+   - Values: Map dynamically from {{1.data}}
+3. Webhooks > Webhook response
+   - Body: {"status":"success"}
+
+Label: MAKE_WEBHOOK_SHEETS
+
+====================================================================
+SCENARIO 9: "VReal - Social Post"
+====================================================================
+Purpose: Posts to social media (Twitter/X, Instagram, etc.) when a new video drops.
+
+Modules:
+1. Webhooks > Custom webhook (name: "VReal - Social")
+2. Twitter > Create a Tweet (connect @VRealAI Twitter if available)
+   - Tweet text: {{1.text}}
+   - If there's media: attach {{1.media_url}}
+3. Webhooks > Webhook response
+   - Body: {"status":"success","tweet_id":"{{2.id}}"}
+
+NOTE: If Twitter isn't connected yet, just create the webhook and add a placeholder HTTP module. Connect Twitter later.
+
+Label: MAKE_WEBHOOK_SOCIAL
+
+====================================================================
+SCENARIO 10: "VReal - Newsletter"
+====================================================================
+Purpose: Sends email newsletter to subscribers when new content drops.
+
+Modules:
+1. Webhooks > Custom webhook (name: "VReal - Newsletter")
+2. Email > Send an email (or Mailchimp if connected)
+   - To: {{1.to}} (or mailing list)
+   - Subject: {{1.subject}}
+   - HTML Body: {{1.html_body}}
+3. Webhooks > Webhook response
+   - Body: {"status":"success"}
+
+Label: MAKE_WEBHOOK_NEWSLETTER
+
+====================================================================
+SCENARIO 11: "VReal - Analytics"
+====================================================================
+Purpose: Pulls YouTube analytics data and returns it.
+
+Modules:
+1. Webhooks > Custom webhook (name: "VReal - Analytics")
+2. YouTube > Get Channel Statistics (connect @VRealAI)
+   - OR: YouTube > List Videos with stats
+3. Webhooks > Webhook response
+   - Body: {"status":"success","data":{{2}}}
+
+Label: MAKE_WEBHOOK_ANALYTICS
+
+====================================================================
+SCENARIO 12: "VReal - Notify Pedro"
+====================================================================
+Purpose: Sends notification to Pedro (email or Slack).
+
+Modules:
+1. Webhooks > Custom webhook (name: "VReal - Notify")
+2. Email > Send an email
+   - To: Pedro's email address
+   - Subject: [V-Real AI] {{1.subject}}
+   - Body: {{1.message}}
+3. Webhooks > Webhook response
+   - Body: {"status":"sent"}
+
+Label: MAKE_WEBHOOK_NOTIFY
+
+====================================================================
+SCENARIO 13: "VReal - Custom"
+====================================================================
+Purpose: General purpose webhook for any custom automation.
+
+Modules:
+1. Webhooks > Custom webhook (name: "VReal - Custom")
+2. HTTP > Make a request
+   - URL: {{1.url}}
+   - Method: {{1.method}}
+   - Headers: {{1.headers}}
+   - Body: {{1.body}}
+   - Parse response: Yes
+3. Webhooks > Webhook response
+   - Body: {"status":"success","response":"{{2.body}}"}
+
+Label: MAKE_WEBHOOK_CUSTOM
+
+====================================================================
+SCENARIO 14: "VReal - Pressure Test OpenAI" (ChatGPT Review)
+====================================================================
+Purpose: Sends content to ChatGPT for quality review (pressure testing).
+
+Modules:
+1. Webhooks > Custom webhook (name: "VReal - Pressure OpenAI")
+2. HTTP > Make a request
+   - URL: https://api.openai.com/v1/chat/completions
+   - Method: POST
+   - Headers:
+     Authorization: Bearer {{1.openai_key}}
+     Content-Type: application/json
+   - Body: {"model":"gpt-4o","messages":[{"role":"system","content":"You are a quality reviewer for YouTube documentary content. Score the work 1-10 and give specific feedback."},{"role":"user","content":"{{1.content}}"}],"max_tokens":2000}
+   - Parse response: Yes
+3. Webhooks > Webhook response
+   - Body: {"status":"success","review":"{{2.body.choices[1].message.content}}"}
+
+NOTE: This needs an OpenAI API key. If Pedro doesn't have one, just create the webhook and module structure. The key can be added later as {{1.openai_key}} in the payload.
+
+Label: MAKE_WEBHOOK_PRESSURE_OPENAI
+
+====================================================================
+SCENARIO 15: "VReal - Pressure Test Gemini"
+====================================================================
+Purpose: Sends content to Google Gemini for quality review.
+
+Modules:
+1. Webhooks > Custom webhook (name: "VReal - Pressure Gemini")
+2. HTTP > Make a request
+   - URL: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{1.gemini_key}}
+   - Method: POST
+   - Headers:
+     Content-Type: application/json
+   - Body: {"contents":[{"parts":[{"text":"You are a quality reviewer for YouTube documentary content. Score 1-10 with specific feedback.\n\n{{1.content}}"}]}],"generationConfig":{"maxOutputTokens":2000}}
+   - Parse response: Yes
+3. Webhooks > Webhook response
+   - Body: {"status":"success","review":"{{2.body.candidates[1].content.parts[1].text}}"}
+
+NOTE: Needs a Gemini API key. Same as above — create the structure, key goes in payload.
+
+Label: MAKE_WEBHOOK_PRESSURE_GEMINI
+
+====================================================================
+SCENARIO 16: "VReal - Pressure Test Grok"
+====================================================================
+Purpose: Sends content to Grok (xAI) for contrarian quality review.
+
+Modules:
+1. Webhooks > Custom webhook (name: "VReal - Pressure Grok")
+2. HTTP > Make a request
+   - URL: https://api.x.ai/v1/chat/completions
+   - Method: POST
+   - Headers:
+     Authorization: Bearer {{1.grok_key}}
+     Content-Type: application/json
+   - Body: {"model":"grok-3","messages":[{"role":"system","content":"You are a contrarian quality reviewer. Be harsh. Find weaknesses. Score 1-10."},{"role":"user","content":"{{1.content}}"}],"max_tokens":2000}
+   - Parse response: Yes
+3. Webhooks > Webhook response
+   - Body: {"status":"success","review":"{{2.body.choices[1].message.content}}"}
+
+NOTE: Needs a Grok/xAI API key. Create structure, key in payload.
+
+Label: MAKE_WEBHOOK_PRESSURE_GROK
+
+====================================================================
+FINAL STEP — COLLECT ALL 16 WEBHOOK URLS
+====================================================================
+
+After creating all scenarios, list every webhook URL in this exact format:
+
+MAKE_WEBHOOK_VOICEOVER=https://hook.us2.make.com/...
+MAKE_WEBHOOK_VIDEO=https://hook.us2.make.com/...
+MAKE_WEBHOOK_UPLOAD=https://hook.us2.make.com/...
+MAKE_WEBHOOK_THUMBNAIL=https://hook.us2.make.com/...
+MAKE_WEBHOOK_SEO=https://hook.us2.make.com/...
+MAKE_WEBHOOK_RESEARCH=https://hook.us2.make.com/...
+MAKE_WEBHOOK_SCRIPT=https://hook.us2.make.com/...
+MAKE_WEBHOOK_SHEETS=https://hook.us2.make.com/...
+MAKE_WEBHOOK_SOCIAL=https://hook.us2.make.com/...
+MAKE_WEBHOOK_NEWSLETTER=https://hook.us2.make.com/...
+MAKE_WEBHOOK_ANALYTICS=https://hook.us2.make.com/...
+MAKE_WEBHOOK_NOTIFY=https://hook.us2.make.com/...
+MAKE_WEBHOOK_CUSTOM=https://hook.us2.make.com/...
+MAKE_WEBHOOK_PRESSURE_OPENAI=https://hook.us2.make.com/...
+MAKE_WEBHOOK_PRESSURE_GEMINI=https://hook.us2.make.com/...
+MAKE_WEBHOOK_PRESSURE_GROK=https://hook.us2.make.com/...
+
+REPLY WITH ALL 16 WEBHOOK URLS so they can be added to the system.
+
+====================================================================
+PRIORITY ORDER (if you need to do them in batches)
+====================================================================
+BATCH 1 (do first — unblocks EP001):
+1. VReal - Voiceover
+2. VReal - Footage
+3. VReal - YouTube Upload
+
+BATCH 2 (unblocks full pipeline):
+4. VReal - Thumbnail
+5. VReal - SEO
+6. VReal - Notify Pedro
+
+BATCH 3 (unblocks pressure testing):
+7. VReal - Pressure Test OpenAI
+8. VReal - Pressure Test Gemini
+9. VReal - Pressure Test Grok
+
+BATCH 4 (unblocks business operations):
+10. VReal - Research
+11. VReal - Script to Sheets
+12. VReal - Sheets Update
+13. VReal - Social Post
+14. VReal - Newsletter
+15. VReal - Analytics
+16. VReal - Custom
