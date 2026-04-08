@@ -1,0 +1,221 @@
+from __future__ import annotations
+
+import anthropic
+import time
+from datetime import datetime, timezone
+from app.config import ANTHROPIC_API_KEY, CLAUDE_MODEL
+
+# Haiku for lightweight tasks (QA reviews, scoring) — 90% cheaper than Sonnet
+CLAUDE_MODEL_LITE = "claude-haiku-4-5-20251001"
+
+# Retry config for rate limits (429 errors)
+MAX_RETRIES = 4
+RETRY_BASE_DELAY = 30  # seconds — waits 30, 60, 120, 240
+
+
+def get_client() -> anthropic.Anthropic:
+    return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+
+
+def _call_with_retry(create_fn) -> str:
+    """Call Claude API with exponential backoff on 429 rate limit errors."""
+    for attempt in range(MAX_RETRIES + 1):
+        try:
+            response = create_fn()
+            return response.content[0].text
+        except anthropic.RateLimitError as e:
+            if attempt == MAX_RETRIES:
+                raise
+            delay = RETRY_BASE_DELAY * (2 ** attempt)
+            print(f"[RATE LIMIT] 429 hit, waiting {delay}s before retry {attempt + 1}/{MAX_RETRIES}...")
+            time.sleep(delay)
+    raise RuntimeError("Unreachable")
+
+
+def format_thread_for_agent(messages: list[dict], agent_id: str) -> list[dict]:
+    """Format thread messages into Claude conversation format.
+
+    The current agent's prior messages become 'assistant' role.
+    All other messages (user + other agents) become 'user' role with sender labels.
+    """
+    formatted = []
+    for msg in messages:
+        if msg["sender_type"] == "agent" and msg.get("sender_agent_id") == agent_id:
+            formatted.append({"role": "assistant", "content": msg["content"]})
+        else:
+            if msg["sender_type"] == "user":
+                label = "CEO (You — the human operator)"
+            else:
+                label = msg.get("sender_name", msg.get("sender_agent_id", "Unknown Agent"))
+            formatted.append({
+                "role": "user",
+                "content": f"[From: {label}]\n{msg['content']}",
+            })
+
+    # Ensure conversation starts with user role
+    if formatted and formatted[0]["role"] == "assistant":
+        formatted.insert(0, {"role": "user", "content": "[System] You have been added to this thread."})
+
+    # Merge consecutive same-role messages
+    merged = []
+    for msg in formatted:
+        if merged and merged[-1]["role"] == msg["role"]:
+            merged[-1]["content"] += "\n\n" + msg["content"]
+        else:
+            merged.append(msg)
+
+    return merged if merged else [{"role": "user", "content": "[System] New thread started."}]
+
+
+def get_date_context() -> str:
+    """Return current date context to inject into every agent's system prompt."""
+    now = datetime.now(timezone.utc)
+    return (
+        f"\n\n---\n"
+        f"CURRENT DATE: {now.strftime('%A, %B %d, %Y')}\n"
+        f"CURRENT TIME (UTC): {now.strftime('%I:%M %p')}\n"
+        f"CURRENT YEAR: {now.year}\n"
+        f"CURRENT QUARTER: Q{(now.month - 1) // 3 + 1} {now.year}\n"
+        f"---\n"
+        f"IMPORTANT: Always use the correct current date above in all responses. "
+        f"Never guess or use placeholder dates. Today is {now.strftime('%B %d, %Y')}.\n"
+    )
+
+
+# Stage-specific token caps — only use what each stage actually needs
+STAGE_TOKEN_LIMITS = {
+    "scripted": 8192,     # Scripts need full length
+    "research": 6144,     # Research briefs are detailed but shorter than scripts
+    "voiceover": 4096,    # Voiceover briefs are structured directions
+    "edited": 4096,       # Edit briefs are structured directions
+    "thumbnail": 2048,    # Thumbnail concepts are short
+    "seo": 3072,          # SEO metadata is compact
+    "review": 4096,       # Final QA review
+    "approved": 2048,     # Approval summary is short
+}
+DEFAULT_MAX_TOKENS = 8192
+
+
+def generate_agent_response(
+    system_prompt: str,
+    thread_messages: list[dict],
+    agent_id: str,
+    stage: str | None = None,
+) -> str:
+    """Generate a response from an agent using Claude. Synchronous — use generate_agent_response_async for async contexts."""
+    client = get_client()
+    messages = format_thread_for_agent(thread_messages, agent_id)
+    full_system_prompt = system_prompt + get_date_context()
+
+    max_tokens = STAGE_TOKEN_LIMITS.get(stage, DEFAULT_MAX_TOKENS) if stage else DEFAULT_MAX_TOKENS
+
+    return _call_with_retry(lambda: client.messages.create(
+        model=CLAUDE_MODEL,
+        max_tokens=max_tokens,
+        system=full_system_prompt,
+        messages=messages,
+    ))
+
+
+def generate_review_response(
+    system_prompt: str,
+    thread_messages: list[dict],
+    agent_id: str,
+) -> str:
+    """Generate a QA review using Haiku — same quality scoring, 90% cheaper than Sonnet.
+
+    Used for quality gate reviews where the task is scoring/grading, not creative work.
+    """
+    client = get_client()
+    messages = format_thread_for_agent(thread_messages, agent_id)
+    full_system_prompt = system_prompt + get_date_context()
+
+    return _call_with_retry(lambda: client.messages.create(
+        model=CLAUDE_MODEL_LITE,
+        max_tokens=2048,  # Reviews don't need more than this
+        system=full_system_prompt,
+        messages=messages,
+    ))
+
+
+async def generate_agent_response_async(
+    system_prompt: str,
+    thread_messages: list[dict],
+    agent_id: str,
+    stage: str | None = None,
+) -> str:
+    """Async wrapper — runs the blocking Claude call in a thread pool so it doesn't block the event loop."""
+    import asyncio
+    import functools
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None, functools.partial(generate_agent_response, system_prompt, thread_messages, agent_id, stage=stage)
+    )
+
+
+async def generate_review_response_async(
+    system_prompt: str,
+    thread_messages: list[dict],
+    agent_id: str,
+) -> str:
+    """Async wrapper for Haiku-based QA reviews."""
+    import asyncio
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None, generate_review_response, system_prompt, thread_messages, agent_id
+    )
+
+
+def analyze_routing(
+    agent_name: str,
+    agent_role: str,
+    response_text: str,
+    reports_to: str | None,
+    direct_reports: list[str],
+    collaborates_with: list[str],
+    all_agent_names: dict[str, str],
+) -> list[str]:
+    """Analyze an agent's response to determine routing.
+
+    Returns list of agent IDs that should respond next.
+    """
+    client = get_client()
+
+    agent_list = "\n".join(f"- {aid}: {aname}" for aid, aname in all_agent_names.items())
+
+    prompt = f"""Analyze this message from {agent_name} ({agent_role}) and determine if any other agents should be notified to respond.
+
+The agent's organizational relationships:
+- Reports to: {reports_to or 'None (top of hierarchy)'}
+- Direct reports: {', '.join(direct_reports) if direct_reports else 'None'}
+- Collaborates with: {', '.join(collaborates_with) if collaborates_with else 'None'}
+
+All available agents:
+{agent_list}
+
+The agent's message:
+{response_text[:1000]}
+
+Return ONLY a JSON object with:
+- "route_to": list of agent IDs that should respond (empty list if none)
+- "reason": brief explanation
+
+Only route to agents when the message explicitly delegates, asks for input, or escalates. Do not route for general statements. Be conservative — route to at most 2 agents."""
+
+    try:
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=256,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        import json
+        text = resp.content[0].text
+        # Extract JSON from response
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        if start >= 0 and end > start:
+            data = json.loads(text[start:end])
+            return [aid for aid in data.get("route_to", []) if aid in all_agent_names]
+    except Exception as e:
+        print(f"[WARNING] Routing analysis failed for {agent_name}: {e}")
+    return []

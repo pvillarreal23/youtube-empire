@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Creator AI | Faceless Channel Dashboard</title>
+  <meta name="description" content="Dashboard for tracking automated YouTube videos, agents, and social media posting.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-container">
+  <aside class="sidebar">
+    <div class="logo-container">
+      <div class="logo-icon"><i data-lucide="youtube"></i></div>
+      <h1 class="logo-text">Creator<span>AI</span></h1>
+    </div>
+    <nav class="nav-menu">
+      <div class="nav-group-title">MAIN</div>
+      <a href="#" class="nav-item active"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+      <a href="#" class="nav-item"><i data-lucide="video"></i> Content Workflows</a>
+      <a href="#" class="nav-item"><i data-lucide="bot"></i> YouTube Agents</a>
+      <div class="nav-group-title">SOCIAL MEDIA</div>
+      <a href="https://youtube.com" target="_blank" class="nav-item"><i data-lucide="youtube"></i> YouTube Channel</a>
+      <a href="https://tiktok.com" target="_blank" class="nav-item"><i data-lucide="music"></i> TikTok Page</a>
+      <a href="https://instagram.com" target="_blank" class="nav-item"><i data-lucide="instagram"></i> Instagram Reels</a>
+      <a href="https://twitter.com" target="_blank" class="nav-item"><i data-lucide="twitter"></i> X (Twitter)</a>
+      <div class="nav-group-title">OBSERVABILITY</div>
+      <a href="#" class="nav-item"><i data-lucide="terminal"></i> Live Logs</a>
+      <div class="nav-group-title">PREFERENCES</div>
+      <a href="#" class="nav-item"><i data-lucide="settings"></i> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="system-status">
+        <div class="status-indicator live"></div>
+        <span>System Online</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div class="search-bar">
+        <i data-lucide="search"></i>
+        <input type="text" placeholder="Search workflows, agents, or logs...">
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn tooltip" data-tooltip="Notifications">
+          <i data-lucide="bell"></i>
+          <span class="badged"></span>
+        </button>
+        <div class="profile-container">
+          <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User Profile" class="avatar">
+          <div class="profile-info">
+            <span class="user-name">Pedro Villarreal</span>
+            <span class="user-role">Admin</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-body">
+      <div class="page-header">
+        <h2>Overview</h2>
+        <div class="date-range">Live Data <i data-lucide="chevron-down"></i></div>
+      </div>
+
+      <section class="metrics-grid">
+        <div class="metric-card glass-panel">
+          <div class="metric-header">
+            <span class="metric-title">Executions Run</span>
+            <div class="metric-icon blue"><i data-lucide="video"></i></div>
+          </div>
+          <div class="metric-value" id="kpi-videos">—</div>
+          <div class="metric-trend positive" id="kpi-videos-trend">
+            <i data-lucide="trending-up"></i> Loading…
+          </div>
+        </div>
+
+        <div class="metric-card glass-panel">
+          <div class="metric-header">
+            <span class="metric-title">Total Views (Est)</span>
+            <div class="metric-icon orange"><i data-lucide="eye"></i></div>
+          </div>
+          <div class="metric-value">—</div>
+          <div class="metric-trend positive"><i data-lucide="trending-up"></i> Check YouTube Studio</div>
+        </div>
+
+        <div class="metric-card glass-panel">
+          <div class="metric-header">
+            <span class="metric-title">Avg Run Duration</span>
+            <div class="metric-icon purple"><i data-lucide="clock"></i></div>
+          </div>
+          <div class="metric-value" id="kpi-avg-time">—</div>
+          <div class="metric-trend positive" id="kpi-avg-trend">
+            <i data-lucide="activity"></i> Loading…
+          </div>
+        </div>
+
+        <div class="metric-card glass-panel">
+          <div class="metric-header">
+            <span class="metric-title">API Costs (Est)</span>
+            <div class="metric-icon green"><i data-lucide="coins"></i></div>
+          </div>
+          <div class="metric-value" id="kpi-costs">—</div>
+          <div class="metric-trend" id="kpi-costs-trend">
+            <i data-lucide="zap"></i> Loading…
+          </div>
+        </div>
+      </section>
+
+      <div class="dashboard-split">
+        <section class="workflows-panel glass-panel">
+          <div class="panel-header">
+            <h3>Active Workflows</h3>
+            <button class="btn-primary"><i data-lucide="plus"></i> New Task</button>
+          </div>
+          <div class="table-container">
+            <table class="workflow-table">
+              <thead>
+                <tr>
+                  <th>Scenario ID</th>
+                  <th>Agent Assigned</th>
+                  <th>Model</th>
+                  <th>Status</th>
+                  <th>Progress</th>
+                  <th>Cost</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="workflow-list">
+                <!-- Generated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="logs-panel glass-panel">
+          <div class="panel-header">
+            <h3>Execution Feed</h3>
+            <div class="live-indicator">
+              <div class="pulse-dot"></div>
+              Live
+            </div>
+          </div>
+          <div class="terminal-container" id="terminal-feed">
+            <!-- Logs generated by JS -->
+          </div>
+        </section>
+      </div>
+
+      <!-- Analytics Row -->
+      <div class="analytics-split">
+        <section class="chart-panel glass-panel">
+          <div class="panel-header">
+            <h3>Executions Per Week</h3>
+            <div class="chart-legend">
+              <span class="legend-dot" style="background:var(--primary);"></span> Execution Volume
+            </div>
+          </div>
+          <div class="chart-canvas-container">
+            <canvas id="weekly-chart"></canvas>
+          </div>
+        </section>
+
+        <section class="ai-summary-panel glass-panel">
+          <div class="panel-header">
+            <h3>AI Metrics Summary</h3>
+          </div>
+          <div class="ai-metrics-body">
+            <div class="ai-metric-row">
+              <div class="ai-metric-label"><i data-lucide="zap" style="width:14px;height:14px;"></i> Total Tokens</div>
+              <div class="ai-metric-value" id="ai-total-tokens">—</div>
+            </div>
+            <div class="ai-metric-row">
+              <div class="ai-metric-label"><i data-lucide="dollar-sign" style="width:14px;height:14px;"></i> Total Cost</div>
+              <div class="ai-metric-value" id="ai-total-cost">—</div>
+            </div>
+            <div class="ai-metric-row">
+              <div class="ai-metric-label"><i data-lucide="check-circle" style="width:14px;height:14px;"></i> Avg Success Rate</div>
+              <div class="ai-metric-value success-value" id="ai-success-rate">—</div>
+            </div>
+            <div class="ai-metric-divider"></div>
+            <div class="ai-metric-row">
+              <div class="ai-metric-label"><span class="model-badge model-claude" style="font-size:0.7rem;">Claude</span> Tasks</div>
+              <div class="ai-metric-value" id="ai-claude-count">—</div>
+            </div>
+            <div class="ai-metric-row">
+              <div class="ai-metric-label"><span class="model-badge model-gemini" style="font-size:0.7rem;">Gemini</span> Tasks</div>
+              <div class="ai-metric-value" id="ai-gemini-count">—</div>
+            </div>
+            <div class="ai-metric-divider"></div>
+            <div class="ai-metric-row">
+              <div class="ai-metric-label"><i data-lucide="check" style="width:14px;height:14px;color:var(--primary)"></i> Completed</div>
+              <div class="ai-metric-value success-value" id="ai-completed">—</div>
+            </div>
+            <div class="ai-metric-row">
+              <div class="ai-metric-label"><i data-lucide="x" style="width:14px;height:14px;color:var(--accent-red)"></i> Failed</div>
+              <div class="ai-metric-value error-value" id="ai-failed">—</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Task Detail Modal -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal-dialog glass-panel">
+    <div class="modal-header">
+      <div>
+        <div class="modal-subtitle">Task Details</div>
+        <h3 class="modal-title" id="modal-vid-id">—</h3>
+        <div class="modal-agent" id="modal-agent">—</div>
+      </div>
+      <button class="modal-close-btn" id="modal-close-btn"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-metrics-row">
+      <div class="modal-metric">
+        <div class="modal-metric-label">Model</div>
+        <div id="modal-model">—</div>
+      </div>
+      <div class="modal-metric">
+        <div class="modal-metric-label">Status</div>
+        <div id="modal-status">—</div>
+      </div>
+      <div class="modal-metric">
+        <div class="modal-metric-label">Tokens Used</div>
+        <div class="modal-metric-value" id="modal-tokens">—</div>
+      </div>
+      <div class="modal-metric">
+        <div class="modal-metric-label">Time Elapsed</div>
+        <div class="modal-metric-value" id="modal-time">—</div>
+      </div>
+      <div class="modal-metric">
+        <div class="modal-metric-label">Estimated Cost</div>
+        <div class="modal-metric-value" id="modal-cost">—</div>
+      </div>
+      <div class="modal-metric">
+        <div class="modal-metric-label">Success Rate</div>
+        <div class="modal-metric-value success-value" id="modal-success-rate">—</div>
+      </div>
+    </div>
+    <div class="modal-output-header">Full Task Output</div>
+    <pre class="modal-output" id="modal-output"></pre>
+  </div>
+</div>
+
+<script src="app.js" type="module"></script>
+<script>
+  lucide.createIcons();
+</script>
+</body>
+</html>
