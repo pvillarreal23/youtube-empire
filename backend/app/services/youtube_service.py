@@ -168,8 +168,8 @@ if __name__ == "__main__":
     print(f"\nOpen this URL in your browser:\n{auth_url}\n")
     code = input("Paste the authorization code: ").strip()
 
-    import requests
-    resp = requests.post("https://oauth2.googleapis.com/token", data={
+    import httpx
+    resp = httpx.post("https://oauth2.googleapis.com/token", data={
         "client_id": client_id,
         "client_secret": client_secret,
         "code": code,

@@ -1,4 +1,5 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
 
 export interface AgentSummary {
   id: string;

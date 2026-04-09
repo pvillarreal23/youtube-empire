@@ -46,7 +46,7 @@ def verify_signature(body: bytes, signature: str | None) -> bool:
         return True  # No secret configured, allow all
     if not signature:
         return False
-    expected = hmac.new(WEBHOOK_SECRET.encode(), body, hashlib.sha256).hexdigest()
+    expected = hmac.HMAC(WEBHOOK_SECRET.encode(), body, hashlib.sha256).hexdigest()
     return hmac.compare_digest(f"sha256={expected}", signature)
 
 
