@@ -53,6 +53,18 @@ export interface OrgTree {
   edges: { source: string; target: string }[];
 }
 
+export interface ModelInfo {
+  active_preset: string;
+  model: string;
+  label: string;
+  max_tokens: number;
+  router_model: string;
+  extended_thinking: boolean;
+  thinking_budget: number | null;
+  context_window: number;
+  available_presets: string[];
+}
+
 async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
@@ -63,6 +75,7 @@ async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  getModelInfo: () => fetchApi<ModelInfo>("/api/model"),
   getAgents: () => fetchApi<AgentSummary[]>("/api/agents"),
   getAgent: (id: string) => fetchApi<AgentDetail>(`/api/agents/${id}`),
   getOrgTree: () => fetchApi<OrgTree>("/api/agents/org/tree"),

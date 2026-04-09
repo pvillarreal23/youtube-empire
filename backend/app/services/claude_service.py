@@ -1,7 +1,16 @@
 from __future__ import annotations
 
+import json
 import anthropic
-from app.config import ANTHROPIC_API_KEY, CLAUDE_MODEL
+from app.config import (
+    ANTHROPIC_API_KEY,
+    CLAUDE_MODEL,
+    CLAUDE_MAX_TOKENS,
+    CLAUDE_ROUTER_MODEL,
+    CLAUDE_ROUTER_MAX_TOKENS,
+    CLAUDE_EXTENDED_THINKING,
+    CLAUDE_THINKING_BUDGET,
+)
 
 
 def get_client() -> anthropic.Anthropic:
@@ -43,22 +52,44 @@ def format_thread_for_agent(messages: list[dict], agent_id: str) -> list[dict]:
     return merged if merged else [{"role": "user", "content": "[System] New thread started."}]
 
 
+def _extract_response_text(response: anthropic.types.Message) -> str:
+    """Extract text from a Claude response, handling both plain and thinking responses."""
+    parts = []
+    for block in response.content:
+        if block.type == "text":
+            parts.append(block.text)
+    return "\n\n".join(parts) if parts else ""
+
+
 def generate_agent_response(
     system_prompt: str,
     thread_messages: list[dict],
     agent_id: str,
 ) -> str:
-    """Generate a response from an agent using Claude."""
+    """Generate a response from an agent using Claude.
+
+    When extended thinking is enabled (Mythos mode), the model reasons
+    through the agent's role and organizational context before responding,
+    producing higher-quality strategic outputs.
+    """
     client = get_client()
     messages = format_thread_for_agent(thread_messages, agent_id)
 
-    response = client.messages.create(
-        model=CLAUDE_MODEL,
-        max_tokens=2048,
-        system=system_prompt,
-        messages=messages,
-    )
-    return response.content[0].text
+    kwargs: dict = {
+        "model": CLAUDE_MODEL,
+        "max_tokens": CLAUDE_MAX_TOKENS,
+        "system": system_prompt,
+        "messages": messages,
+    }
+
+    if CLAUDE_EXTENDED_THINKING:
+        kwargs["thinking"] = {
+            "type": "enabled",
+            "budget_tokens": CLAUDE_THINKING_BUDGET,
+        }
+
+    response = client.messages.create(**kwargs)
+    return _extract_response_text(response)
 
 
 def analyze_routing(
@@ -72,6 +103,8 @@ def analyze_routing(
 ) -> list[str]:
     """Analyze an agent's response to determine routing.
 
+    When using Mythos as the router model, extended thinking enables
+    deeper analysis of organizational dynamics and more accurate routing.
     Returns list of agent IDs that should respond next.
     """
     client = get_client()
@@ -89,7 +122,7 @@ All available agents:
 {agent_list}
 
 The agent's message:
-{response_text[:1000]}
+{response_text[:2000]}
 
 Return ONLY a JSON object with:
 - "route_to": list of agent IDs that should respond (empty list if none)
@@ -97,14 +130,21 @@ Return ONLY a JSON object with:
 
 Only route to agents when the message explicitly delegates, asks for input, or escalates. Do not route for general statements. Be conservative — route to at most 2 agents."""
 
+    kwargs: dict = {
+        "model": CLAUDE_ROUTER_MODEL,
+        "max_tokens": CLAUDE_ROUTER_MAX_TOKENS,
+        "messages": [{"role": "user", "content": prompt}],
+    }
+
+    if CLAUDE_EXTENDED_THINKING and CLAUDE_ROUTER_MODEL == CLAUDE_MODEL:
+        kwargs["thinking"] = {
+            "type": "enabled",
+            "budget_tokens": 4000,
+        }
+
     try:
-        resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=256,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        import json
-        text = resp.content[0].text
+        resp = client.messages.create(**kwargs)
+        text = _extract_response_text(resp)
         # Extract JSON from response
         start = text.find("{")
         end = text.rfind("}") + 1

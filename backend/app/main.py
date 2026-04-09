@@ -36,3 +36,30 @@ app.include_router(threads.router)
 @app.get("/api/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/api/model")
+async def model_info():
+    """Return the active model configuration."""
+    from app.config import (
+        CLAUDE_MODEL,
+        CLAUDE_MODEL_LABEL,
+        CLAUDE_MAX_TOKENS,
+        CLAUDE_ROUTER_MODEL,
+        CLAUDE_EXTENDED_THINKING,
+        CLAUDE_THINKING_BUDGET,
+        CLAUDE_CONTEXT_WINDOW,
+        ACTIVE_PRESET,
+        MODEL_PRESETS,
+    )
+    return {
+        "active_preset": ACTIVE_PRESET,
+        "model": CLAUDE_MODEL,
+        "label": CLAUDE_MODEL_LABEL,
+        "max_tokens": CLAUDE_MAX_TOKENS,
+        "router_model": CLAUDE_ROUTER_MODEL,
+        "extended_thinking": CLAUDE_EXTENDED_THINKING,
+        "thinking_budget": CLAUDE_THINKING_BUDGET if CLAUDE_EXTENDED_THINKING else None,
+        "context_window": CLAUDE_CONTEXT_WINDOW,
+        "available_presets": list(MODEL_PRESETS.keys()),
+    }

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { api, type ModelInfo } from "@/lib/api";
 
 const navItems = [
   { href: "/inbox", label: "Inbox", icon: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" },
@@ -12,6 +14,13 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
+
+  useEffect(() => {
+    api.getModelInfo().then(setModelInfo).catch(() => {});
+  }, []);
+
+  const isMythos = modelInfo?.active_preset === "mythos";
 
   return (
     <aside className="w-16 lg:w-56 flex flex-col border-r border-[#334155] bg-[#1e293b] shrink-0">
@@ -42,6 +51,40 @@ export default function Sidebar() {
           );
         })}
       </nav>
+      {modelInfo && (
+        <div className="px-3 py-2 border-t border-[#334155]">
+          <div className="hidden lg:block">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span
+                className={`inline-block w-2 h-2 rounded-full ${
+                  isMythos ? "bg-emerald-400 animate-pulse" : "bg-[#8b5cf6]"
+                }`}
+              />
+              <span className="text-xs font-medium text-white truncate">
+                {modelInfo.label}
+              </span>
+            </div>
+            {modelInfo.extended_thinking && (
+              <span className="text-[10px] text-emerald-400 font-medium">
+                Extended Thinking ON
+              </span>
+            )}
+            <div className="text-[10px] text-[#64748b] mt-0.5">
+              {(modelInfo.context_window / 1000).toFixed(0)}k ctx
+              {" / "}
+              {(modelInfo.max_tokens / 1000).toFixed(0)}k out
+            </div>
+          </div>
+          <div className="lg:hidden flex justify-center">
+            <span
+              className={`inline-block w-2 h-2 rounded-full ${
+                isMythos ? "bg-emerald-400 animate-pulse" : "bg-[#8b5cf6]"
+              }`}
+              title={modelInfo.label}
+            />
+          </div>
+        </div>
+      )}
       <div className="p-3 border-t border-[#334155]">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-[#8b5cf6] flex items-center justify-center text-white text-xs font-bold">
