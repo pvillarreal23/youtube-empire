@@ -14,13 +14,25 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
+  const fallback: ModelInfo = {
+    active_preset: "mythos",
+    model: "claude-mythos-preview",
+    label: "Claude Mythos Preview",
+    max_tokens: 16384,
+    router_model: "claude-mythos-preview",
+    extended_thinking: true,
+    thinking_budget: 10000,
+    context_window: 1_000_000,
+    available_presets: ["sonnet", "opus", "mythos"],
+  };
+
+  const [modelInfo, setModelInfo] = useState<ModelInfo>(fallback);
 
   useEffect(() => {
     api.getModelInfo().then(setModelInfo).catch(() => {});
   }, []);
 
-  const isMythos = modelInfo?.active_preset === "mythos";
+  const isMythos = modelInfo.active_preset === "mythos";
 
   return (
     <aside className="w-16 lg:w-56 flex flex-col border-r border-[#334155] bg-[#1e293b] shrink-0">
@@ -51,40 +63,38 @@ export default function Sidebar() {
           );
         })}
       </nav>
-      {modelInfo && (
-        <div className="px-3 py-2 border-t border-[#334155]">
-          <div className="hidden lg:block">
-            <div className="flex items-center gap-1.5 mb-1">
-              <span
-                className={`inline-block w-2 h-2 rounded-full ${
-                  isMythos ? "bg-emerald-400 animate-pulse" : "bg-[#8b5cf6]"
-                }`}
-              />
-              <span className="text-xs font-medium text-white truncate">
-                {modelInfo.label}
-              </span>
-            </div>
-            {modelInfo.extended_thinking && (
-              <span className="text-[10px] text-emerald-400 font-medium">
-                Extended Thinking ON
-              </span>
-            )}
-            <div className="text-[10px] text-[#64748b] mt-0.5">
-              {(modelInfo.context_window / 1000).toFixed(0)}k ctx
-              {" / "}
-              {(modelInfo.max_tokens / 1000).toFixed(0)}k out
-            </div>
-          </div>
-          <div className="lg:hidden flex justify-center">
+      <div className="px-3 py-2 border-t border-[#334155]">
+        <div className="hidden lg:block">
+          <div className="flex items-center gap-1.5 mb-1">
             <span
               className={`inline-block w-2 h-2 rounded-full ${
                 isMythos ? "bg-emerald-400 animate-pulse" : "bg-[#8b5cf6]"
               }`}
-              title={modelInfo.label}
             />
+            <span className="text-xs font-medium text-white truncate">
+              {modelInfo.label}
+            </span>
+          </div>
+          {modelInfo.extended_thinking && (
+            <span className="text-[10px] text-emerald-400 font-medium">
+              Extended Thinking ON
+            </span>
+          )}
+          <div className="text-[10px] text-[#64748b] mt-0.5">
+            {(modelInfo.context_window / 1000).toFixed(0)}k ctx
+            {" / "}
+            {(modelInfo.max_tokens / 1000).toFixed(0)}k out
           </div>
         </div>
-      )}
+        <div className="lg:hidden flex justify-center">
+          <span
+            className={`inline-block w-2 h-2 rounded-full ${
+              isMythos ? "bg-emerald-400 animate-pulse" : "bg-[#8b5cf6]"
+            }`}
+            title={modelInfo.label}
+          />
+        </div>
+      </div>
       <div className="p-3 border-t border-[#334155]">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-[#8b5cf6] flex items-center justify-center text-white text-xs font-bold">
