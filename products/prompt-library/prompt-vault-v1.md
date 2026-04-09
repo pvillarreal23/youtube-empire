@@ -605,6 +605,302 @@ get the result I want. Explain why each part of the prompt matters.
 
 ---
 
+## Section 10: Data & Analysis (6 prompts)
+
+### 10.1 — Spreadsheet Formula Generator
+```
+I have a spreadsheet with [describe columns/data]. I need a formula that [what you want to calculate]. Give me the formula for [Google Sheets / Excel] with a plain-English explanation of how it works. If it's complex, break it into helper columns.
+```
+
+### 10.2 — Survey Question Writer
+```
+I'm running a survey about [topic] for [audience]. Write 10 survey questions that will give me actionable insights about [what you want to learn]. Mix question types: multiple choice, rating scale (1-5), and 2 open-ended. Avoid leading questions.
+```
+
+### 10.3 — Data Story Finder
+```
+Here's a dataset summary: [paste key numbers, trends, or a table]. Find the 3 most interesting stories hidden in this data. For each story, give me: the insight in one sentence, why it matters, and what action to take based on it.
+```
+
+### 10.4 — Competitive Analysis Brief
+```
+I'm competing against [competitor names] in [industry/niche]. For each competitor, analyze: their positioning (what they claim), their weakness (where they fall short), and the gap I can exploit. Use publicly available information only. Format as a brief I can hand to my team.
+```
+
+### 10.5 — Report Summarizer
+```
+Summarize this report into: (1) 3 key findings, (2) 1 surprising insight, (3) 2 recommended actions. Write it so a busy executive can read it in 60 seconds. Here's the report: [paste report or key sections]
+```
+
+### 10.6 — KPI Dashboard Designer
+```
+I run a [type of business/project]. Design a KPI dashboard with the 8 most important metrics I should track weekly. For each metric: name it, define how to calculate it, set a benchmark range (green/yellow/red), and explain what action to take when it goes red.
+```
+
+---
+
+## Section 11: Email & Communication (7 prompts)
+
+### 11.1 — Cold Email That Gets Replies
+```
+Write a cold email to [person's role] at [type of company]. I want to [goal: book a meeting, pitch a partnership, get feedback]. My angle is [what makes this relevant to them]. Keep it under 100 words. No fluff, no "I hope this finds you well." Make the ask crystal clear.
+```
+
+### 11.2 — Difficult Conversation Prep
+```
+I need to have a difficult conversation with [who] about [topic]. The key tension is [what's hard about it]. Help me prepare: (1) Opening line that sets the right tone, (2) 3 key points to make, (3) Likely pushback and how to respond, (4) Closing that preserves the relationship.
+```
+
+### 11.3 — Follow-Up Email Series
+```
+I met [who] at [where/how] and want to follow up about [topic]. Write a 3-email follow-up sequence: Email 1 (day 1, warm reminder), Email 2 (day 4, add value), Email 3 (day 8, final gentle nudge). Each under 75 words. Never desperate, always helpful.
+```
+
+### 11.4 — Meeting Agenda Builder
+```
+I have a [duration]-minute meeting with [attendees] about [topic]. Build an agenda that: starts with the most important decision first, allocates time per item, includes 1 question per agenda item to drive discussion, and ends 5 minutes early for action items.
+```
+
+### 11.5 — Apology Email
+```
+I need to apologize to [who] because [what happened]. Write a professional apology that: acknowledges the impact specifically (not "sorry for any inconvenience"), takes ownership without excuses, explains what I'm doing to fix it, and keeps it under 150 words.
+```
+
+### 11.6 — Feedback Request
+```
+I want feedback on [what] from [who]. Write a message that makes it easy for them to respond honestly. Include 3 specific questions (not "what do you think?"), suggest a 5-minute time commitment, and make it clear I want real criticism, not compliments.
+```
+
+### 11.7 — Status Update Template
+```
+Write a status update for [project/work] covering the last [time period]. Format: 3 things completed (with impact), 1 thing blocked (with what I need), 2 things planned next. Keep it under 150 words. Tone: confident, not defensive.
+```
+
+---
+
+## Section 12: Social Media & Content (6 prompts)
+
+### 12.1 — LinkedIn Post Generator
+```
+I want to share a lesson I learned about [topic] on LinkedIn. The key insight is [what you learned]. Write a LinkedIn post that: opens with a surprising or contrarian first line, tells the story briefly, delivers the lesson, and ends with a question that invites comments. No hashtag spam. Under 200 words.
+```
+
+### 12.2 — Twitter/X Thread
+```
+Turn this idea into a Twitter thread (8-10 tweets): [your idea or topic]. Rules: Tweet 1 must be a hook that makes people stop scrolling. Each tweet must stand alone but flow together. Last tweet = CTA to follow or bookmark. No filler tweets. Every tweet earns the next.
+```
+
+### 12.3 — Content Repurposer
+```
+I have this piece of content: [paste blog post, video transcript, or article]. Repurpose it into: (1) One LinkedIn post, (2) One Twitter thread (5 tweets), (3) One email newsletter section (100 words), (4) Three Instagram caption options. Each should feel native to its platform, not copy-pasted.
+```
+
+### 12.4 — Headline / Title Generator
+```
+Generate 20 title options for content about [topic]. Target audience: [who]. Mix these formulas: number-driven ("7 ways..."), question-based ("Why does..."), contrarian ("Stop doing..."), result-driven ("How I got..."), and curiosity gap ("The thing nobody tells you about..."). Bold the 3 best.
+```
+
+### 12.5 — YouTube Video Idea Generator
+```
+I run a YouTube channel about [niche] for [audience]. Generate 10 video ideas that: have search demand (people Google this), have curiosity pull (makes you click), I can deliver unique value on, and fit [short/medium/long] format. For each, include the title AND the hook (first line of the video).
+```
+
+### 12.6 — Newsletter Issue Builder
+```
+Write a newsletter issue about [topic] for [audience]. Structure: (1) Opening hook (2 sentences that earn the read), (2) Main insight with one concrete example, (3) Quick tip they can use today, (4) One link worth sharing, (5) Sign-off that feels personal. Total: 300-400 words.
+```
+
+---
+
+## Section 13: Productivity & Systems (6 prompts)
+
+### 13.1 — Weekly Review Template
+```
+Help me do a weekly review. Ask me these questions one at a time: (1) What were my 3 biggest wins this week? (2) What's the one thing I avoided that I shouldn't have? (3) What's draining my energy that I can eliminate? (4) What's the single most important thing for next week? Then give me a focused plan for Monday morning.
+```
+
+### 13.2 — SOP Writer
+```
+Write a Standard Operating Procedure for [task/process]. I do this [frequency]. The steps are roughly: [describe what you do]. Format it so someone with zero context could follow it perfectly. Include: trigger (when to start), steps (numbered), tools needed, quality check (how to verify it's done right), and time estimate.
+```
+
+### 13.3 — Delegation Brief
+```
+I need to delegate [task] to [who]. Write a delegation brief that includes: the objective (what done looks like), context (why this matters), constraints (budget, timeline, rules), resources (what they have access to), and check-in points (when I want updates, not micromanagement).
+```
+
+### 13.4 — Habit Builder
+```
+I want to build the habit of [habit]. I've tried before and failed because [why]. Design a habit system: (1) Tiny version I can't say no to (2-minute start), (2) Trigger/cue to attach it to, (3) Reward that reinforces it, (4) Tracking method, (5) What to do when I miss a day. Be realistic, not motivational.
+```
+
+### 13.5 — Morning Routine Optimizer
+```
+Here's my current morning routine: [describe what you do]. I have [X hours] before work. My priorities are [energy, focus, health, learning, etc.]. Redesign my routine to be more intentional. Cut what doesn't serve me. Add one thing I'm missing. Keep it realistic — I'm not waking up at 4 AM.
+```
+
+### 13.6 — Project Kickoff Document
+```
+I'm starting a project: [describe project]. Write a one-page kickoff document with: (1) Project goal in one sentence, (2) Success criteria (how we know it worked), (3) Scope boundaries (what's NOT included), (4) Key milestones with dates, (5) Risks and mitigation, (6) First 3 action items.
+```
+
+---
+
+## Section 14: Learning & Research (5 prompts)
+
+### 14.1 — Learn Anything in 30 Days
+```
+I want to learn [skill/topic] from zero to competent in 30 days. I can dedicate [X hours/week]. Build me a learning plan: Week 1 (foundations), Week 2 (practice), Week 3 (apply), Week 4 (refine). Include the single best resource for each week (no long reading lists). Focus on doing, not consuming.
+```
+
+### 14.2 — Book Summary Extractor
+```
+I just read [book title] by [author]. Help me extract maximum value: (1) The book's core argument in 2 sentences, (2) The 3 most actionable ideas, (3) One thing I disagree with or find weak, (4) How I'll apply the best idea this week (make me commit to something specific).
+```
+
+### 14.3 — Research Brief Builder
+```
+I need to research [topic] to make a decision about [what]. Build me a research brief: (1) The 5 most important questions to answer, (2) Where to find reliable answers (specific sources, not "Google it"), (3) Red flags that indicate bad information, (4) A framework for organizing what I find.
+```
+
+### 14.4 — Explain Like I'm 5
+```
+Explain [complex topic] to me like I'm 5 years old. Use analogies from everyday life. Then explain it again like I'm a smart adult who's never encountered this topic. Then give me 3 questions I should ask to go deeper. Make each explanation under 100 words.
+```
+
+### 14.5 — Skill Gap Identifier
+```
+I currently work as [role] and want to move toward [goal role/career]. Based on what those roles typically require, identify: (1) Skills I probably already have, (2) The 3 most critical gaps, (3) The single fastest gap to close (highest impact, lowest effort), (4) One project I could do in the next 30 days to demonstrate the skill.
+```
+
+---
+
+## Section 15: Finance & Money (5 prompts)
+
+### 15.1 — Budget Audit
+```
+Here's what I spend monthly: [list categories and amounts, or paste bank statement summary]. Be brutally honest: What's wasteful? What could I negotiate down? What's missing (insurance, savings, etc.)? Give me a revised budget with the goal of saving [X%] more while cutting nothing that actually matters to my quality of life.
+```
+
+### 15.2 — Pricing Strategy
+```
+I sell [product/service] to [audience]. Current price: [price]. I think I might be undercharging. Help me think through pricing: (1) What are competitors charging? (2) What's the value to the customer in dollars? (3) What price would I need to charge to hit [revenue goal]? (4) A pricing experiment I can run this month to test.
+```
+
+### 15.3 — Negotiation Prep
+```
+I'm negotiating [what — salary, deal, price] with [who]. My ideal outcome: [target]. My walk-away point: [minimum]. Prepare me: (1) Opening position and framing, (2) 3 points of leverage I might not have considered, (3) Their likely counter and my response, (4) The exact words to use when making my ask.
+```
+
+### 15.4 — Revenue Stream Brainstorm
+```
+I have [describe your skills, audience, assets]. Brainstorm 10 ways I could generate additional income using what I already have. For each idea: estimated monthly revenue range, time to first dollar, and whether it's active or passive. Rank them by effort-to-income ratio. Be creative but realistic.
+```
+
+### 15.5 — Invoice & Payment Email
+```
+Write a professional but firm email to [client/person] about [late payment / pricing discussion / scope creep charge]. The situation: [describe what happened]. Tone: assertive, not aggressive. Include the specific amount, the deadline, and a clear next step. Under 100 words.
+```
+
+---
+
+## Section 16: Problem-Solving & Strategy (6 prompts)
+
+### 16.1 — Root Cause Analysis
+```
+I'm dealing with this problem: [describe the problem]. Don't give me a quick fix. Help me find the root cause by asking me "why" 5 times (Five Whys method). After we find the root cause, give me a fix that prevents it from happening again — not just a band-aid.
+```
+
+### 16.2 — Decision Matrix
+```
+I need to decide between these options: [list 2-4 options]. The factors that matter most to me are: [list what you care about — cost, time, risk, quality, etc.]. Build a decision matrix. Score each option against each factor (1-10). Weight the factors by importance. Tell me which option wins and why. Be honest if it's close.
+```
+
+### 16.3 — Devil's Advocate
+```
+I'm planning to [describe your plan or decision]. I think it's a good idea, but I need someone to challenge it. Play devil's advocate: (1) What are the 3 biggest risks I'm not seeing? (2) What would need to be true for this to fail? (3) What would a smart skeptic say? (4) What's the one thing that could make this a terrible decision?
+```
+
+### 16.4 — Pre-Mortem
+```
+I'm about to launch [project/product/initiative]. Before I start, let's do a pre-mortem: Imagine it's 6 months from now and this has completely failed. Write a realistic post-mortem explaining exactly why it failed. Then give me the 3 most likely failure modes and what I should do NOW to prevent each one.
+```
+
+### 16.5 — First Principles Breakdown
+```
+I want to solve [problem] but every approach I can think of feels conventional. Help me break this down from first principles: (1) What are the fundamental truths about this problem? (2) What assumptions is everyone making that might be wrong? (3) If we started from scratch with zero constraints, what would the ideal solution look like? (4) What's the closest achievable version?
+```
+
+### 16.6 — Opportunity Cost Calculator
+```
+I'm considering spending [time/money] on [option A]. Help me understand the opportunity cost: (1) What else could I do with that same [time/money]? (2) What's the expected return of each alternative? (3) What am I implicitly saying "no" to by saying "yes" to this? (4) Is there a version of this that costs 80% less and gets 80% of the result?
+```
+
+---
+
+## Section 17: Health & Wellbeing (5 prompts)
+
+### 17.1 — Meal Prep Planner
+```
+I want to meal prep for [X days]. Constraints: [budget per day, dietary needs, cooking skill level, equipment available]. Give me a meal plan with: (1) Shopping list (grouped by store section), (2) Prep order (what to cook first), (3) Storage instructions, (4) Total time estimate. Keep it simple — max 5 ingredients per meal.
+```
+
+### 17.2 — Exercise Routine Builder
+```
+Build me a workout routine. I have [equipment/gym/nothing]. I can commit to [X days/week, Y minutes each]. My goal is [strength, endurance, weight loss, flexibility]. Current level: [beginner/intermediate]. Give me the exact routine — exercises, sets, reps, rest. No "listen to your body" fluff. Tell me exactly what to do.
+```
+
+### 17.3 — Sleep Optimizer
+```
+I currently sleep [X hours], go to bed at [time], wake at [time]. My main sleep issue is [falling asleep, staying asleep, waking tired, etc.]. Give me a specific sleep optimization plan: (1) Ideal schedule, (2) Evening wind-down routine (with times), (3) Environment changes, (4) One thing to try this week. Be practical, not preachy.
+```
+
+### 17.4 — Stress Debrief
+```
+I'm stressed about [describe situation]. Don't tell me to meditate or take deep breaths. Instead: (1) Help me identify what specifically I can control vs. can't control, (2) Give me one concrete action I can take in the next 15 minutes to make progress, (3) Reframe the situation — what would this look like if it were happening FOR me instead of TO me? (4) What's the worst realistic outcome, and could I survive it?
+```
+
+### 17.5 — Energy Audit
+```
+I feel most energized at [time of day] and most drained at [time of day]. My typical day looks like: [describe rough schedule]. Audit my energy management: (1) Am I putting my hardest work at my peak energy time? (2) What's draining me that I could eliminate or delegate? (3) What's missing that would boost my energy? (4) Redesign my ideal day around energy, not clock time.
+```
+
+---
+
+## Section 18: Bonus — AI Power Combos (6 prompts)
+
+### 18.1 — Chain of Thought Activator
+```
+I need to solve this complex problem: [describe problem]. Don't jump to the answer. Think through it step by step. At each step, show me your reasoning and let me know your confidence level (low/medium/high). If you're unsure about a step, flag it and explain why. I'd rather have an honest "I'm not sure" than a confident wrong answer.
+```
+
+### 18.2 — Persona Simulator
+```
+Simulate a conversation with [type of person: skeptical customer, demanding boss, potential investor, etc.]. I'll pitch them on [what]. You play their role — ask tough questions, raise real objections, and don't be easy on me. After 5 exchanges, break character and tell me what I did well and what I need to improve.
+```
+
+### 18.3 — Output Evaluator
+```
+Rate this [content type: email, essay, proposal, code, etc.] on a scale of 1-10 across these dimensions: clarity, persuasiveness, conciseness, professionalism, and originality. For any dimension below 7, give me specific rewrites that would raise it to 9+. Be harsh — I'm here to improve, not to feel good. Here it is: [paste content]
+```
+
+### 18.4 — Contrarian Brainstorm
+```
+Everyone in [industry/topic] agrees that [common belief]. Challenge this. Give me 5 contrarian perspectives that could be true. For each: the contrarian take, evidence that supports it, and why most people ignore it. Don't be contrarian for shock value — make genuinely interesting arguments.
+```
+
+### 18.5 — System Designer
+```
+I want to build a system for [recurring task/process]. Constraints: [time, money, tools available]. Design a system that works without willpower. Include: (1) The trigger (what starts it), (2) The workflow (step by step), (3) Automation opportunities (what can a tool do), (4) The quality check (how to know it's working), (5) The iteration schedule (when to improve it).
+```
+
+### 18.6 — Weekly AI Power Hour Plan
+```
+I have 1 hour per week to use AI to improve my [work/life/business]. Based on my situation: [describe your role, goals, biggest pain points], design a recurring "AI Power Hour" routine. What should I do in that hour every week to get maximum leverage? Include: specific tools, specific prompts, expected output, and how results compound over time.
+```
+
+---
+
 ## About V-Real AI
 
 V-Real AI is a faceless documentary YouTube channel about AI tools and transformation — built entirely with AI agents. We're transparent about how we make everything, and we want to help you start using AI even if you've never tried it before.

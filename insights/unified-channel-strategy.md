@@ -1,6 +1,8 @@
 # V-Real AI (@VRealAI) — Unified YouTube Channel Strategy
 **Unified Strategy Document | All 32 Agents Consensus | April 2, 2026**
 
+> **NOTE (April 2026):** This document represents an earlier agent consensus session. The final canonical content mix is **50% Stories / 30% Breakdowns / 20% Playbooks** as locked in `CONTEXT.md`. Some numbers, subscriber counts, and projections below reflect aspirational modeling, not current state. Refer to `CONTEXT.md` for authoritative strategy.
+
 ---
 
 ## EXECUTIVE SUMMARY

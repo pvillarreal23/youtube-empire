@@ -444,10 +444,14 @@ class SceneSpec:
     aspect_ratio: str = "16:9"
 
 
+MIN_SCENES_FOR_EPISODE = 5  # Minimum scenes required to produce a viable episode
+
+
 async def generate_episode_media(
     scenes: list[SceneSpec],
     episode_id: str = "ep001",
     max_concurrent: int = 3,
+    min_success_ratio: float = 0.6,
 ) -> GenerationResult:
     """Generate all AI media for an episode with cascading fallback.
 
@@ -462,6 +466,11 @@ async def generate_episode_media(
     Returns:
         GenerationResult with all assets and cost summary.
     """
+    if len(scenes) < MIN_SCENES_FOR_EPISODE:
+        raise ValueError(
+            f"Episode requires at least {MIN_SCENES_FOR_EPISODE} scenes, got {len(scenes)}"
+        )
+
     start_time = time.time()
     result = GenerationResult()
     semaphore = asyncio.Semaphore(max_concurrent)
@@ -538,10 +547,20 @@ async def generate_episode_media(
 
     result.generation_time = time.time() - start_time
 
+    # Validate minimum success ratio
+    success_ratio = len(result.assets) / len(scenes) if scenes else 0
+    if success_ratio < min_success_ratio:
+        result.errors.append(
+            f"CRITICAL: Only {len(result.assets)}/{len(scenes)} scenes succeeded "
+            f"({success_ratio:.0%}). Minimum required: {min_success_ratio:.0%}. "
+            f"Video assembly will have gaps — review before proceeding."
+        )
+        logger.error(result.errors[-1])
+
     logger.info(
-        f"Episode {episode_id}: Generated {len(result.assets)}/{len(scenes)} scenes, "
-        f"${result.total_cost:.2f} total, {result.generation_time:.1f}s, "
-        f"{len(result.errors)} errors"
+        f"Episode {episode_id}: Generated {len(result.assets)}/{len(scenes)} scenes "
+        f"({success_ratio:.0%}), ${result.total_cost:.2f} total, "
+        f"{result.generation_time:.1f}s, {len(result.errors)} errors"
     )
 
     return result

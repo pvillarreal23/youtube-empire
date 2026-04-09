@@ -33,7 +33,7 @@ The difference between a useless AI response and one that saves you 3 hours? Abo
 
 ### What's inside:
 
-- **100+ tested prompts** organized into 9 categories
+- **100+ tested prompts** organized into 18 categories
 - **Copy-paste ready** — replace the [brackets] and go
 - **Works everywhere** — ChatGPT, Claude, Gemini, any AI
 - **Beginner-friendly** — starts from "I've never used AI" and levels up

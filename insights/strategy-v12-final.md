@@ -1,6 +1,8 @@
 # V-Real AI (@VRealAI) — YouTube Channel Strategy v12 (Final)
 ## Target: $1M/year Revenue | Cinematic Documentary | AI-Powered Production
 
+> **NOTE (April 2026):** This was the v12 iteration strategy. The final canonical content mix is **50% Stories / 30% Breakdowns / 20% Playbooks** as locked in `CONTEXT.md`. Some percentages below reflect earlier v12 thinking that was superseded during the final lockdown. Refer to `CONTEXT.md` for authoritative numbers.
+
 ---
 
 ## 1. CHANNEL IDENTITY

@@ -658,7 +658,7 @@ def prepare_upload_metadata() -> dict:
             "Is AI making your job easier... or making you replaceable? "
             "Drop your honest answer below. No judgment."
         ),
-        "seo_filename": "half-her-team-was-gone-by-10am-ai-shift-2026.mp4",
+        "seo_filename": "9-years-of-skill-replaced-in-20-minutes-ai-documentary-2026.mp4",
     }
 
     # Save metadata to file
@@ -671,13 +671,191 @@ def prepare_upload_metadata() -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Step 5: Shorts Extraction
+# ---------------------------------------------------------------------------
+
+# Timestamps for best Shorts clips (9:16 vertical, 15-60 seconds)
+SHORTS_CLIPS = [
+    {
+        "id": "short_1_hook",
+        "title": "9 Years of Skill Replaced in 20 Minutes #ai #shorts",
+        "start": "0:00",
+        "end": "0:30",
+        "hook_text": "9 years. 20 minutes.",
+    },
+    {
+        "id": "short_2_taste",
+        "title": "AI Has Intelligence But Not This #ai #shorts",
+        "start": "3:00",
+        "end": "3:45",
+        "hook_text": "Intelligence without taste is noise.",
+    },
+    {
+        "id": "short_3_revenue",
+        "title": "$3K to $7.5K — How She Did It With AI #ai #shorts",
+        "start": "4:15",
+        "end": "4:55",
+        "hook_text": "$3,000 → $7,500",
+    },
+    {
+        "id": "short_4_gap",
+        "title": "The Gap Is Already Enormous #ai #shorts",
+        "start": "5:20",
+        "end": "5:55",
+        "hook_text": "The gap is already enormous.",
+    },
+    {
+        "id": "short_5_window",
+        "title": "$50/Month Does What $5K Used To #ai #shorts",
+        "start": "6:30",
+        "end": "7:10",
+        "hook_text": "$50/month = $5,000 in 2024",
+    },
+]
+
+
+def extract_shorts(video_path: Path | None, dry_run: bool = False) -> list[Path]:
+    """Extract vertical Shorts clips from the main video."""
+    logger.info("=" * 60)
+    logger.info("STEP 5: SHORTS EXTRACTION (9:16 Vertical)")
+    logger.info("=" * 60)
+
+    if dry_run:
+        logger.info("[DRY RUN] Would extract %d Shorts clips", len(SHORTS_CLIPS))
+        return []
+
+    if not video_path or not video_path.exists():
+        logger.error("No video file to extract Shorts from")
+        return []
+
+    shorts_dir = OUTPUT_DIR / "shorts"
+    shorts_dir.mkdir(exist_ok=True)
+    extracted = []
+
+    for clip in SHORTS_CLIPS:
+        output_file = shorts_dir / f"{clip['id']}.mp4"
+        logger.info(f"Extracting: {clip['title']} ({clip['start']}-{clip['end']})")
+
+        # Convert timestamp to seconds
+        def ts_to_sec(ts: str) -> float:
+            parts = ts.split(":")
+            return int(parts[0]) * 60 + float(parts[1])
+
+        start_sec = ts_to_sec(clip["start"])
+        duration_sec = ts_to_sec(clip["end"]) - start_sec
+
+        # Extract and reformat to 9:16 vertical with caption overlay
+        result = subprocess.run(
+            [
+                "ffmpeg", "-y",
+                "-ss", str(start_sec),
+                "-i", str(video_path),
+                "-t", str(duration_sec),
+                "-vf", (
+                    "crop=ih*9/16:ih,"  # Center crop to 9:16
+                    "scale=1080:1920,"
+                    f"drawtext=text='{clip['hook_text']}':"
+                    "fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:"
+                    "fontsize=64:fontcolor=white:borderw=3:bordercolor=black:"
+                    "x=(w-text_w)/2:y=h*0.75:enable='between(t,0,3)'"
+                ),
+                "-c:v", "libx264", "-preset", "fast", "-crf", "20",
+                "-c:a", "aac", "-b:a", "192k",
+                str(output_file),
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        if result.returncode == 0 and output_file.exists():
+            extracted.append(output_file)
+            logger.info(f"  Saved: {output_file}")
+        else:
+            logger.warning(f"  Failed: {result.stderr[:200] if result.stderr else 'unknown error'}")
+
+    logger.info(f"Extracted {len(extracted)}/{len(SHORTS_CLIPS)} Shorts")
+
+    # Save shorts metadata
+    shorts_meta = OUTPUT_DIR / "shorts_metadata.json"
+    with open(shorts_meta, "w") as f:
+        json.dump(SHORTS_CLIPS, f, indent=2)
+
+    return extracted
+
+
+# ---------------------------------------------------------------------------
+# Step 6: Post-Publish Monitoring
+# ---------------------------------------------------------------------------
+
+
+def generate_post_publish_checklist() -> dict:
+    """Generate the post-publish monitoring checklist and debrief template."""
+    logger.info("=" * 60)
+    logger.info("STEP 6: POST-PUBLISH MONITORING CHECKLIST")
+    logger.info("=" * 60)
+
+    checklist = {
+        "episode": EPISODE_ID,
+        "title": YOUTUBE_TITLE,
+        "first_30_min": [
+            "Share to Twitter with hook line + link",
+            "Share to LinkedIn with professional angle",
+            "Share to Instagram story with key visual",
+            "Pin comment with engagement question",
+        ],
+        "first_hour": [
+            "Heart first 20-30 comments",
+            "Reply to every early comment",
+            "Check initial view velocity",
+        ],
+        "at_24_hours": [
+            "Check CTR — if below 4%, consider thumbnail swap",
+            "Check average view duration — target 40%+",
+            "Check subscriber conversion rate",
+            "Review top traffic source",
+            "Post community tab teaser for next episode",
+        ],
+        "at_48_hours": [
+            "Complete EPISODE_DEBRIEF_LOG.md entry",
+            "Record: views, CTR, AVD, AVD%, subs gained",
+            "Identify biggest drop-off point + hypothesis",
+            "Document 3 things to do differently next episode",
+            "Document 3 things to keep / double down on",
+            "Confirm Shorts distributed (5 clips to YT/TikTok/Reels)",
+        ],
+        "distribution_checklist": [
+            "[ ] YouTube (full episode)",
+            "[ ] YouTube Shorts (5 clips)",
+            "[ ] TikTok (re-formatted clips)",
+            "[ ] Instagram Reels (re-formatted clips)",
+            "[ ] LinkedIn (professional angle post)",
+            "[ ] Twitter/X (hook + link)",
+            "[ ] Newsletter (episode summary)",
+        ],
+        "benchmarks": {
+            "target_ctr": "6-10% (early channel)",
+            "target_avd_pct": "40%+",
+            "target_subs_conversion": "1-3%",
+            "thumbnail_swap_threshold": "CTR < 4% at 24h",
+        },
+    }
+
+    checklist_file = OUTPUT_DIR / "post_publish_checklist.json"
+    with open(checklist_file, "w") as f:
+        json.dump(checklist, f, indent=2)
+    logger.info(f"Checklist saved: {checklist_file}")
+
+    return checklist
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 
 async def main():
     parser = argparse.ArgumentParser(description="EP001 Production Runner")
-    parser.add_argument("--step", type=int, help="Run only a specific step (1-4)")
+    parser.add_argument("--step", type=int, help="Run only a specific step (1-6)")
     parser.add_argument("--skip-voice", action="store_true", help="Skip voiceover generation")
     parser.add_argument("--skip-footage", action="store_true", help="Skip footage generation")
     parser.add_argument("--dry-run", action="store_true", help="Preview without generating")
@@ -685,12 +863,13 @@ async def main():
 
     logger.info("=" * 60)
     logger.info(f"V-REAL AI — {EPISODE_TITLE}")
-    logger.info("Full Production Runner")
+    logger.info("Full Production Runner (Steps 1-6)")
     logger.info("=" * 60)
 
     voiceover = None
     footage = []
     music = None
+    final_video = None
 
     # Step 1: Voiceover
     if not args.skip_voice and (args.step is None or args.step == 1):
@@ -706,11 +885,24 @@ async def main():
 
     # Step 3: Assembly
     if args.step is None or args.step == 3:
-        assemble_video(voiceover, footage, music, dry_run=args.dry_run)
+        final_video = assemble_video(voiceover, footage, music, dry_run=args.dry_run)
 
     # Step 4: Upload metadata
     if args.step is None or args.step == 4:
         prepare_upload_metadata()
+
+    # Step 5: Shorts extraction
+    if args.step is None or args.step == 5:
+        # Try to find the assembled video if we didn't just build it
+        if not final_video:
+            candidate = Path("output/assembled/ep001_final.mp4")
+            if candidate.exists():
+                final_video = candidate
+        extract_shorts(final_video, dry_run=args.dry_run)
+
+    # Step 6: Post-publish monitoring checklist
+    if args.step is None or args.step == 6:
+        generate_post_publish_checklist()
 
     logger.info("=" * 60)
     logger.info("PRODUCTION COMPLETE")
