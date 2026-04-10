@@ -48,6 +48,7 @@ DEPARTMENT_MAP = {
     "digital-product-manager-agent": "monetization",
     "newsletter-strategist-agent": "monetization",
     "community-manager-agent": "monetization",
+    "hermes-agent": "executive",
 }
 
 

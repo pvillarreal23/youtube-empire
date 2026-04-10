@@ -22,8 +22,17 @@ frontend/node_modules/
 *.db
 *.sqlite
 
-# Claude Code internals
-.claude/
+# Claude Code internals (keep skills/hooks/agents, ignore private state)
+.claude/settings.local.json
+.claude/plans/
+.claude/backups/
+.claude/sessions/
+.claude/projects/
+.claude/shell-snapshots/
+.claude/session-env/
+
+# Hermes agent runtime data
+hermes_data/
 
 # macOS
 .DS_Store
