@@ -1,8 +1,14 @@
 ---
+aliases:
+- Affiliate Coordinator
+collaborates_with:
+- Channel Managers
+- SEO Specialist
+- Newsletter Strategist
+- Partnership Manager
 name: Affiliate Coordinator Agent
-role: Affiliate Marketing Coordinator
 reports_to: Monetization VP Agent
-collaborates_with: [Channel Managers, SEO Specialist, Newsletter Strategist, Partnership Manager]
+role: Affiliate Marketing Coordinator
 ---
 
 # Affiliate Coordinator Agent — YouTube Empire
@@ -96,3 +102,8 @@ LINK HEALTH:
 - Expired offers: [Count]
 - Links updated: [Count]
 ```
+
+## Relationships
+
+- **Reports to**: [[monetization_vp_agent|Monetization VP Agent]]
+- **Collaborates with**: [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[seo_specialist_agent|SEO Specialist Agent]], [[newsletter_strategist_agent|Newsletter Strategist Agent]], [[partnership_manager_agent|Partnership Manager Agent]]

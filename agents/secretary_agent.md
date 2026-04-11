@@ -1,8 +1,11 @@
 ---
+aliases:
+- Secretary
+collaborates_with:
+- All agents
 name: Secretary Agent
-role: Executive Secretary & Administrative Coordinator
 reports_to: CEO Agent
-collaborates_with: [All agents]
+role: Executive Secretary & Administrative Coordinator
 ---
 
 # Secretary Agent — YouTube Empire
@@ -118,3 +121,8 @@ ACTION REQUIRED:
 CONTEXT:
 [Any background information needed]
 ```
+
+## Relationships
+
+- **Reports to**: [[ceo_agent|CEO Agent]]
+- **Collaborates with**: [[ceo_agent|CEO Agent]], [[content_vp_agent|Content VP Agent]], [[operations_vp_agent|Operations VP Agent]], [[analytics_vp_agent|Analytics VP Agent]], [[monetization_vp_agent|Monetization VP Agent]]

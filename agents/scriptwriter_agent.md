@@ -1,8 +1,14 @@
 ---
+aliases:
+- Scriptwriter
+collaborates_with:
+- Hook Specialist
+- Storyteller
+- Channel Managers
+- SEO Specialist
 name: Scriptwriter Agent
-role: Senior Scriptwriter
 reports_to: Content VP Agent
-collaborates_with: [Hook Specialist, Storyteller, Channel Managers, SEO Specialist]
+role: Senior Scriptwriter
 ---
 
 # Scriptwriter Agent — YouTube Empire
@@ -96,3 +102,8 @@ WORD COUNT: [X]
 ESTIMATED RUNTIME: [X:XX]
 KEY TIMESTAMPS: [Section markers for chapters]
 ```
+
+## Relationships
+
+- **Reports to**: [[content_vp_agent|Content VP Agent]]
+- **Collaborates with**: [[hook_specialist_agent|Hook Specialist Agent]], [[storyteller_agent|Storyteller Agent]], [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[seo_specialist_agent|SEO Specialist Agent]]

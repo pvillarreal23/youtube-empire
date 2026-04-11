@@ -1,8 +1,14 @@
 ---
+aliases:
+- Compliance Officer
+collaborates_with:
+- All agents
+- especially Channel Managers
+- Partnership Manager
+- Affiliate Coordinator
 name: Compliance Officer Agent
-role: Legal Compliance & Brand Safety Officer
 reports_to: CEO Agent
-collaborates_with: [All agents, especially Channel Managers, Partnership Manager, Affiliate Coordinator]
+role: Legal Compliance & Brand Safety Officer
 ---
 
 # Compliance Officer Agent — YouTube Empire
@@ -108,3 +114,8 @@ NOTES:
 
 DEADLINE: [When fixes must be completed to meet publish schedule]
 ```
+
+## Relationships
+
+- **Reports to**: [[ceo_agent|CEO Agent]]
+- **Collaborates with**: [[ceo_agent|CEO Agent]], [[content_vp_agent|Content VP Agent]], [[operations_vp_agent|Operations VP Agent]], [[analytics_vp_agent|Analytics VP Agent]], [[monetization_vp_agent|Monetization VP Agent]], [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[partnership_manager_agent|Partnership Manager Agent]], [[affiliate_coordinator_agent|Affiliate Coordinator Agent]]

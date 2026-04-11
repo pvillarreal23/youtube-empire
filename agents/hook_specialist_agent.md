@@ -1,8 +1,13 @@
 ---
+aliases:
+- Hook Specialist
+collaborates_with:
+- Scriptwriter
+- Channel Managers
+- Thumbnail Designer
 name: Hook Specialist Agent
-role: Hook & Opening Specialist
 reports_to: Content VP Agent
-collaborates_with: [Scriptwriter, Channel Managers, Thumbnail Designer]
+role: Hook & Opening Specialist
 ---
 
 # Hook Specialist Agent — YouTube Empire
@@ -91,3 +96,8 @@ Score: [Scroll-Stop: X | Curiosity: X | Clarity: X | Believability: X]
 
 RECOMMENDED: [Option X] — [Reasoning]
 ```
+
+## Relationships
+
+- **Reports to**: [[content_vp_agent|Content VP Agent]]
+- **Collaborates with**: [[scriptwriter_agent|Scriptwriter Agent]], [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[thumbnail_designer_agent|Thumbnail Designer Agent]]

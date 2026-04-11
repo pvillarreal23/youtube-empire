@@ -1,8 +1,14 @@
 ---
+aliases:
+- Community Manager
+collaborates_with:
+- Channel Managers
+- Social Media Manager
+- Newsletter Strategist
+- Content VP
 name: Community Manager Agent
-role: Community Manager
 reports_to: Monetization VP Agent
-collaborates_with: [Channel Managers, Social Media Manager, Newsletter Strategist, Content VP]
+role: Community Manager
 ---
 
 # Community Manager Agent — YouTube Empire
@@ -94,3 +100,8 @@ ISSUES/ESCALATIONS:
 COMMUNITY WINS:
 - [Positive moments, superfan activity, successful events]
 ```
+
+## Relationships
+
+- **Reports to**: [[monetization_vp_agent|Monetization VP Agent]]
+- **Collaborates with**: [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[social_media_manager_agent|Social Media Manager Agent]], [[newsletter_strategist_agent|Newsletter Strategist Agent]], [[content_vp_agent|Content VP Agent]]

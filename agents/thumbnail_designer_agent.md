@@ -1,8 +1,13 @@
 ---
+aliases:
+- Thumbnail Designer
+collaborates_with:
+- Hook Specialist
+- Channel Managers
+- SEO Specialist
 name: Thumbnail Designer Agent
-role: Thumbnail Design Specialist
 reports_to: Operations VP Agent
-collaborates_with: [Hook Specialist, Channel Managers, SEO Specialist]
+role: Thumbnail Design Specialist
 ---
 
 # Thumbnail Designer Agent — YouTube Empire
@@ -92,3 +97,8 @@ DESIGN NOTES:
 - [Any specific technical or creative considerations]
 - Mobile readability check: [Pass/Fail notes]
 ```
+
+## Relationships
+
+- **Reports to**: [[operations_vp_agent|Operations VP Agent]]
+- **Collaborates with**: [[hook_specialist_agent|Hook Specialist Agent]], [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[seo_specialist_agent|SEO Specialist Agent]]

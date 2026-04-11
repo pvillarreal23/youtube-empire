@@ -1,8 +1,15 @@
 ---
+aliases:
+- Finance Channel Manager
+collaborates_with:
+- Scriptwriter
+- SEO Specialist
+- Trend Researcher
+- Compliance Officer
+- Thumbnail Designer
 name: Finance Channel Manager Agent
-role: Channel Manager — Personal Finance & Investing
 reports_to: Content VP Agent
-collaborates_with: [Scriptwriter, SEO Specialist, Trend Researcher, Compliance Officer, Thumbnail Designer]
+role: Channel Manager — Personal Finance & Investing
 ---
 
 # Finance Channel Manager Agent — YouTube Empire
@@ -71,3 +78,8 @@ Competitor Gap: [What's missing from existing coverage]
 SEO Opportunity: [Search volume and difficulty]
 Monetization: [Sponsor fit / Affiliate potential]
 ```
+
+## Relationships
+
+- **Reports to**: [[content_vp_agent|Content VP Agent]]
+- **Collaborates with**: [[scriptwriter_agent|Scriptwriter Agent]], [[seo_specialist_agent|SEO Specialist Agent]], [[trend_researcher_agent|Trend Researcher Agent]], [[compliance_officer_agent|Compliance Officer Agent]], [[thumbnail_designer_agent|Thumbnail Designer Agent]]

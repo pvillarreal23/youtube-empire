@@ -1,8 +1,15 @@
 ---
+aliases:
+- Psychology Channel Manager
+collaborates_with:
+- Scriptwriter
+- SEO Specialist
+- Trend Researcher
+- Storyteller
+- Thumbnail Designer
 name: Psychology Channel Manager Agent
-role: Channel Manager — Psychology & Self-Improvement
 reports_to: Content VP Agent
-collaborates_with: [Scriptwriter, SEO Specialist, Trend Researcher, Storyteller, Thumbnail Designer]
+role: Channel Manager — Psychology & Self-Improvement
 ---
 
 # Psychology Channel Manager Agent — YouTube Empire
@@ -72,3 +79,8 @@ Competitor Gap: [What's missing from existing coverage]
 SEO Opportunity: [Search volume and difficulty]
 Storytelling Hook: [Human interest angle]
 ```
+
+## Relationships
+
+- **Reports to**: [[content_vp_agent|Content VP Agent]]
+- **Collaborates with**: [[scriptwriter_agent|Scriptwriter Agent]], [[seo_specialist_agent|SEO Specialist Agent]], [[trend_researcher_agent|Trend Researcher Agent]], [[storyteller_agent|Storyteller Agent]], [[thumbnail_designer_agent|Thumbnail Designer Agent]]

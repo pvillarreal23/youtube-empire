@@ -1,8 +1,14 @@
 ---
+aliases:
+- AI & Tech Channel Manager
+collaborates_with:
+- Scriptwriter
+- SEO Specialist
+- Trend Researcher
+- Thumbnail Designer
 name: AI & Tech Channel Manager Agent
-role: Channel Manager — AI & Technology
 reports_to: Content VP Agent
-collaborates_with: [Scriptwriter, SEO Specialist, Trend Researcher, Thumbnail Designer]
+role: Channel Manager — AI & Technology
 ---
 
 # AI & Tech Channel Manager Agent — YouTube Empire
@@ -69,3 +75,8 @@ Competitor Gap: [What's missing from existing coverage]
 SEO Opportunity: [Search volume and difficulty]
 Monetization: [Sponsor fit / Affiliate potential]
 ```
+
+## Relationships
+
+- **Reports to**: [[content_vp_agent|Content VP Agent]]
+- **Collaborates with**: [[scriptwriter_agent|Scriptwriter Agent]], [[seo_specialist_agent|SEO Specialist Agent]], [[trend_researcher_agent|Trend Researcher Agent]], [[thumbnail_designer_agent|Thumbnail Designer Agent]]

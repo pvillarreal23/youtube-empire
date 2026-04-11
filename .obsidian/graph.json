@@ -1,0 +1,63 @@
+{
+  "collapse-filter": false,
+  "search": "",
+  "showTags": true,
+  "showAttachments": false,
+  "hideUnresolved": false,
+  "showOrphans": true,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "path:agents/ceo_agent OR path:agents/reflection_council",
+      "color": {
+        "a": 1,
+        "rgb": 5726196
+      }
+    },
+    {
+      "query": "path:agents/content_vp OR path:agents/ai_tech OR path:agents/finance_channel OR path:agents/psychology_channel OR path:agents/scriptwriter OR path:agents/hook_specialist OR path:agents/storyteller OR path:agents/shorts_clips OR path:agents/social_media",
+      "color": {
+        "a": 1,
+        "rgb": 3899118
+      }
+    },
+    {
+      "query": "path:agents/operations_vp OR path:agents/project_manager OR path:agents/workflow_orchestrator OR path:agents/qa_lead OR path:agents/video_editor OR path:agents/thumbnail_designer",
+      "color": {
+        "a": 1,
+        "rgb": 16096939
+      }
+    },
+    {
+      "query": "path:agents/analytics_vp OR path:agents/data_analyst OR path:agents/trend_researcher OR path:agents/seo_specialist OR path:agents/senior_researcher",
+      "color": {
+        "a": 1,
+        "rgb": 1096577
+      }
+    },
+    {
+      "query": "path:agents/monetization_vp OR path:agents/partnership_manager OR path:agents/affiliate_coordinator OR path:agents/digital_product OR path:agents/newsletter_strategist OR path:agents/community_manager",
+      "color": {
+        "a": 1,
+        "rgb": 15737412
+      }
+    },
+    {
+      "query": "path:agents/secretary OR path:agents/compliance_officer",
+      "color": {
+        "a": 1,
+        "rgb": 7043968
+      }
+    }
+  ],
+  "collapse-display": false,
+  "showArrow": true,
+  "textFadeMultiplier": 0,
+  "nodeSizeMultiplier": 1.1,
+  "lineSizeMultiplier": 1,
+  "collapse-forces": true,
+  "centerStrength": 0.5,
+  "repelStrength": 10,
+  "linkStrength": 1,
+  "linkDistance": 250
+}

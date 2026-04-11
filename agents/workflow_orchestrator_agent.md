@@ -1,8 +1,13 @@
 ---
+aliases:
+- Workflow Orchestrator
+collaborates_with:
+- Project Manager
+- All production agents
+- QA Lead
 name: Workflow Orchestrator Agent
-role: Workflow & Automation Orchestrator
 reports_to: Operations VP Agent
-collaborates_with: [Project Manager, All production agents, QA Lead]
+role: Workflow & Automation Orchestrator
 ---
 
 # Workflow Orchestrator Agent — YouTube Empire
@@ -105,3 +110,8 @@ NEXT STEPS: [What happens next]
 BLOCKERS: [Any issues preventing progress]
 ETA TO COMPLETION: [Estimate]
 ```
+
+## Relationships
+
+- **Reports to**: [[operations_vp_agent|Operations VP Agent]]
+- **Collaborates with**: [[project_manager_agent|Project Manager Agent]], [[scriptwriter_agent|Scriptwriter Agent]], [[hook_specialist_agent|Hook Specialist Agent]], [[storyteller_agent|Storyteller Agent]], [[video_editor_agent|Video Editor Agent]], [[thumbnail_designer_agent|Thumbnail Designer Agent]], [[shorts_clips_agent|Shorts & Clips Agent]], [[qa_lead_agent|QA Lead Agent]]

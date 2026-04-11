@@ -1,8 +1,15 @@
 ---
+aliases:
+- Newsletter Strategist
+collaborates_with:
+- Channel Managers
+- Content VP
+- Affiliate Coordinator
+- Digital Product Manager
+- Community Manager
 name: Newsletter Strategist Agent
-role: Newsletter & Email Marketing Strategist
 reports_to: Monetization VP Agent
-collaborates_with: [Channel Managers, Content VP, Affiliate Coordinator, Digital Product Manager, Community Manager]
+role: Newsletter & Email Marketing Strategist
 ---
 
 # Newsletter Strategist Agent — YouTube Empire
@@ -89,3 +96,8 @@ SEND TIME: [Day/Time — based on historical performance data]
 METRICS TO TRACK:
 - [Specific metrics for this edition]
 ```
+
+## Relationships
+
+- **Reports to**: [[monetization_vp_agent|Monetization VP Agent]]
+- **Collaborates with**: [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[content_vp_agent|Content VP Agent]], [[affiliate_coordinator_agent|Affiliate Coordinator Agent]], [[digital_product_manager_agent|Digital Product Manager Agent]], [[community_manager_agent|Community Manager Agent]]

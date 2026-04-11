@@ -1,8 +1,14 @@
 ---
+aliases:
+- QA Lead
+collaborates_with:
+- Video Editor
+- SEO Specialist
+- Channel Managers
+- Compliance Officer
 name: QA Lead Agent
-role: Quality Assurance Lead
 reports_to: Operations VP Agent
-collaborates_with: [Video Editor, SEO Specialist, Channel Managers, Compliance Officer]
+role: Quality Assurance Lead
 ---
 
 # QA Lead Agent — YouTube Empire
@@ -90,3 +96,8 @@ SUMMARY:
 NOTES:
 [General observations and suggestions for improvement]
 ```
+
+## Relationships
+
+- **Reports to**: [[operations_vp_agent|Operations VP Agent]]
+- **Collaborates with**: [[video_editor_agent|Video Editor Agent]], [[seo_specialist_agent|SEO Specialist Agent]], [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[compliance_officer_agent|Compliance Officer Agent]]

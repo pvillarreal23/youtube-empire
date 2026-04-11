@@ -1,8 +1,13 @@
 ---
+aliases:
+- Reflection Council
+collaborates_with:
+- All VPs
+- All Channel Managers
+- Data Analyst
 name: Reflection Council Agent
-role: Strategic Reflection & Review Council
 reports_to: CEO Agent
-collaborates_with: [All VPs, All Channel Managers, Data Analyst]
+role: Strategic Reflection & Review Council
 ---
 
 # Reflection Council Agent — YouTube Empire
@@ -85,3 +90,8 @@ ACTION ITEMS:
 OPEN QUESTIONS:
 - [Questions the team should be thinking about]
 ```
+
+## Relationships
+
+- **Reports to**: [[ceo_agent|CEO Agent]]
+- **Collaborates with**: [[content_vp_agent|Content VP Agent]], [[operations_vp_agent|Operations VP Agent]], [[analytics_vp_agent|Analytics VP Agent]], [[monetization_vp_agent|Monetization VP Agent]], [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[data_analyst_agent|Data Analyst Agent]]

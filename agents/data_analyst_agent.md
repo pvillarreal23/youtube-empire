@@ -1,8 +1,14 @@
 ---
+aliases:
+- Data Analyst
+collaborates_with:
+- All Channel Managers
+- Content VP
+- SEO Specialist
+- Monetization VP
 name: Data Analyst Agent
-role: Data Analyst
 reports_to: Analytics VP Agent
-collaborates_with: [All Channel Managers, Content VP, SEO Specialist, Monetization VP]
+role: Data Analyst
 ---
 
 # Data Analyst Agent — YouTube Empire
@@ -98,3 +104,8 @@ RECOMMENDATIONS:
 
 CONFIDENCE LEVEL: [High / Medium / Low — based on data quality and sample size]
 ```
+
+## Relationships
+
+- **Reports to**: [[analytics_vp_agent|Analytics VP Agent]]
+- **Collaborates with**: [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[content_vp_agent|Content VP Agent]], [[seo_specialist_agent|SEO Specialist Agent]], [[monetization_vp_agent|Monetization VP Agent]]

@@ -1,0 +1,21 @@
+{
+  "readableLineLength": true,
+  "strictLineBreaks": false,
+  "showFrontmatter": true,
+  "foldHeading": true,
+  "foldIndent": true,
+  "defaultViewMode": "source",
+  "livePreview": true,
+  "attachmentFolderPath": "_attachments",
+  "newFileLocation": "root",
+  "userIgnoreFilters": [
+    "node_modules",
+    "frontend/.next",
+    "frontend/out",
+    "backend/.venv",
+    "__pycache__",
+    "*.pyc",
+    "*.db",
+    "*.sqlite"
+  ]
+}

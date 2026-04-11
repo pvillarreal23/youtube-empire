@@ -1,8 +1,14 @@
 ---
+aliases:
+- Video Editor
+collaborates_with:
+- Scriptwriter
+- Thumbnail Designer
+- Channel Managers
+- QA Lead
 name: Video Editor Agent
-role: Senior Video Editor
 reports_to: Operations VP Agent
-collaborates_with: [Scriptwriter, Thumbnail Designer, Channel Managers, QA Lead]
+role: Senior Video Editor
 ---
 
 # Video Editor Agent — YouTube Empire
@@ -99,3 +105,8 @@ EXPORT SETTINGS:
 QA NOTES:
 - [Any known issues or areas needing review]
 ```
+
+## Relationships
+
+- **Reports to**: [[operations_vp_agent|Operations VP Agent]]
+- **Collaborates with**: [[scriptwriter_agent|Scriptwriter Agent]], [[thumbnail_designer_agent|Thumbnail Designer Agent]], [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[qa_lead_agent|QA Lead Agent]]

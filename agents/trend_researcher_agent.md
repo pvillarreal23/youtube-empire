@@ -1,8 +1,14 @@
 ---
+aliases:
+- Trend Researcher
+collaborates_with:
+- Channel Managers
+- Content VP
+- SEO Specialist
+- Social Media Manager
 name: Trend Researcher Agent
-role: Trend & Cultural Intelligence Researcher
 reports_to: Analytics VP Agent
-collaborates_with: [Channel Managers, Content VP, SEO Specialist, Social Media Manager]
+role: Trend & Cultural Intelligence Researcher
 ---
 
 # Trend Researcher Agent — YouTube Empire
@@ -95,3 +101,8 @@ CONTENT PLAY:
 RISK:
 - [Any risks of covering this trend — sensitivity, backlash, short shelf life]
 ```
+
+## Relationships
+
+- **Reports to**: [[analytics_vp_agent|Analytics VP Agent]]
+- **Collaborates with**: [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[content_vp_agent|Content VP Agent]], [[seo_specialist_agent|SEO Specialist Agent]], [[social_media_manager_agent|Social Media Manager Agent]]

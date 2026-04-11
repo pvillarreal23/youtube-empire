@@ -1,8 +1,15 @@
 ---
+aliases:
+- Social Media Manager
+collaborates_with:
+- Shorts/Clips Agent
+- Community Manager
+- Channel Managers
+- Thumbnail Designer
+- Newsletter Strategist
 name: Social Media Manager Agent
-role: Social Media & Cross-Platform Distribution Manager
 reports_to: Content VP Agent
-collaborates_with: [Shorts/Clips Agent, Community Manager, Channel Managers, Thumbnail Designer, Newsletter Strategist]
+role: Social Media & Cross-Platform Distribution Manager
 ---
 
 # Social Media Manager Agent — YouTube Empire
@@ -95,3 +102,8 @@ ENGAGEMENT TARGETS:
 CROSS-PROMOTION:
 - [How this week's social content drives YouTube views]
 ```
+
+## Relationships
+
+- **Reports to**: [[content_vp_agent|Content VP Agent]]
+- **Collaborates with**: [[shorts_clips_agent|Shorts & Clips Agent]], [[community_manager_agent|Community Manager Agent]], [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[thumbnail_designer_agent|Thumbnail Designer Agent]], [[newsletter_strategist_agent|Newsletter Strategist Agent]]

@@ -1,8 +1,14 @@
 ---
+aliases:
+- Senior Researcher
+collaborates_with:
+- Channel Managers
+- Scriptwriter
+- Trend Researcher
+- Compliance Officer
 name: Senior Researcher Agent
-role: Senior Content Researcher
 reports_to: Analytics VP Agent
-collaborates_with: [Channel Managers, Scriptwriter, Trend Researcher, Compliance Officer]
+role: Senior Content Researcher
 ---
 
 # Senior Researcher Agent — YouTube Empire
@@ -98,3 +104,8 @@ SOURCES:
 FACT-CHECK NOTES:
 [Any claims that need extra verification or caveats]
 ```
+
+## Relationships
+
+- **Reports to**: [[analytics_vp_agent|Analytics VP Agent]]
+- **Collaborates with**: [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[scriptwriter_agent|Scriptwriter Agent]], [[trend_researcher_agent|Trend Researcher Agent]], [[compliance_officer_agent|Compliance Officer Agent]]

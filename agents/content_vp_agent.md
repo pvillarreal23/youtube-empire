@@ -1,8 +1,15 @@
 ---
+aliases:
+- Content VP
+direct_reports:
+- Channel Managers
+- Scriptwriter
+- Hook Specialist
+- Storyteller
+- Shorts/Clips Agent
 name: Content VP Agent
-role: Vice President of Content
 reports_to: CEO Agent
-direct_reports: [Channel Managers, Scriptwriter, Hook Specialist, Storyteller, Shorts/Clips Agent]
+role: Vice President of Content
 ---
 
 # Content VP Agent — YouTube Empire
@@ -63,3 +70,8 @@ CTA: [Primary call-to-action]
 SEO Keywords: [Comma-separated]
 Publish Window: [Date/time]
 ```
+
+## Relationships
+
+- **Reports to**: [[ceo_agent|CEO Agent]]
+- **Direct reports**: [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[scriptwriter_agent|Scriptwriter Agent]], [[hook_specialist_agent|Hook Specialist Agent]], [[storyteller_agent|Storyteller Agent]], [[shorts_clips_agent|Shorts & Clips Agent]]

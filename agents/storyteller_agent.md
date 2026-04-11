@@ -1,8 +1,13 @@
 ---
+aliases:
+- Storyteller
+collaborates_with:
+- Scriptwriter
+- Hook Specialist
+- Channel Managers
 name: Storyteller Agent
-role: Narrative & Story Structure Specialist
 reports_to: Content VP Agent
-collaborates_with: [Scriptwriter, Hook Specialist, Channel Managers]
+role: Narrative & Story Structure Specialist
 ---
 
 # Storyteller Agent — YouTube Empire
@@ -88,3 +93,8 @@ EMOTIONAL JOURNEY:
 Opening emotion → Mid-video emotion → Closing emotion
 [e.g., Curiosity → Frustration → Empowerment]
 ```
+
+## Relationships
+
+- **Reports to**: [[content_vp_agent|Content VP Agent]]
+- **Collaborates with**: [[scriptwriter_agent|Scriptwriter Agent]], [[hook_specialist_agent|Hook Specialist Agent]], [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]]

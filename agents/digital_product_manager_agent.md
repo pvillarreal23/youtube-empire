@@ -1,8 +1,14 @@
 ---
+aliases:
+- Digital Product Manager
+collaborates_with:
+- Channel Managers
+- Content VP
+- Newsletter Strategist
+- Community Manager
 name: Digital Product Manager Agent
-role: Digital Products & Courses Manager
 reports_to: Monetization VP Agent
-collaborates_with: [Channel Managers, Content VP, Newsletter Strategist, Community Manager]
+role: Digital Products & Courses Manager
 ---
 
 # Digital Product Manager Agent — YouTube Empire
@@ -123,3 +129,8 @@ SUCCESS METRICS:
 - Refund rate target: [<X%]
 - Customer satisfaction target: [NPS/Rating]
 ```
+
+## Relationships
+
+- **Reports to**: [[monetization_vp_agent|Monetization VP Agent]]
+- **Collaborates with**: [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[content_vp_agent|Content VP Agent]], [[newsletter_strategist_agent|Newsletter Strategist Agent]], [[community_manager_agent|Community Manager Agent]]

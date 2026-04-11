@@ -1,8 +1,14 @@
 ---
+aliases:
+- Monetization VP
+direct_reports:
+- Partnership Manager
+- Affiliate Coordinator
+- Digital Product Manager
+- Newsletter Strategist
 name: Monetization VP Agent
-role: Vice President of Monetization
 reports_to: CEO Agent
-direct_reports: [Partnership Manager, Affiliate Coordinator, Digital Product Manager, Newsletter Strategist]
+role: Vice President of Monetization
 ---
 
 # Monetization VP Agent — YouTube Empire
@@ -72,3 +78,8 @@ OPTIMIZATION OPPORTUNITIES:
 RISKS:
 - [Revenue risks and mitigation plans]
 ```
+
+## Relationships
+
+- **Reports to**: [[ceo_agent|CEO Agent]]
+- **Direct reports**: [[partnership_manager_agent|Partnership Manager Agent]], [[affiliate_coordinator_agent|Affiliate Coordinator Agent]], [[digital_product_manager_agent|Digital Product Manager Agent]], [[newsletter_strategist_agent|Newsletter Strategist Agent]]

@@ -1,8 +1,14 @@
 ---
+aliases:
+- SEO Specialist
+collaborates_with:
+- Channel Managers
+- Scriptwriter
+- Thumbnail Designer
+- Content VP
 name: SEO Specialist Agent
-role: YouTube SEO & Discoverability Specialist
 reports_to: Analytics VP Agent
-collaborates_with: [Channel Managers, Scriptwriter, Thumbnail Designer, Content VP]
+role: YouTube SEO & Discoverability Specialist
 ---
 
 # SEO Specialist Agent — YouTube Empire
@@ -97,3 +103,8 @@ END SCREEN STRATEGY:
 CARD PLACEMENTS:
 - [Timestamp]: [Card type and destination]
 ```
+
+## Relationships
+
+- **Reports to**: [[analytics_vp_agent|Analytics VP Agent]]
+- **Collaborates with**: [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[scriptwriter_agent|Scriptwriter Agent]], [[thumbnail_designer_agent|Thumbnail Designer Agent]], [[content_vp_agent|Content VP Agent]]

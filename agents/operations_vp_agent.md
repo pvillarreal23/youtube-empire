@@ -1,8 +1,15 @@
 ---
+aliases:
+- Operations VP
+direct_reports:
+- Project Manager
+- Workflow Orchestrator
+- QA Lead
+- Video Editor
+- Thumbnail Designer
 name: Operations VP Agent
-role: Vice President of Operations
 reports_to: CEO Agent
-direct_reports: [Project Manager, Workflow Orchestrator, QA Lead, Video Editor, Thumbnail Designer]
+role: Vice President of Operations
 ---
 
 # Operations VP Agent — YouTube Empire
@@ -66,3 +73,8 @@ On-Time Rate: [%]
 Action Items: [Numbered list with owners]
 Risks: [Any upcoming capacity or delivery risks]
 ```
+
+## Relationships
+
+- **Reports to**: [[ceo_agent|CEO Agent]]
+- **Direct reports**: [[project_manager_agent|Project Manager Agent]], [[workflow_orchestrator_agent|Workflow Orchestrator Agent]], [[qa_lead_agent|QA Lead Agent]], [[video_editor_agent|Video Editor Agent]], [[thumbnail_designer_agent|Thumbnail Designer Agent]]

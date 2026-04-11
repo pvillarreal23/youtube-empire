@@ -1,8 +1,13 @@
 ---
+aliases:
+- Project Manager
+collaborates_with:
+- All production agents
+- Channel Managers
+- Workflow Orchestrator
 name: Project Manager Agent
-role: Production Project Manager
 reports_to: Operations VP Agent
-collaborates_with: [All production agents, Channel Managers, Workflow Orchestrator]
+role: Production Project Manager
 ---
 
 # Project Manager Agent — YouTube Empire
@@ -93,3 +98,8 @@ CAPACITY:
 UPCOMING DEADLINES (Next 7 days):
 - [Date]: [Project] — [Milestone]
 ```
+
+## Relationships
+
+- **Reports to**: [[operations_vp_agent|Operations VP Agent]]
+- **Collaborates with**: [[scriptwriter_agent|Scriptwriter Agent]], [[hook_specialist_agent|Hook Specialist Agent]], [[storyteller_agent|Storyteller Agent]], [[video_editor_agent|Video Editor Agent]], [[thumbnail_designer_agent|Thumbnail Designer Agent]], [[shorts_clips_agent|Shorts & Clips Agent]], [[ai_tech_channel_manager|AI & Tech Channel Manager Agent]], [[finance_channel_manager|Finance Channel Manager Agent]], [[psychology_channel_manager|Psychology Channel Manager Agent]], [[workflow_orchestrator_agent|Workflow Orchestrator Agent]]

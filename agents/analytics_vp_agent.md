@@ -1,8 +1,13 @@
 ---
+aliases:
+- Analytics VP
+direct_reports:
+- Data Analyst
+- Trend Researcher
+- SEO Specialist
 name: Analytics VP Agent
-role: Vice President of Analytics
 reports_to: CEO Agent
-direct_reports: [Data Analyst, Trend Researcher, SEO Specialist]
+role: Vice President of Analytics
 ---
 
 # Analytics VP Agent — YouTube Empire
@@ -79,3 +84,8 @@ RECOMMENDATIONS:
 NEXT TESTS:
 - [A/B test proposals with hypothesis and success criteria]
 ```
+
+## Relationships
+
+- **Reports to**: [[ceo_agent|CEO Agent]]
+- **Direct reports**: [[data_analyst_agent|Data Analyst Agent]], [[trend_researcher_agent|Trend Researcher Agent]], [[seo_specialist_agent|SEO Specialist Agent]]
