@@ -1,0 +1,24 @@
+{
+  "name": "vreal-ai-video",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render",
+    "render:episode": "remotion render VRealEpisode out/episode.mp4",
+    "render:short": "remotion render VRealShort out/short.mp4"
+  },
+  "dependencies": {
+    "@remotion/captions": "^4",
+    "@remotion/media-utils": "^4",
+    "@remotion/transitions": "^4",
+    "react": "^19",
+    "react-dom": "^19",
+    "remotion": "^4"
+  },
+  "devDependencies": {
+    "@remotion/cli": "^4",
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}

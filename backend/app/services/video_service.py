@@ -245,24 +245,85 @@ async def _search_pexels(query: str, per_page: int = 3) -> list[dict]:
     return clips
 
 
-# --- Video Assembly via Creatomate ---
+# --- Video Assembly ---
+# Uses Remotion (primary) or Creatomate (fallback)
 
-async def assemble_video(
+async def assemble_video_remotion(
+    voiceover_path: str,
+    scenes: list[dict],
+    title: str,
+    captions: list[dict] | None = None,
+) -> str:
+    """
+    Assemble video using Remotion (React-based video renderer).
+    Renders locally via CLI — full control over titles, transitions, captions.
+    Returns path to the rendered MP4 file.
+    """
+    import json
+    import subprocess
+    from pathlib import Path
+
+    video_dir = Path(__file__).resolve().parent.parent.parent.parent / "video"
+
+    # Build input props for Remotion
+    props = {
+        "title": title,
+        "voiceoverUrl": voiceover_path,
+        "scenes": [
+            {
+                "id": f"scene-{i}",
+                "type": s.get("type", "b-roll"),
+                "description": s.get("cue", ""),
+                "videoUrl": s["url"],
+                "duration": s.get("duration", 10),
+                "textOverlay": s.get("text_overlay"),
+            }
+            for i, s in enumerate(scenes)
+        ],
+        "captions": captions or [],
+        "durationInSeconds": sum(s.get("duration", 10) for s in scenes) + 4,
+    }
+
+    props_path = video_dir / "out" / "props.json"
+    props_path.parent.mkdir(parents=True, exist_ok=True)
+    props_path.write_text(json.dumps(props))
+
+    output_path = video_dir / "out" / "episode.mp4"
+
+    # Calculate total frames
+    total_frames = int(props["durationInSeconds"] * 30)
+
+    result = subprocess.run(
+        [
+            "npx", "remotion", "render",
+            "VRealEpisode",
+            str(output_path),
+            "--props", str(props_path),
+            "--frames", f"0-{total_frames}",
+        ],
+        cwd=str(video_dir),
+        capture_output=True,
+        text=True,
+        timeout=1800,  # 30 minute timeout
+    )
+
+    if result.returncode != 0:
+        raise Exception(f"Remotion render failed: {result.stderr[:500]}")
+
+    return str(output_path)
+
+
+async def assemble_video_creatomate(
     voiceover_url: str,
     scenes: list[dict],
     title: str,
 ) -> str:
     """
-    Assemble final video using Creatomate API.
-
-    Takes voiceover audio + video scenes (Kling or stock) + text overlays
-    and produces a final rendered video.
-
-    Returns the URL of the rendered video.
+    Assemble video using Creatomate API (cloud fallback).
+    Returns URL of the rendered video.
     """
     elements = []
 
-    # Video scenes layer
     for scene in scenes:
         elements.append({
             "type": "video",
@@ -270,20 +331,11 @@ async def assemble_video(
             "trim_duration": scene.get("duration", 10),
         })
 
-    # Voiceover audio layer
+    elements.append({"type": "audio", "source": voiceover_url})
     elements.append({
-        "type": "audio",
-        "source": voiceover_url,
-    })
-
-    # Title card
-    elements.append({
-        "type": "text",
-        "text": title,
-        "font_size": "8 vmin",
-        "font_weight": "700",
-        "color": "#ffffff",
-        "background_color": "rgba(0,0,0,0.6)",
+        "type": "text", "text": title,
+        "font_size": "8 vmin", "font_weight": "700",
+        "color": "#ffffff", "background_color": "rgba(0,0,0,0.6)",
         "duration": 4,
     })
 
@@ -294,12 +346,7 @@ async def assemble_video(
                 "Authorization": f"Bearer {CREATOMATE_API_KEY}",
                 "Content-Type": "application/json",
             },
-            json={
-                "output_format": "mp4",
-                "width": 1920,
-                "height": 1080,
-                "elements": elements,
-            },
+            json={"output_format": "mp4", "width": 1920, "height": 1080, "elements": elements},
         )
         resp.raise_for_status()
         data = resp.json()
@@ -317,9 +364,9 @@ async def assemble_video(
             if status_data.get("status") == "succeeded":
                 return status_data["url"]
             if status_data.get("status") == "failed":
-                raise Exception(f"Video render failed: {status_data.get('error_message')}")
+                raise Exception(f"Creatomate render failed: {status_data.get('error_message')}")
 
-    raise Exception("Video render timed out")
+    raise Exception("Creatomate render timed out")
 
 
 # --- Full Pipeline ---
@@ -330,17 +377,21 @@ async def generate_video_from_script(script: str, title: str) -> dict:
     1. Parse script for spoken text + visual cues
     2. Generate voiceover via ElevenLabs
     3. Generate custom scenes via Kling AI (fall back to Pexels)
-    4. Assemble video via Creatomate
-    Returns {video_url, scenes_generated, sections_parsed, spoken_word_count}
+    4. Assemble video via Remotion (fall back to Creatomate)
+    Returns {video_url, scenes_generated, sections_parsed, spoken_word_count, renderer}
     """
+    from pathlib import Path
+
     parsed = parse_script_cues(script)
 
     # Generate voiceover
     audio_bytes = await generate_voiceover(parsed["full_spoken_text"])
 
-    # In production, upload audio to cloud storage and get URL
-    # For now this is a placeholder
-    voiceover_url = ""  # Replace with S3/GCS upload
+    # Save voiceover to video/public for Remotion access
+    video_dir = Path(__file__).resolve().parent.parent.parent.parent / "video"
+    voiceover_path = video_dir / "public" / "voiceover" / "episode.mp3"
+    voiceover_path.parent.mkdir(parents=True, exist_ok=True)
+    voiceover_path.write_bytes(audio_bytes)
 
     # Generate scenes for all visual cues
     all_cues = []
@@ -349,12 +400,33 @@ async def generate_video_from_script(script: str, title: str) -> dict:
 
     scenes = await generate_scenes_for_cues(all_cues)
 
-    # Assemble video
-    video_url = await assemble_video(
-        voiceover_url=voiceover_url,
-        scenes=scenes,
-        title=title,
-    )
+    # Download scene videos to video/public for Remotion access
+    footage_dir = video_dir / "public" / "footage"
+    footage_dir.mkdir(parents=True, exist_ok=True)
+    for i, scene in enumerate(scenes):
+        local_path = footage_dir / f"scene-{i}.mp4"
+        async with httpx.AsyncClient(timeout=120) as client:
+            resp = await client.get(scene["url"])
+            if resp.status_code == 200:
+                local_path.write_bytes(resp.content)
+                scene["local_path"] = str(local_path)
+
+    # Try Remotion first (local render, full control)
+    renderer = "remotion"
+    try:
+        video_url = await assemble_video_remotion(
+            voiceover_path=str(voiceover_path),
+            scenes=scenes,
+            title=title,
+        )
+    except Exception:
+        # Fall back to Creatomate (cloud render)
+        renderer = "creatomate"
+        video_url = await assemble_video_creatomate(
+            voiceover_url=str(voiceover_path),
+            scenes=scenes,
+            title=title,
+        )
 
     return {
         "video_url": video_url,
@@ -364,4 +436,5 @@ async def generate_video_from_script(script: str, title: str) -> dict:
         ],
         "sections_parsed": len(parsed["sections"]),
         "spoken_word_count": len(parsed["full_spoken_text"].split()),
+        "renderer": renderer,
     }
