@@ -65,6 +65,31 @@ export interface ModelInfo {
   available_presets: string[];
 }
 
+export interface WorkflowInfo {
+  id: string;
+  name: string;
+  description: string;
+  agents_used: string[];
+  channel_specific: boolean;
+}
+
+export interface ChannelInfo {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface WorkflowRun {
+  id: string;
+  workflow_id: string;
+  channel: string | null;
+  status: "running" | "completed" | "failed";
+  session_id: string | null;
+  output: string;
+  created_at: string;
+  completed_at: string | null;
+}
+
 async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
@@ -88,4 +113,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  // Automation
+  getWorkflows: () => fetchApi<WorkflowInfo[]>("/api/automation/workflows"),
+  getChannels: () => fetchApi<ChannelInfo[]>("/api/automation/channels"),
+  runWorkflow: (workflowId: string, channel?: string) =>
+    fetchApi<{ id: string; workflow_id: string; channel: string | null; status: string }>(
+      `/api/automation/run/${workflowId}`,
+      { method: "POST", body: JSON.stringify({ channel: channel || null }) },
+    ),
+  getAutomationHistory: () => fetchApi<WorkflowRun[]>("/api/automation/history"),
+  getRunDetail: (runId: string) => fetchApi<WorkflowRun>(`/api/automation/history/${runId}`),
+  streamUrl: (runId: string) => `${API_URL}/api/automation/stream/${runId}`,
 };

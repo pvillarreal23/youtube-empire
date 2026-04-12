@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db, async_session
 from app.services.agent_loader import load_agents_to_db
 from app.routers import agents, threads
+from app.routers import automation
 import os
 
 os.makedirs("data", exist_ok=True)
@@ -16,6 +17,16 @@ async def lifespan(app: FastAPI):
     async with async_session() as session:
         await load_agents_to_db(session)
     print("Loaded agents into database")
+
+    # Register managed agents for automation workflows
+    from app.services.managed_agents import register_agents, ensure_environment
+    try:
+        await ensure_environment()
+        await register_agents()
+        print("Registered managed agents for automation")
+    except Exception as e:
+        print(f"Managed agent registration skipped: {e}")
+
     yield
 
 
@@ -31,6 +42,7 @@ app.add_middleware(
 
 app.include_router(agents.router)
 app.include_router(threads.router)
+app.include_router(automation.router)
 
 
 @app.get("/api/health")

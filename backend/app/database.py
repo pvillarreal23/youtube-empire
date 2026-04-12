@@ -16,5 +16,10 @@ async def get_db():
 
 
 async def init_db():
+    # Import all models so their tables are registered with Base.metadata
+    import app.models.agent  # noqa: F401
+    import app.models.thread  # noqa: F401
+    import app.models.automation  # noqa: F401
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
