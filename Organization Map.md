@@ -1,5 +1,7 @@
 # YouTube Empire — Organization Map
 
+> **[[Home]]** | [[inbox|Inbox]] | `daily-notes/` | `projects/` | `conversations/` | `knowledge-base/`
+
 ## Executive
 
 - [[ceo_agent|CEO Agent]] — Chief Executive Officer

@@ -7,7 +7,8 @@
   "defaultViewMode": "source",
   "livePreview": true,
   "attachmentFolderPath": "_attachments",
-  "newFileLocation": "root",
+  "newFileLocation": "folder",
+  "newFileFolderPath": "inbox",
   "userIgnoreFilters": [
     "node_modules",
     "frontend/.next",

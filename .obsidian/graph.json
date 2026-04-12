@@ -48,6 +48,34 @@
         "a": 1,
         "rgb": 7043968
       }
+    },
+    {
+      "query": "path:daily-notes",
+      "color": {
+        "a": 1,
+        "rgb": 2201331
+      }
+    },
+    {
+      "query": "path:projects",
+      "color": {
+        "a": 1,
+        "rgb": 16750848
+      }
+    },
+    {
+      "query": "path:conversations",
+      "color": {
+        "a": 1,
+        "rgb": 10040217
+      }
+    },
+    {
+      "query": "path:knowledge-base",
+      "color": {
+        "a": 1,
+        "rgb": 2003199
+      }
     }
   ],
   "collapse-display": false,
