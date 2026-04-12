@@ -6,10 +6,14 @@ type: dashboard
 
 ## Quick Access
 
-| | |
-|---|---|
-| [[Organization Map]] | Full agent hierarchy |
-| [[inbox]] | Unsorted captures |
+| Section | Description |
+|---------|-------------|
+| [[Organization Map]] | Full agent hierarchy (30 agents) |
+| [[Daily Notes]] | Daily journals & task tracking |
+| [[Projects]] | Active initiatives & tracked work |
+| [[Conversations]] | Meeting logs, calls, collaborations |
+| [[Knowledge Base]] | Research, learnings, reference material |
+| [[Inbox]] | Unsorted captures — process regularly |
 
 ## Daily
 

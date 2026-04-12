@@ -1,6 +1,6 @@
 # YouTube Empire — Organization Map
 
-> **[[Home]]** | [[inbox|Inbox]] | `daily-notes/` | `projects/` | `conversations/` | `knowledge-base/`
+> **[[Home]]** | [[Daily Notes]] | [[Projects]] | [[Conversations]] | [[Knowledge Base]] | [[Inbox]]
 
 ## Executive
 
