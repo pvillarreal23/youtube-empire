@@ -1,0 +1,1081 @@
+from __future__ import annotations
+
+import uuid
+import asyncio
+import re
+from datetime import datetime, timezone
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from pydantic import BaseModel
+from typing import Optional
+from app.database import get_db, async_session
+from app.models.production import ProductionJob, PIPELINE_STAGES, CHANNEL_MANAGERS
+from app.models.thread import Thread, Message
+from app.models.agent import Agent
+from app.models.scheduler import Escalation
+from app.services.claude_service import generate_agent_response, generate_agent_response_async, generate_review_response_async
+from app.services.pressure_test import pressure_test
+from app.services.agent_memory import (
+    record_failure_lesson, record_success,
+    record_pressure_test_lesson, record_reviewer_feedback,
+    build_memory_prompt, update_skill_score,
+)
+from app.services.skill_growth import grant_xp
+
+router = APIRouter(prefix="/api/production", tags=["production"])
+
+# ── Quality Gate Configuration ──────────────────────────────────────────────
+MAX_REVISION_LOOPS = 5  # Safety valve — max times a stage can loop before escalating
+QUALITY_THRESHOLD = 10  # Only 10/10 passes. Period.
+
+# Which stages get quality-gated (scored and looped)
+GATED_STAGES = {"research", "scripted", "voiceover", "thumbnail", "edited", "seo"}
+
+# Which stages get multi-model pressure tested (Claude + ChatGPT + Gemini + Grok)
+# ALL gated stages get pressure tested — nothing ships without multi-model consensus
+PRESSURE_TEST_STAGES = {"research", "scripted", "voiceover", "thumbnail", "edited", "seo"}
+
+# The QA reviewer for each stage — who judges the work
+STAGE_REVIEWERS = {
+    "research": "senior-researcher",
+    "scripted": "quality-assurance-lead",
+    "voiceover": "voice-director",
+    "thumbnail": "quality-assurance-lead",
+    "edited": "quality-assurance-lead",
+    "seo": "seo-specialist",
+}
+
+# Agent IDs that match the reviewer names
+REVIEWER_AGENT_IDS = {
+    "senior-researcher": "senior-researcher",
+    "quality-assurance-lead": "quality-assurance-lead",
+    "voice-director": "voice-director",
+    "seo-specialist": "seo-specialist",
+}
+
+QUALITY_REVIEW_PROMPT = """You are reviewing the output of the {stage} stage for the episode "{title}" on {channel}.
+
+Your job is to score this work on a scale of 1-10 using the V-Real AI quality standards:
+- 10/10 = BBC/Netflix documentary quality. Would stop you mid-scroll. No improvements needed.
+- 9/10 = Excellent but one small thing could be better. NOT good enough — send back.
+- 8/10 = Good but noticeable gaps. Definitely send back.
+- 7/10 or below = Major issues. Send back with detailed notes.
+
+ONLY a 10/10 passes. Everything else loops back for revision.
+
+Review the work below and respond in EXACTLY this format:
+
+QUALITY SCORE: [X]/10
+
+VERDICT: [APPROVED or REVISION_NEEDED]
+
+FEEDBACK:
+[If REVISION_NEEDED: specific, actionable feedback on exactly what needs to change to reach 10/10]
+[If APPROVED: brief note on what makes this 10/10 quality]
+
+---
+
+Work to review:
+{work_output}
+"""
+
+REVISION_PROMPT = """Your previous {stage} output for "{title}" was reviewed and scored {score}/10 — NOT good enough.
+
+It needs to be 10/10 to proceed. Here is the specific feedback:
+
+{feedback}
+
+IMPORTANT:
+- Address EVERY point in the feedback
+- Don't just tweak — genuinely improve
+- This is revision #{revision_number} of max {max_revisions}
+- If this doesn't hit 10/10, it loops again
+- Read the feedback carefully and deliver exactly what's asked
+
+Produce your complete revised output now. Make it 10/10."""
+
+
+class CreateJobRequest(BaseModel):
+    title: str
+    channel: str
+    target_date: str = ""
+
+
+class RejectJobRequest(BaseModel):
+    notes: str = ""
+    send_back_to: str = "scripted"
+
+
+def _extract_score(review_text: str) -> tuple[int, str, str]:
+    """Extract score, verdict, and feedback from QA review response."""
+    score = 0
+    verdict = "REVISION_NEEDED"
+    feedback = ""
+
+    # Extract score — case-insensitive, handles "Quality Score", "QUALITY SCORE", "Score", etc.
+    score_match = re.search(r"(?:QUALITY\s+)?SCORE:\s*(\d+)\s*/\s*10", review_text, re.IGNORECASE)
+    if not score_match:
+        # Fallback: look for any X/10 pattern
+        score_match = re.search(r"(\d+)\s*/\s*10", review_text)
+    if score_match:
+        score = min(int(score_match.group(1)), 10)  # Cap at 10
+
+    # Extract verdict — case-insensitive
+    verdict_match = re.search(r"VERDICT:\s*(.+)", review_text, re.IGNORECASE)
+    if verdict_match:
+        verdict_text = verdict_match.group(1).strip().upper()
+        if "APPROVED" in verdict_text and "REVISION" not in verdict_text:
+            verdict = "APPROVED"
+        else:
+            verdict = "REVISION_NEEDED"
+
+    # Extract feedback — case-insensitive
+    feedback_match = re.search(r"FEEDBACK:\s*(.*)", review_text, re.IGNORECASE | re.DOTALL)
+    if feedback_match:
+        feedback = feedback_match.group(1).strip()
+        # Clean up — remove trailing sections if any
+        if "---" in feedback:
+            feedback = feedback.split("---")[0].strip()
+
+    # Safety: if score < 10 but verdict says approved, override
+    if score < QUALITY_THRESHOLD:
+        verdict = "REVISION_NEEDED"
+
+    return score, verdict, feedback
+
+
+async def _quality_gate(
+    job: ProductionJob,
+    stage: str,
+    work_output: str,
+    db: AsyncSession,
+) -> tuple[bool, int, str]:
+    """
+    Run quality review on stage output.
+    Returns: (passed: bool, score: int, feedback: str)
+    """
+    reviewer_name = STAGE_REVIEWERS.get(stage)
+    if not reviewer_name:
+        return True, 10, "No reviewer configured — auto-pass"
+
+    reviewer_id = REVIEWER_AGENT_IDS.get(reviewer_name, reviewer_name)
+    reviewer = await db.get(Agent, reviewer_id)
+
+    if not reviewer:
+        # Try with -agent suffix
+        reviewer = await db.get(Agent, reviewer_id + "-agent")
+        if not reviewer:
+            print(f"[QUALITY] Reviewer '{reviewer_id}' not found, auto-passing")
+            return True, 10, "Reviewer not found — auto-pass"
+
+    # Build the review prompt
+    review_prompt = QUALITY_REVIEW_PROMPT.format(
+        stage=stage,
+        title=job.title,
+        channel=job.channel,
+        work_output=work_output[:8000],  # Limit to avoid token overflow
+    )
+
+    # Get the reviewer's assessment (uses Haiku — scoring doesn't need Sonnet)
+    try:
+        review_response = await generate_review_response_async(
+            system_prompt=reviewer.system_prompt,
+            thread_messages=[{"id": "review", "sender_type": "user", "sender_agent_id": None,
+                            "sender_name": "Pipeline QA System", "content": review_prompt,
+                            "created_at": datetime.now(timezone.utc).isoformat(), "status": "complete"}],
+            agent_id=reviewer.id,
+        )
+
+        score, verdict, feedback = _extract_score(review_response)
+
+        # Log the review in the thread
+        if job.thread_id:
+            review_msg = Message(
+                id=str(uuid.uuid4()),
+                thread_id=job.thread_id,
+                sender_type="agent",
+                sender_agent_id=reviewer.id,
+                content=f"[QUALITY GATE — {stage.upper()}]\n\n{review_response}",
+                status="complete",
+            )
+            db.add(review_msg)
+            await db.commit()
+
+        passed = verdict == "APPROVED" and score >= QUALITY_THRESHOLD
+        return passed, score, feedback
+
+    except Exception as e:
+        print(f"[QUALITY] Review failed for {stage}: {e}")
+        return False, 0, f"Review failed: {str(e)}"
+
+
+MAX_PIPELINE_DEPTH = 10  # Safety valve against infinite recursion
+
+
+async def _advance_pipeline(job_id: str, _depth: int = 0):
+    """
+    Auto-advance a production job through the pipeline.
+
+    QUALITY LOOP: Each gated stage runs → gets reviewed → if not 10/10,
+    loops back with feedback until it hits 10/10 or max revisions.
+    Only 10/10 work advances. Everything else loops.
+    """
+    if _depth >= MAX_PIPELINE_DEPTH:
+        print(f"[PRODUCTION] ⚠ Max pipeline depth ({MAX_PIPELINE_DEPTH}) reached for job {job_id}. Stopping.")
+        return
+
+    async with async_session() as db:
+        job = await db.get(ProductionJob, job_id)
+        if not job:
+            return
+
+        stage_info = PIPELINE_STAGES.get(job.stage)
+        if not stage_info or not stage_info.get("agent"):
+            return
+
+        agent_id = stage_info["agent"]
+        agent = await db.get(Agent, agent_id)
+        if not agent:
+            # Try without -agent suffix
+            print(f"[PRODUCTION] Agent '{agent_id}' not found, skipping stage")
+            return
+
+        # Also involve the channel manager for context
+        cm_id = CHANNEL_MANAGERS.get(job.channel)
+
+        # Create or get thread for this job
+        if not job.thread_id:
+            thread = Thread(
+                id=str(uuid.uuid4()),
+                subject=f"[Production] {job.title} — {job.stage.upper()}",
+                participants=[agent_id, cm_id] if cm_id else [agent_id],
+            )
+            db.add(thread)
+            job.thread_id = thread.id
+        else:
+            thread = await db.get(Thread, job.thread_id)
+            if thread:
+                thread.subject = f"[Production] {job.title} — {job.stage.upper()}"
+                participants = thread.participants or []
+                if agent_id not in participants:
+                    thread.participants = participants + [agent_id]
+
+        # Build the stage-specific prompt
+        stage_prompts = {
+            "research": f"Research trending angles and data for a video titled '{job.title}' on the {job.channel} channel. Find key facts, statistics, competitor content, and unique angles. Provide a comprehensive research package. This must be 10/10 quality — deep, specific, with real data points.",
+            "scripted": f"Write a complete video script for '{job.title}' on the {job.channel} channel. Use the research provided in this thread. Follow your SCRIPT format with hook, animation cues, voice principles, and 3-act structure. Target 8-12 minutes (~1200 words). This must be 10/10 — BBC documentary quality, not a single weak line.",
+            "voiceover": f"The script for '{job.title}' is ready. Prepare a complete VOICEOVER BRIEF — pacing map, emphasis words, pause points, annotated script with all delivery directions. Voice: Julian on ElevenLabs (Stability 0.65, Similarity 0.75, Style 0.00, Speaker Boost OFF). This must be 10/10 — every word must land.",
+            "thumbnail": f"Create 3 thumbnail concepts for '{job.title}' on {job.channel}. Use THUMBNAIL BRIEF format with SAFE, BOLD, and EXPERIMENTAL options. Dark background, max 5 words, Inter Black font, test at 120px. Must be 10/10 — would you click this?",
+            "edited": f"The voiceover and thumbnail for '{job.title}' are ready. Prepare a complete EDIT BRIEF — scene-by-scene with footage sources, transitions, pattern interrupts every 15-20s, 4-layer audio mix, color grade specs. No static shot > 2 seconds. Must be 10/10.",
+            "seo": f"Optimize SEO for '{job.title}' on {job.channel}. Full SEO PACKAGE — 5 title options ranked, description with chapters, 15-20 tags, keyword research, recommendation wake analysis. Must be 10/10 — maximum discoverability.",
+            "review": f"FINAL QA review for '{job.title}' on {job.channel}. Run the complete QA CHECKLIST across ALL previous work in this thread — research quality, script quality, voiceover direction, thumbnail concepts, edit brief, SEO package. Score each component 1-10. Only if EVERYTHING is 10/10 does this pass. Give your final verdict.",
+            "approved": f"'{job.title}' has passed all quality gates for {job.channel}. Every stage scored 10/10. Prepare final approval summary for Pedro. This needs his sign-off to go live.",
+        }
+
+        prompt = stage_prompts.get(job.stage, f"Process stage '{job.stage}' for '{job.title}'")
+
+        # Add context about previous stages so each agent sees prior work
+        context_parts = []
+        if job.research_data:
+            context_parts.append(f"[Research completed — 10/10]\n{job.research_data[:2000]}")
+        if job.script:
+            context_parts.append(f"[Script completed — 10/10]\n{job.script[:2000]}")
+        if job.voiceover_brief:
+            context_parts.append(f"[Voiceover Brief completed — 10/10]\n{job.voiceover_brief[:1500]}")
+        if job.thumbnail_brief:
+            context_parts.append(f"[Thumbnail Concepts completed — 10/10]\n{job.thumbnail_brief[:1500]}")
+        if job.edit_brief:
+            context_parts.append(f"[Edit Brief completed — 10/10]\n{job.edit_brief[:1500]}")
+        if job.seo_metadata:
+            context_parts.append(f"[SEO completed — 10/10]\n{job.seo_metadata[:1000]}")
+        if job.rejection_notes:
+            context_parts.append(f"[PREVIOUS REJECTION NOTES]\n{job.rejection_notes}")
+        if context_parts:
+            prompt += "\n\nPrevious work:\n" + "\n---\n".join(context_parts)
+
+        # ═══════════════════════════════════════════════════════════════
+        # THE QUALITY LOOP — keeps going until 10/10 or max revisions
+        # ═══════════════════════════════════════════════════════════════
+
+        revision_count = 0
+        current_prompt = prompt
+        is_gated = job.stage in GATED_STAGES
+
+        while True:
+            # Send message to the thread
+            msg = Message(
+                id=str(uuid.uuid4()),
+                thread_id=job.thread_id,
+                sender_type="user",
+                sender_agent_id=None,
+                content=f"[Pipeline — Stage: {job.stage.upper()} | Attempt: {revision_count + 1}/{MAX_REVISION_LOOPS}]\n\n{current_prompt}",
+            )
+            db.add(msg)
+            job.current_agent_id = agent_id
+            job.updated_at = datetime.now(timezone.utc)
+            await db.commit()
+
+            # Get agent response
+            try:
+                result = await db.execute(
+                    select(Message).where(Message.thread_id == job.thread_id).order_by(Message.created_at)
+                )
+                thread_msgs = []
+                for m in result.scalars().all():
+                    a = await db.get(Agent, m.sender_agent_id) if m.sender_agent_id else None
+                    thread_msgs.append({
+                        "id": m.id, "sender_type": m.sender_type,
+                        "sender_agent_id": m.sender_agent_id,
+                        "sender_name": a.name if a else None,
+                        "content": m.content,
+                        "created_at": m.created_at.isoformat() if m.created_at else None,
+                        "status": m.status,
+                    })
+
+                # Inject agent memory (lessons from past work) into system prompt
+                memory_prompt = await build_memory_prompt(agent_id, stage=job.stage)
+                enhanced_prompt = agent.system_prompt + "\n\n---\n\n" + memory_prompt if memory_prompt else agent.system_prompt
+
+                response = await generate_agent_response_async(
+                    system_prompt=enhanced_prompt,
+                    thread_messages=thread_msgs,
+                    agent_id=agent_id,
+                    stage=job.stage,
+                )
+
+                # Save response
+                agent_msg = Message(
+                    id=str(uuid.uuid4()),
+                    thread_id=job.thread_id,
+                    sender_type="agent",
+                    sender_agent_id=agent_id,
+                    content=response,
+                    status="complete",
+                )
+                db.add(agent_msg)
+
+                # Store output in the appropriate field
+                _stage_field_map = {
+                    "research": "research_data",
+                    "scripted": "script",
+                    "voiceover": "voiceover_brief",
+                    "thumbnail": "thumbnail_brief",
+                    "edited": "edit_brief",
+                    "seo": "seo_metadata",
+                    "review": "review_summary",
+                    "approved": "approval_summary",
+                }
+                field = _stage_field_map.get(job.stage)
+                if field:
+                    setattr(job, field, response)
+
+                # Add to reviewed_by
+                reviewed = job.reviewed_by or []
+                if agent_id not in reviewed:
+                    job.reviewed_by = reviewed + [agent_id]
+
+                await db.commit()
+
+            except Exception as e:
+                print(f"[PRODUCTION] Pipeline error at stage '{job.stage}' for '{job.title}': {e}")
+                # Escalate to Pedro instead of silently dying
+                escalation = Escalation(
+                    id=str(uuid.uuid4()),
+                    thread_id=job.thread_id,
+                    agent_id=agent_id,
+                    reason=(
+                        f"PIPELINE ERROR: '{job.title}' stage '{job.stage}' hit an exception: {str(e)[:300]}\n\n"
+                        f"The pipeline has stopped. Pedro: check the logs and retry or manually advance."
+                    ),
+                    severity="critical",
+                )
+                db.add(escalation)
+                await db.commit()
+                return
+
+            # ── QUALITY GATE ──────────────────────────────────────────
+            if not is_gated:
+                # Non-gated stages (review, approved) pass through
+                break
+
+            passed, score, feedback = await _quality_gate(job, job.stage, response, db)
+
+            # Record reviewer feedback in agent memory (even if passed — learn what reviewers care about)
+            reviewer_name = STAGE_REVIEWERS.get(job.stage)
+            if reviewer_name and feedback:
+                await record_reviewer_feedback(
+                    agent_id=agent_id,
+                    reviewer_id=reviewer_name,
+                    feedback=feedback[:500],
+                    score=score,
+                    stage=job.stage,
+                    episode_title=job.title,
+                )
+
+            if passed:
+                # Record success in agent memory
+                await record_success(
+                    agent_id=agent_id,
+                    stage=job.stage,
+                    episode_title=job.title,
+                    score=score,
+                    attempts=revision_count + 1,
+                    work_summary=response[:500],
+                )
+                await update_skill_score(agent_id, job.stage, passed_first_try=(revision_count == 0), revisions_needed=revision_count)
+
+            if passed and job.stage in PRESSURE_TEST_STAGES:
+                # Passed internal QA — now run multi-model pressure test
+                print(f"[PRESSURE TEST] Running multi-model review for {job.stage}...")
+
+                # Log pressure test start in thread
+                if job.thread_id:
+                    pt_msg = Message(
+                        id=str(uuid.uuid4()),
+                        thread_id=job.thread_id,
+                        sender_type="user",
+                        sender_agent_id=None,
+                        content=f"[PRESSURE TEST — {job.stage.upper()}]\nInternal QA passed ({score}/10). Now running multi-model pressure test: Claude + ChatGPT + Gemini + Grok...",
+                    )
+                    db.add(pt_msg)
+                    await db.commit()
+
+                pt_result = await pressure_test(
+                    stage=job.stage,
+                    title=job.title,
+                    content=response,
+                )
+
+                # Log pressure test results in thread
+                pt_scores_dict = {r.model: r.score for r in pt_result.results if r.verdict not in ("SKIP", "ERROR")}
+                if job.thread_id:
+                    scores_display = ", ".join(f"{m}: {s}/10" for m, s in pt_scores_dict.items())
+                    skipped = [r.model for r in pt_result.results if r.verdict == "SKIP"]
+                    skip_note = f" (Skipped: {', '.join(skipped)} — API keys not set)" if skipped else ""
+
+                    pt_result_msg = Message(
+                        id=str(uuid.uuid4()),
+                        thread_id=job.thread_id,
+                        sender_type="agent",
+                        sender_agent_id="quality-assurance-lead",
+                        content=(
+                            f"[PRESSURE TEST RESULTS — {job.stage.upper()}]\n\n"
+                            f"Scores: {scores_display}{skip_note}\n"
+                            f"Average: {pt_result.average_score}/10\n"
+                            f"Unanimous: {'YES' if pt_result.unanimous else 'NO'}\n"
+                            f"Verdict: {'✓ ALL MODELS APPROVED' if pt_result.passed else '✗ REVISION NEEDED'}\n\n"
+                            f"Synthesized Feedback:\n{pt_result.synthesized_feedback}"
+                        ),
+                        status="complete",
+                    )
+                    db.add(pt_result_msg)
+                    await db.commit()
+
+                # Record pressure test results in agent memory
+                await record_pressure_test_lesson(
+                    agent_id=agent_id,
+                    stage=job.stage,
+                    episode_title=job.title,
+                    model_scores=pt_scores_dict,
+                    synthesized_feedback=pt_result.synthesized_feedback or "",
+                    passed=pt_result.passed,
+                )
+
+                if pt_result.passed:
+                    print(f"[PRESSURE TEST] ✓ All models approved {job.stage} — avg {pt_result.average_score}/10")
+                    # Grant skill XP — pressure test pass is the biggest XP boost
+                    leveled_up = await grant_xp(
+                        agent_id=agent_id, stage=job.stage, episode_title=job.title,
+                        score=score, passed_first_try=(revision_count == 0),
+                        pressure_test_passed=True, attempts=revision_count + 1,
+                    )
+                    if leveled_up:
+                        for lu in leveled_up:
+                            print(f"[SKILLS] ⬆ {agent_id} leveled up: {lu['skill']} → {lu['level_name']} (Lv{lu['new_level']})")
+                    break  # Passed everything!
+                else:
+                    # Failed pressure test — use synthesized feedback for revision
+                    print(f"[PRESSURE TEST] ✗ Failed — avg {pt_result.average_score}/10, looping back")
+                    passed = False
+                    score = int(pt_result.average_score)
+                    feedback = pt_result.synthesized_feedback
+
+            elif passed:
+                # Passed internal QA, no pressure test needed for this stage
+                print(f"[QUALITY] ✓ {job.stage} for '{job.title}' scored {score}/10 — APPROVED (attempt {revision_count + 1})")
+                # Grant skill XP
+                leveled_up = await grant_xp(
+                    agent_id=agent_id, stage=job.stage, episode_title=job.title,
+                    score=score, passed_first_try=(revision_count == 0),
+                    pressure_test_passed=False, attempts=revision_count + 1,
+                )
+                if leveled_up:
+                    for lu in leveled_up:
+                        print(f"[SKILLS] ⬆ {agent_id} leveled up: {lu['skill']} → {lu['level_name']} (Lv{lu['new_level']})")
+                break
+
+            # Not 10/10 — loop back and LEARN from the failure
+            revision_count += 1
+            print(f"[QUALITY] ✗ {job.stage} for '{job.title}' scored {score}/10 — REVISION {revision_count}/{MAX_REVISION_LOOPS}")
+
+            # Record failure in agent memory so they learn
+            await record_failure_lesson(
+                agent_id=agent_id,
+                stage=job.stage,
+                episode_title=job.title,
+                score=score,
+                feedback=feedback[:500],
+                revision_number=revision_count,
+            )
+
+            if revision_count >= MAX_REVISION_LOOPS:
+                # Safety valve — escalate to Pedro
+                print(f"[QUALITY] ⚠ Max revisions ({MAX_REVISION_LOOPS}) reached for {job.stage}. Escalating to Pedro.")
+                escalation = Escalation(
+                    id=str(uuid.uuid4()),
+                    thread_id=job.thread_id,
+                    agent_id=agent_id,
+                    reason=(
+                        f"QUALITY GATE STUCK: '{job.title}' stage '{job.stage}' failed to reach 10/10 "
+                        f"after {MAX_REVISION_LOOPS} attempts. Last score: {score}/10.\n\n"
+                        f"Last feedback:\n{feedback[:500]}\n\n"
+                        f"Pedro: Review the thread and either approve manually or provide direction."
+                    ),
+                    severity="critical",
+                )
+                db.add(escalation)
+                await db.commit()
+                return  # Stop pipeline — Pedro needs to intervene
+
+            # Build revision prompt with specific feedback
+            current_prompt = REVISION_PROMPT.format(
+                stage=job.stage,
+                title=job.title,
+                score=score,
+                feedback=feedback,
+                revision_number=revision_count,
+                max_revisions=MAX_REVISION_LOOPS,
+            )
+
+            # Small delay to avoid hammering the API
+            await asyncio.sleep(2)
+
+        # ═══════════════════════════════════════════════════════════════
+        # STAGE PASSED — Auto-advance to next stage
+        # ═══════════════════════════════════════════════════════════════
+
+        next_stage = stage_info.get("next")
+        if not next_stage:
+            return  # Final stage
+
+        # Special handling for "approved" stage — ALWAYS needs Pedro
+        if next_stage == "approved" or job.stage == "review":
+            # After QA review, create escalation for Pedro
+            escalation = Escalation(
+                id=str(uuid.uuid4()),
+                thread_id=job.thread_id,
+                agent_id="ceo-agent",
+                reason=(
+                    f"READY FOR FINAL APPROVAL: '{job.title}' for {job.channel} has passed all quality gates. "
+                    f"Every stage scored 10/10. Review the thread and approve for publishing."
+                ),
+                severity="critical",
+            )
+            db.add(escalation)
+            job.stage = "approved"
+            job.updated_at = datetime.now(timezone.utc)
+            await db.commit()
+            # Run the approved stage (CEO summary) but DON'T auto-publish
+            await _advance_pipeline(job_id, _depth=_depth + 1)
+            return
+
+        # Auto-advance to next stage
+        job.stage = next_stage
+        job.updated_at = datetime.now(timezone.utc)
+        await db.commit()
+
+        print(f"[PRODUCTION] Auto-advancing '{job.title}' to stage: {next_stage}")
+
+        # Trigger next stage automatically
+        await _advance_pipeline(job_id, _depth=_depth + 1)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.get("/jobs")
+async def list_jobs(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(ProductionJob).order_by(ProductionJob.updated_at.desc()))
+    jobs = result.scalars().all()
+    out = []
+    for j in jobs:
+        agent = await db.get(Agent, j.current_agent_id) if j.current_agent_id else None
+        out.append({
+            "id": j.id, "title": j.title, "channel": j.channel,
+            "stage": j.stage, "current_agent_id": j.current_agent_id,
+            "current_agent_name": agent.name if agent else None,
+            "created_at": j.created_at.isoformat() if j.created_at else None,
+            "updated_at": j.updated_at.isoformat() if j.updated_at else None,
+            "target_date": j.target_date, "thread_id": j.thread_id,
+            "reviewed_by": j.reviewed_by or [],
+            "make_executions": j.make_executions or [],
+            "has_research": bool(j.research_data),
+            "has_script": bool(j.script),
+            "has_voiceover": bool(j.voiceover_brief),
+            "has_thumbnail": bool(j.thumbnail_brief),
+            "has_edit_brief": bool(j.edit_brief),
+            "has_seo": bool(j.seo_metadata),
+            "has_review": bool(j.review_summary),
+        })
+    return out
+
+
+@router.post("/jobs")
+async def create_job(
+    data: CreateJobRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a new production job and start the auto-advancing quality-gated pipeline."""
+    job = ProductionJob(
+        id=str(uuid.uuid4()),
+        title=data.title,
+        channel=data.channel,
+        stage="research",
+        target_date=data.target_date,
+    )
+    db.add(job)
+    await db.commit()
+
+    # Start the pipeline — it auto-advances through ALL stages with quality gates
+    background_tasks.add_task(_advance_pipeline, job.id)
+    return {
+        "id": job.id,
+        "title": job.title,
+        "stage": "research",
+        "status": "started",
+        "message": "Pipeline started. Each stage will auto-advance after hitting 10/10 quality. Pedro approval required before publish.",
+    }
+
+
+@router.get("/jobs/{job_id}")
+async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
+    """Get detailed job status including quality gate history."""
+    job = await db.get(ProductionJob, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    agent = await db.get(Agent, job.current_agent_id) if job.current_agent_id else None
+
+    # Get thread messages for quality gate history
+    quality_history = []
+    if job.thread_id:
+        result = await db.execute(
+            select(Message).where(Message.thread_id == job.thread_id).order_by(Message.created_at)
+        )
+        for m in result.scalars().all():
+            if "[QUALITY GATE" in (m.content or ""):
+                score_match = re.search(r"QUALITY SCORE:\s*(\d+)\s*/\s*10", m.content)
+                quality_history.append({
+                    "agent": m.sender_agent_id,
+                    "score": int(score_match.group(1)) if score_match else None,
+                    "passed": "APPROVED" in (m.content or ""),
+                    "timestamp": m.created_at.isoformat() if m.created_at else None,
+                })
+
+    return {
+        "id": job.id, "title": job.title, "channel": job.channel,
+        "stage": job.stage, "current_agent_id": job.current_agent_id,
+        "current_agent_name": agent.name if agent else None,
+        "created_at": job.created_at.isoformat() if job.created_at else None,
+        "updated_at": job.updated_at.isoformat() if job.updated_at else None,
+        "target_date": job.target_date, "thread_id": job.thread_id,
+        "reviewed_by": job.reviewed_by or [],
+        "has_research": bool(job.research_data),
+        "has_script": bool(job.script),
+        "has_voiceover": bool(job.voiceover_brief),
+        "has_thumbnail": bool(job.thumbnail_brief),
+        "has_edit_brief": bool(job.edit_brief),
+        "has_seo": bool(job.seo_metadata),
+        "has_review": bool(job.review_summary),
+        "approved_by": job.approved_by,
+        "rejection_notes": job.rejection_notes,
+        "quality_history": quality_history,
+    }
+
+
+@router.post("/jobs/{job_id}/approve")
+async def approve_job(job_id: str, db: AsyncSession = Depends(get_db)):
+    """Pedro approves a job for publishing. Only Pedro can do this."""
+    job = await db.get(ProductionJob, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.stage not in ("approved", "review"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Job is at stage '{job.stage}' — must be at 'approved' or 'review' stage for Pedro to approve"
+        )
+
+    job.approved_by = "pedro"
+    job.stage = "published"
+    job.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+
+    return {
+        "id": job.id,
+        "stage": "published",
+        "approved_by": "pedro",
+        "message": "Approved by Pedro. Ready to upload.",
+    }
+
+
+@router.post("/jobs/{job_id}/reject")
+async def reject_job(
+    job_id: str,
+    data: RejectJobRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
+    """Pedro rejects a job — sends it back to a specific stage with notes."""
+    job = await db.get(ProductionJob, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    target_stage = data.send_back_to
+    if target_stage not in PIPELINE_STAGES:
+        raise HTTPException(status_code=400, detail=f"Invalid stage: {target_stage}")
+
+    job.stage = target_stage
+    job.rejection_notes = data.notes or "Sent back for revisions by Pedro"
+    job.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+
+    # Re-start the pipeline from the target stage with quality loops
+    background_tasks.add_task(_advance_pipeline, job.id)
+
+    return {
+        "id": job.id,
+        "stage": target_stage,
+        "status": "rejected_for_revision",
+        "message": f"Sent back to '{target_stage}' stage. Pipeline will re-run with quality gates.",
+    }
+
+
+@router.post("/jobs/{job_id}/advance")
+async def advance_job(
+    job_id: str,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
+    """Manually advance a job (override quality gate). Use sparingly."""
+    job = await db.get(ProductionJob, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    stage_info = PIPELINE_STAGES.get(job.stage)
+    if not stage_info or not stage_info.get("next"):
+        raise HTTPException(status_code=400, detail="Job is already at the final stage")
+
+    job.stage = stage_info["next"]
+    job.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+
+    background_tasks.add_task(_advance_pipeline, job.id)
+    return {"id": job.id, "stage": job.stage, "status": "manually_advanced"}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VIDEO PRODUCTION — Trigger actual rendering
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class ProduceRequest(BaseModel):
+    """Request to trigger video production for an approved episode."""
+    step: str = "all"  # "voiceover", "footage", "assemble", "upload", "all"
+
+
+@router.post("/jobs/{job_id}/produce")
+async def produce_video(
+    job_id: str,
+    data: ProduceRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Trigger actual video production for an approved episode.
+
+    This calls the production runner to:
+      1. Generate voiceover via ElevenLabs
+      2. Download b-roll from Pexels
+      3. Assemble video with FFmpeg
+      4. Upload to YouTube
+
+    Requires the episode to be in 'approved' stage or later.
+    """
+    job = await db.get(ProductionJob, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    valid_steps = {"voiceover", "footage", "assemble", "upload", "all"}
+    if data.step not in valid_steps:
+        raise HTTPException(status_code=400, detail=f"Invalid step. Choose from: {valid_steps}")
+
+    background_tasks.add_task(_run_production, job.id, data.step)
+
+    return {
+        "id": job.id,
+        "status": "production_started",
+        "step": data.step,
+        "message": f"Production step '{data.step}' started in background for {job.title}",
+    }
+
+
+async def _run_production(job_id: str, step: str):
+    """Background task: run actual video production."""
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    produce_script = Path(__file__).resolve().parent.parent.parent.parent.parent / "produce_ep001.py"
+
+    if not produce_script.exists():
+        print(f"[PRODUCE] ERROR: Production script not found at {produce_script}")
+        return
+
+    cmd = [sys.executable, str(produce_script), "--step", step]
+    print(f"[PRODUCE] Running: {' '.join(cmd)}")
+
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+
+    if result.returncode == 0:
+        print(f"[PRODUCE] ✓ Production step '{step}' completed successfully")
+        print(result.stdout[-500:] if len(result.stdout) > 500 else result.stdout)
+    else:
+        print(f"[PRODUCE] ✗ Production step '{step}' failed")
+        print(result.stderr[-500:] if len(result.stderr) > 500 else result.stderr)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAKE.COM INTEGRATION — Trigger production via Make.com webhooks
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# EP001 voiceover blocks for Make.com
+EP001_VOICEOVER_BLOCKS = {
+    1: {
+        "name": "block1-hook-sarah",
+        "text": "Sarah Chen's phone buzzed at nine forty-seven AM.\n\nEmergency meeting.\n\nBy ten AM, half her team was gone.\n\nReplaced by AI tools that cost forty-nine dollars a month.\n\nBut here's what nobody tells you — the people who moved fast saw twenty-eight percent salary increases.\n\nThe people who froze took eight months to recover.\n\nThe difference was a single decision made in the first ninety days.\n\nAnd I tracked exactly what that decision was.\n\nThis happened to three point two million people in 2025.\n\nDecember fifteenth, 2025.\n\nOpenAI released their advanced reasoning model.\n\nSame week, Anthropic launched Claude three point five Sonnet with computer control.\n\nWithin seventy-two hours, AI tools could handle tasks that took human teams weeks.\n\nI tracked forty-seven people through this transformation — across eight industries, four continents, ages twenty-six to fifty-two.\n\nThree survival patterns emerged.\n\nThe first pattern: people who experimented immediately. Sarah Chen is the clearest example.\n\nSarah Chen didn't wait for permission.\n\nDecember eighteenth — three days after the AI announcement — she signed up for everything.\n\nClaude. ChatGPT. Copy dot AI.\n\nHer husband found her at midnight, teaching Claude to analyze competitor campaigns.\n\n\"What are you doing?\"\n\n\"Learning how to survive.\"\n\nJanuary third — breakthrough moment.\n\nA competitive analysis that typically took two days was finished by eleven thirty AM.\n\nBut something was different about the quality.\n\nThe AI handled the data collection.\n\nSarah added the strategic thinking that competitors couldn't replicate.\n\nShe didn't replace herself with AI.\n\nShe became irreplaceable because of AI.\n\nThe second pattern: people who resisted the change. Mike Rodriguez represents this path.",
+    },
+    2: {
+        "name": "block2-mike",
+        "text": "Mike Rodriguez made a different choice.\n\nEighteen years of legal research experience.\n\nWhen his firm introduced Harvey AI, Mike's response was immediate and final.\n\nHis words: \"I don't need a computer to tell me how to practice law.\"\n\nThat wasn't arrogance.\n\nMike believed something true — human judgment in law can't be outsourced.\n\nHe'd built his reputation on finding precedents other lawyers missed.\n\nOn understanding the nuance behind case law.\n\nOn being the guy partners trusted with impossible research.\n\nThe problem?\n\nHarvey AI didn't outsource his judgment. It accelerated it.\n\nAnd he missed the moment when that distinction mattered.\n\nWhile his colleagues learned Harvey AI, Mike doubled down on what made him valuable.\n\nFebruary reality check.\n\nHis research assignments were taking six hours.\n\nHis AI-assisted colleagues were finishing equivalent work in forty-five minutes.\n\nThe partners delivered their verdict.\n\n\"Mike, your efficiency metrics don't justify your position.\"\n\nMarch first — position eliminated.\n\nMike wasn't alone. Forty-three percent of workers who rejected AI training in the first sixty days faced similar outcomes within six months.\n\nThe third pattern: people who saw the shift as strategy. David Park exemplifies this approach.",
+    },
+    3: {
+        "name": "block3-david",
+        "text": "David Park saw what others missed.\n\nWhen his company announced AI customer service integration, David didn't panic.\n\nHe studied the technology for two weeks.\n\nMapped what AI could and couldn't do.\n\nThen he wrote the memo that changed everything.\n\n\"AI can handle eighty percent of our ticket volume perfectly. But the twenty percent it can't handle — furious customers, complex technical issues, executive escalations — that's where we create customer loyalty.\"\n\nInstead of fighting the AI rollout, he designed it.\n\nResult: VP of Customer Experience.\n\nForty-eight percent salary increase.\n\nBut here's what connects these three stories...\n\nEach person had the exact same information on the exact same day.\n\nThe difference wasn't opportunity. It was response speed.",
+    },
+    4: {
+        "name": "block4-framework",
+        "text": "Sarah, Mike, and David weren't unique cases.\n\nI found this same pattern in forty-seven people across eight industries.\n\nThe people who succeeded all did three specific actions within ninety days of their company's AI announcement.\n\nThis is the Ninety-Day Rule.\n\nDays one to thirty: Immediate hands-on experimentation.\n\nWinners signed up for AI tools the day their company announced integration.\n\nNot when training started. Not when it became mandatory.\n\nThe day they heard it was coming.\n\nSarah spent thirty minutes every morning for thirty days testing different AI tools.\n\nShe gave Claude the same tasks she'd normally do manually.\n\nCompared outputs. Found the gaps. Learned the limits.\n\nMike? He never opened a single AI tool.\n\nDays thirty-one to sixty: Identify your irreplaceable complement.\n\nThey mapped what AI handled well versus what broke down.\n\nThen they became experts at the breakdown points.\n\nSarah discovered AI could generate competitive analysis in minutes.\n\nBut it couldn't interpret what that meant for strategy.\n\nCouldn't read between the lines of competitor behavior.\n\nCouldn't predict which insights would actually change business decisions.\n\nSo she became the strategic interpreter.\n\nDavid found AI could resolve eighty percent of customer tickets.\n\nBut it couldn't handle the twenty percent that required emotional intelligence.\n\nThe angry customers. The complex technical problems. The executive escalations.\n\nSo he became the human escalation specialist.\n\nDays sixty-one to ninety: Position yourself as the essential bridge.\n\nThey stopped competing with AI and started designing workflows that combined both.\n\nThey became the person who understood what AI could do and what humans had to do.\n\nSarah pitched herself as the \"AI-Human Strategy Director.\"\n\nNot just a marketer. The person who could harness AI speed and add human wisdom.\n\nDavid positioned himself as the \"Customer Experience Architect.\"\n\nNot just a manager. The designer of human-AI customer service systems.\n\nThey made themselves indispensable by becoming the integration point.\n\nHere's what makes this urgent.\n\nMost industries are already past day sixty of this transformation.\n\nIf you're in marketing, customer service, content creation, research, analysis — your ninety-day window is probably closing.\n\nIf you're watching this today, here's what you do.\n\nQuestion one: What am I doing manually that AI could accelerate?\n\nPick one task. Sign up for one AI tool. Test it for thirty minutes.\n\nQuestion two: What can I do that AI fundamentally cannot?\n\nFind the breakdown points. The judgment calls. The human moments.\n\nQuestion three: How do I become the bridge that makes both work better?\n\nDon't compete with AI. Design the workflow that needs both.\n\nThe question isn't whether this will reach your job.\n\nIt's whether you'll be Sarah or Mike when it does.\n\nThis shift isn't happening to us.\n\nIt's happening through us.\n\nThe question is: which side of it will you choose to be on?",
+    },
+    5: {
+        "name": "block5-close",
+        "text": "If this changed how you see what's coming for your industry, there's more where this came from.\n\nThis is V-Real AI.\n\nWe're here to help you see what's coming — and position yourself correctly — before your ninety days are up.\n\nSubscribe for the insights that determine outcomes.\n\nThe next episode drops Tuesday.",
+    },
+}
+
+EP001_FOOTAGE_SCENES = [
+    {"scene": 1, "query": "neural network dark visualization", "min_duration": 5},
+    {"scene": 2, "query": "data particles accelerating light", "min_duration": 5},
+    {"scene": 3, "query": "person crossroads silhouette decision", "min_duration": 5},
+    {"scene": 4, "query": "woman working laptop night office", "min_duration": 10},
+    {"scene": 5, "query": "phone notification message alert", "min_duration": 5},
+    {"scene": 6, "query": "person using AI tools multiple screens", "min_duration": 10},
+    {"scene": 7, "query": "AI generated digital creativity", "min_duration": 8},
+    {"scene": 8, "query": "hand selecting choosing decision", "min_duration": 8},
+    {"scene": 9, "query": "revenue growth chart data visualization", "min_duration": 10},
+    {"scene": 10, "query": "world map connections global network", "min_duration": 10},
+    {"scene": 11, "query": "chain reaction dominos technology", "min_duration": 8},
+    {"scene": 12, "query": "two paths diverging gap between", "min_duration": 8},
+    {"scene": 13, "query": "sunrise opportunity hope new beginning", "min_duration": 15},
+    {"scene": 14, "query": "person walking forward confident future", "min_duration": 15},
+]
+
+
+class MakeVoiceoverRequest(BaseModel):
+    episode_id: str = "ep001"
+    block: int  # 1-5
+
+
+class MakeFootageRequest(BaseModel):
+    episode_id: str = "ep001"
+    scene: Optional[int] = None  # None = all scenes
+
+
+class MakeAllRequest(BaseModel):
+    episode_id: str = "ep001"
+
+
+@router.post("/make/voiceover")
+async def trigger_voiceover(data: MakeVoiceoverRequest):
+    """Trigger ElevenLabs voiceover generation via Make.com webhook."""
+    from app.services.make_integration import MAKE_WEBHOOKS
+    import httpx
+
+    webhook_url = MAKE_WEBHOOKS.get("voiceover", "")
+    if not webhook_url:
+        raise HTTPException(
+            status_code=400,
+            detail="MAKE_WEBHOOK_VOICEOVER not configured. Set it in .env with your Make.com webhook URL."
+        )
+
+    block_data = EP001_VOICEOVER_BLOCKS.get(data.block)
+    if not block_data:
+        raise HTTPException(status_code=400, detail=f"Invalid block number. Choose 1-5.")
+
+    payload = {
+        "agent_id": "video-editor",
+        "scenario": "voiceover",
+        "episode_id": data.episode_id,
+        "voice_id": "CjK4w2V6sbgFJY05zTGt",
+        "model_id": "eleven_multilingual_v2",
+        "stability": 0.65,
+        "similarity": 0.75,
+        "style": 0.0,
+        "speaker_boost": False,
+        "filename": f"{data.episode_id}-{block_data['name']}.mp3",
+        "text": block_data["text"],
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=120) as client:
+            response = await client.post(webhook_url, json=payload)
+            return {
+                "status": "triggered",
+                "block": data.block,
+                "block_name": block_data["name"],
+                "make_status": response.status_code,
+                "make_response": response.text[:500],
+            }
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Make.com webhook failed: {str(e)[:200]}")
+
+
+@router.post("/make/voiceover/all")
+async def trigger_all_voiceover(data: MakeAllRequest, background_tasks: BackgroundTasks):
+    """Trigger ALL 5 voiceover blocks via Make.com (sequentially in background)."""
+    from app.services.make_integration import MAKE_WEBHOOKS
+
+    webhook_url = MAKE_WEBHOOKS.get("voiceover", "")
+    if not webhook_url:
+        raise HTTPException(
+            status_code=400,
+            detail="MAKE_WEBHOOK_VOICEOVER not configured. Set it in .env with your Make.com webhook URL."
+        )
+
+    background_tasks.add_task(_trigger_all_voiceover_blocks, data.episode_id, webhook_url)
+    return {
+        "status": "started",
+        "message": "Generating all 5 voiceover blocks via Make.com. Check server logs for progress.",
+        "blocks": list(EP001_VOICEOVER_BLOCKS.keys()),
+    }
+
+
+async def _trigger_all_voiceover_blocks(episode_id: str, webhook_url: str):
+    """Background: trigger all voiceover blocks sequentially."""
+    import httpx
+
+    for block_num, block_data in EP001_VOICEOVER_BLOCKS.items():
+        payload = {
+            "agent_id": "video-editor",
+            "scenario": "voiceover",
+            "episode_id": episode_id,
+            "voice_id": "CjK4w2V6sbgFJY05zTGt",
+            "model_id": "eleven_multilingual_v2",
+            "stability": 0.65,
+            "similarity": 0.75,
+            "style": 0.0,
+            "speaker_boost": False,
+            "filename": f"{episode_id}-{block_data['name']}.mp3",
+            "text": block_data["text"],
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=120) as client:
+                response = await client.post(webhook_url, json=payload)
+                print(f"[MAKE] ✓ Block {block_num} ({block_data['name']}): {response.status_code}")
+        except Exception as e:
+            print(f"[MAKE] ✗ Block {block_num} failed: {e}")
+
+        await asyncio.sleep(2)  # Rate limit between blocks
+
+    print(f"[MAKE] All voiceover blocks triggered for {episode_id}")
+
+
+@router.post("/make/footage")
+async def trigger_footage(data: MakeFootageRequest, background_tasks: BackgroundTasks):
+    """Trigger Pexels footage download via Make.com webhook."""
+    from app.services.make_integration import MAKE_WEBHOOKS
+    import httpx
+
+    webhook_url = MAKE_WEBHOOKS.get("video_assembly", "")
+    if not webhook_url:
+        raise HTTPException(
+            status_code=400,
+            detail="MAKE_WEBHOOK_VIDEO not configured. Set it in .env with your Make.com webhook URL."
+        )
+
+    if data.scene:
+        scenes = [s for s in EP001_FOOTAGE_SCENES if s["scene"] == data.scene]
+        if not scenes:
+            raise HTTPException(status_code=400, detail=f"Invalid scene number. Choose 1-14.")
+    else:
+        scenes = EP001_FOOTAGE_SCENES
+
+    background_tasks.add_task(_trigger_footage_downloads, data.episode_id, webhook_url, scenes)
+    return {
+        "status": "started",
+        "message": f"Downloading {len(scenes)} footage clips via Make.com.",
+        "scenes": [s["scene"] for s in scenes],
+    }
+
+
+async def _trigger_footage_downloads(episode_id: str, webhook_url: str, scenes: list):
+    """Background: trigger footage downloads sequentially."""
+    import httpx
+
+    for scene in scenes:
+        payload = {
+            "agent_id": "video-editor",
+            "scenario": "footage",
+            "episode_id": episode_id,
+            "scene_number": f"{scene['scene']:02d}",
+            "query": scene["query"],
+            "min_duration": scene["min_duration"],
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=60) as client:
+                response = await client.post(webhook_url, json=payload)
+                print(f"[MAKE] ✓ Scene {scene['scene']:02d}: {response.status_code}")
+        except Exception as e:
+            print(f"[MAKE] ✗ Scene {scene['scene']:02d} failed: {e}")
+
+        await asyncio.sleep(1)
+
+    print(f"[MAKE] All footage scenes triggered for {episode_id}")
+
+
+@router.get("/make/status")
+async def make_status():
+    """Check which Make.com webhooks are configured."""
+    from app.services.make_integration import MAKE_WEBHOOKS
+
+    return {
+        webhook: {
+            "configured": bool(url),
+            "url_prefix": url[:40] + "..." if url else "NOT SET",
+        }
+        for webhook, url in MAKE_WEBHOOKS.items()
+    }

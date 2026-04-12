@@ -1,0 +1,45 @@
+{
+  "episode": "ep001",
+  "title": "9 Years of Skill. Replaced in 20 Minutes. [AI Documentary 2026]",
+  "first_30_min": [
+    "Share to Twitter with hook line + link",
+    "Share to LinkedIn with professional angle",
+    "Share to Instagram story with key visual",
+    "Pin comment with engagement question"
+  ],
+  "first_hour": [
+    "Heart first 20-30 comments",
+    "Reply to every early comment",
+    "Check initial view velocity"
+  ],
+  "at_24_hours": [
+    "Check CTR \u2014 if below 4%, consider thumbnail swap",
+    "Check average view duration \u2014 target 40%+",
+    "Check subscriber conversion rate",
+    "Review top traffic source",
+    "Post community tab teaser for next episode"
+  ],
+  "at_48_hours": [
+    "Complete EPISODE_DEBRIEF_LOG.md entry",
+    "Record: views, CTR, AVD, AVD%, subs gained",
+    "Identify biggest drop-off point + hypothesis",
+    "Document 3 things to do differently next episode",
+    "Document 3 things to keep / double down on",
+    "Confirm Shorts distributed (5 clips to YT/TikTok/Reels)"
+  ],
+  "distribution_checklist": [
+    "[ ] YouTube (full episode)",
+    "[ ] YouTube Shorts (5 clips)",
+    "[ ] TikTok (re-formatted clips)",
+    "[ ] Instagram Reels (re-formatted clips)",
+    "[ ] LinkedIn (professional angle post)",
+    "[ ] Twitter/X (hook + link)",
+    "[ ] Newsletter (episode summary)"
+  ],
+  "benchmarks": {
+    "target_ctr": "6-10% (early channel)",
+    "target_avd_pct": "40%+",
+    "target_subs_conversion": "1-3%",
+    "thumbnail_swap_threshold": "CTR < 4% at 24h"
+  }
+}

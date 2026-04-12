@@ -1,0 +1,14 @@
+{
+  "name": "youtube-empire-discord-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for YouTube Empire — mirrors agent feed, escalation alerts, and team commands",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "node --watch bot.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.0",
+    "node-fetch": "^3.3.0"
+  }
+}
