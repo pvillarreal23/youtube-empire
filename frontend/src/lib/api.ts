@@ -53,6 +53,25 @@ export interface OrgTree {
   edges: { source: string; target: string }[];
 }
 
+export interface SandboxTask {
+  id: string;
+  agent_id: string;
+  managed_agent_id: string | null;
+  environment_id: string | null;
+  session_id: string | null;
+  task: string;
+  status: "pending" | "running" | "completed" | "failed";
+  result: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SandboxTaskEvents {
+  session_id: string;
+  status: string;
+  events: { type: string; text?: string }[];
+}
+
 async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
@@ -75,4 +94,17 @@ export const api = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  // Sandbox (Managed Agents)
+  dispatchToSandbox: (data: { agent_id: string; task: string }) =>
+    fetchApi<SandboxTask>("/api/sandbox/dispatch", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  getSandboxTasks: () => fetchApi<SandboxTask[]>("/api/sandbox/tasks"),
+  getSandboxTask: (taskId: string) => fetchApi<SandboxTask>(`/api/sandbox/tasks/${taskId}`),
+  getSandboxTaskEvents: (taskId: string) =>
+    fetchApi<SandboxTaskEvents>(`/api/sandbox/tasks/${taskId}/events`),
+  getAgentSandboxTasks: (agentId: string) =>
+    fetchApi<SandboxTask[]>(`/api/sandbox/tasks/agent/${agentId}`),
 };

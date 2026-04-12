@@ -3,24 +3,63 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { api, AgentDetail, AgentSummary } from "@/lib/api";
-import { getInitials, departmentLabel } from "@/lib/utils";
+import { api, AgentDetail, AgentSummary, SandboxTask } from "@/lib/api";
+import { getInitials, departmentLabel, timeAgo } from "@/lib/utils";
+
+const STATUS_COLORS: Record<string, string> = {
+  pending: "#f59e0b",
+  running: "#3b82f6",
+  completed: "#10b981",
+  failed: "#ef4444",
+};
 
 export default function AgentProfilePage() {
   const params = useParams();
   const agentId = params.id as string;
   const [agent, setAgent] = useState<AgentDetail | null>(null);
   const [allAgents, setAllAgents] = useState<Record<string, AgentSummary>>({});
+  const [sandboxTask, setSandboxTask] = useState("");
+  const [sandboxTasks, setSandboxTasks] = useState<SandboxTask[]>([]);
+  const [dispatching, setDispatching] = useState(false);
+  const [expandedTask, setExpandedTask] = useState<string | null>(null);
 
   useEffect(() => {
     if (!agentId) return;
-    Promise.all([api.getAgent(agentId), api.getAgents()]).then(([a, all]) => {
+    Promise.all([
+      api.getAgent(agentId),
+      api.getAgents(),
+      api.getAgentSandboxTasks(agentId).catch(() => [] as SandboxTask[]),
+    ]).then(([a, all, tasks]) => {
       setAgent(a);
       const map: Record<string, AgentSummary> = {};
       all.forEach((ag) => (map[ag.id] = ag));
       setAllAgents(map);
+      setSandboxTasks(tasks);
     });
   }, [agentId]);
+
+  const handleDispatch = async () => {
+    if (!sandboxTask.trim() || dispatching) return;
+    setDispatching(true);
+    try {
+      const task = await api.dispatchToSandbox({ agent_id: agentId, task: sandboxTask });
+      setSandboxTasks((prev: SandboxTask[]) => [task, ...prev]);
+      setSandboxTask("");
+    } catch {
+      // Error will show in task status
+    } finally {
+      setDispatching(false);
+    }
+  };
+
+  const refreshTask = async (taskId: string) => {
+    try {
+      const updated = await api.getSandboxTask(taskId);
+      setSandboxTasks((prev: SandboxTask[]) => prev.map((t: SandboxTask) => (t.id === taskId ? updated : t)));
+    } catch {
+      // ignore
+    }
+  };
 
   if (!agent) return <div className="flex items-center justify-center h-full text-[#64748b]">Loading...</div>;
 
@@ -126,6 +165,73 @@ export default function AgentProfilePage() {
           <pre className="text-sm text-[#94a3b8] whitespace-pre-wrap font-sans leading-relaxed">
             {agent.system_prompt}
           </pre>
+        </div>
+
+        {/* Sandbox dispatch */}
+        <div className="p-4 rounded-lg bg-[#1e293b] border border-[#334155]">
+          <h3 className="text-xs font-semibold text-[#64748b] uppercase mb-3">
+            Sandbox Task
+          </h3>
+          <p className="text-xs text-[#64748b] mb-3">
+            Dispatch {agent.name} to an autonomous cloud sandbox for long-running tasks like
+            research, analysis, or content generation.
+          </p>
+          <textarea
+            value={sandboxTask}
+            onChange={(e) => setSandboxTask(e.target.value)}
+            placeholder={`e.g. "Research the top 10 trending AI topics this week and write a summary report..."`}
+            className="w-full p-3 rounded-lg bg-[#0f172a] border border-[#334155] text-sm text-white placeholder-[#475569] resize-none focus:outline-none focus:border-[#8b5cf6]"
+            rows={3}
+          />
+          <button
+            onClick={handleDispatch}
+            disabled={!sandboxTask.trim() || dispatching}
+            className="mt-2 px-4 py-2 bg-[#10b981] hover:bg-[#059669] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            {dispatching ? "Dispatching..." : "Dispatch to Sandbox"}
+          </button>
+
+          {/* Previous sandbox tasks */}
+          {sandboxTasks.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <h4 className="text-xs font-semibold text-[#64748b] uppercase">
+                Previous Tasks
+              </h4>
+              {sandboxTasks.map((t) => (
+                <div
+                  key={t.id}
+                  className="p-3 rounded bg-[#0f172a] border border-[#1e293b] cursor-pointer hover:border-[#334155] transition-colors"
+                  onClick={() => {
+                    setExpandedTask(expandedTask === t.id ? null : t.id);
+                    if (t.status === "running" || t.status === "pending") refreshTask(t.id);
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-[#94a3b8] truncate flex-1">
+                      {t.task.slice(0, 80)}{t.task.length > 80 ? "..." : ""}
+                    </span>
+                    <div className="flex items-center gap-2 ml-2 shrink-0">
+                      <span className="text-[10px] text-[#64748b]">{timeAgo(t.created_at)}</span>
+                      <span
+                        className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+                        style={{
+                          color: STATUS_COLORS[t.status] || "#64748b",
+                          backgroundColor: (STATUS_COLORS[t.status] || "#64748b") + "20",
+                        }}
+                      >
+                        {t.status}
+                      </span>
+                    </div>
+                  </div>
+                  {expandedTask === t.id && t.result && (
+                    <pre className="mt-2 text-xs text-[#94a3b8] whitespace-pre-wrap font-sans leading-relaxed border-t border-[#1e293b] pt-2">
+                      {t.result}
+                    </pre>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Quick action */}
