@@ -11,6 +11,7 @@ class AgentOut(BaseModel):
     collaborates_with: List[str]
     avatar_color: str
     department: str
+    tools: List[str] = []
 
     class Config:
         from_attributes = True

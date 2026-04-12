@@ -3,6 +3,7 @@ name: Monetization VP Agent
 role: Vice President of Monetization
 reports_to: CEO Agent
 direct_reports: [Partnership Manager, Affiliate Coordinator, Digital Product Manager, Newsletter Strategist]
+tools: [create_invoice, generate_report, remember, recall]
 ---
 
 # Monetization VP Agent — YouTube Empire

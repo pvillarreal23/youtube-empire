@@ -3,6 +3,7 @@ name: Content VP Agent
 role: Vice President of Content
 reports_to: CEO Agent
 direct_reports: [Channel Managers, Scriptwriter, Hook Specialist, Storyteller, Shorts/Clips Agent]
+tools: [create_task, send_notification, remember, recall]
 ---
 
 # Content VP Agent — YouTube Empire

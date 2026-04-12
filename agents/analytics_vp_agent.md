@@ -3,6 +3,7 @@ name: Analytics VP Agent
 role: Vice President of Analytics
 reports_to: CEO Agent
 direct_reports: [Data Analyst, Trend Researcher, SEO Specialist]
+tools: [generate_report, remember, recall]
 ---
 
 # Analytics VP Agent — YouTube Empire

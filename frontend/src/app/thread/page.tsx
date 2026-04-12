@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { api, ThreadDetail, AgentSummary } from "@/lib/api";
 import { getInitials, timeAgo } from "@/lib/utils";
+import ToolCallBlock from "@/components/ToolCallBlock";
 
 function ThreadContent() {
   const searchParams = useSearchParams();
@@ -111,6 +112,13 @@ function ThreadContent() {
                   }`}
                 >
                   {msg.content}
+                  {msg.tool_calls && msg.tool_calls.length > 0 && (
+                    <div className="mt-3 space-y-1">
+                      {msg.tool_calls.map((tc) => (
+                        <ToolCallBlock key={tc.id} toolCall={tc} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               {isUser && (

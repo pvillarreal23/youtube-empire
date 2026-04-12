@@ -3,6 +3,7 @@ name: Project Manager Agent
 role: Production Project Manager
 reports_to: Operations VP Agent
 collaborates_with: [All production agents, Channel Managers, Workflow Orchestrator]
+tools: [create_task, update_task_status, send_notification, remember, recall]
 ---
 
 # Project Manager Agent — YouTube Empire

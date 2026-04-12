@@ -1,0 +1,48 @@
+name: YouTube Empire
+description: A multi-channel YouTube media company with AI agents managing content production, analytics, monetization, and operations.
+version: "1.0"
+
+departments:
+  executive:
+    color: "#8b5cf6"
+    label: Executive
+  content:
+    color: "#3b82f6"
+    label: Content
+  operations:
+    color: "#f59e0b"
+    label: Operations
+  analytics:
+    color: "#10b981"
+    label: Analytics
+  monetization:
+    color: "#ef4444"
+    label: Monetization
+  admin:
+    color: "#6b7280"
+    label: Admin
+
+# Default tools available to all agents (unless overridden per-agent)
+default_tools:
+  - search_knowledge_base
+  - remember
+  - recall
+
+# Department-level tool assignments (agents inherit from their department)
+department_tools:
+  executive:
+    - create_task
+    - generate_report
+    - send_notification
+  content:
+    - create_task
+    - send_notification
+  operations:
+    - create_task
+    - update_task_status
+    - send_notification
+  analytics:
+    - generate_report
+  monetization:
+    - create_invoice
+    - generate_report

@@ -15,3 +15,4 @@ class Agent(Base):
     system_prompt = Column(Text, nullable=False)
     avatar_color = Column(String, default="#6366f1")
     department = Column(String, default="general")
+    tools = Column(JSON, default=list)  # list of tool IDs this agent can use

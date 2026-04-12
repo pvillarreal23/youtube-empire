@@ -8,7 +8,8 @@ from sqlalchemy import select
 from app.database import get_db
 from app.models.thread import Thread, Message
 from app.models.agent import Agent
-from app.schemas.thread import ThreadOut, ThreadWithMessages, CreateThread, SendMessage, MessageOut
+from app.models.tool import ToolCall
+from app.schemas.thread import ThreadOut, ThreadWithMessages, CreateThread, SendMessage, MessageOut, ToolCallOut
 from app.services.claude_service import generate_agent_response, analyze_routing
 from app.config import MAX_AGENTS_PER_TURN
 
@@ -23,6 +24,25 @@ async def _get_thread_messages(db: AsyncSession, thread_id: str) -> list[dict]:
     out = []
     for m in messages:
         agent = await db.get(Agent, m.sender_agent_id) if m.sender_agent_id else None
+
+        # Load tool call details if present
+        tool_calls_data = None
+        if m.tool_calls:
+            tool_calls_data = []
+            for tc_id in m.tool_calls:
+                tc = await db.get(ToolCall, tc_id)
+                if tc:
+                    tool_calls_data.append({
+                        "id": tc.id,
+                        "tool_name": tc.tool_name,
+                        "input_data": tc.input_data or {},
+                        "output_data": tc.output_data,
+                        "status": tc.status,
+                        "error_message": tc.error_message,
+                        "created_at": tc.created_at.isoformat() if tc.created_at else None,
+                        "completed_at": tc.completed_at.isoformat() if tc.completed_at else None,
+                    })
+
         out.append({
             "id": m.id,
             "thread_id": m.thread_id,
@@ -32,6 +52,8 @@ async def _get_thread_messages(db: AsyncSession, thread_id: str) -> list[dict]:
             "content": m.content,
             "created_at": m.created_at.isoformat() if m.created_at else None,
             "status": m.status,
+            "message_type": m.message_type or "text",
+            "tool_calls": tool_calls_data,
         })
     return out
 
@@ -48,10 +70,13 @@ async def _process_agent_response(thread_id: str, agent_id: str, depth: int = 0)
         thread_msgs = await _get_thread_messages(db, thread_id)
 
         try:
-            response_text = generate_agent_response(
+            response = await generate_agent_response(
                 system_prompt=agent.system_prompt,
                 thread_messages=thread_msgs,
                 agent_id=agent_id,
+                agent_tools=agent.tools or None,
+                thread_id=thread_id,
+                db=db,
             )
         except Exception as e:
             # Save error message
@@ -67,16 +92,27 @@ async def _process_agent_response(thread_id: str, agent_id: str, depth: int = 0)
             await db.commit()
             return
 
+        # Collect tool call IDs
+        tool_call_ids = [tc["tool_call_id"] for tc in response.tool_calls] if response.tool_calls else None
+
         # Save agent response
         msg = Message(
             id=str(uuid.uuid4()),
             thread_id=thread_id,
             sender_type="agent",
             sender_agent_id=agent_id,
-            content=response_text,
+            content=response.text,
             status="complete",
+            tool_calls=tool_call_ids,
         )
         db.add(msg)
+
+        # Update tool call records with the message_id
+        if tool_call_ids:
+            for tc_id in tool_call_ids:
+                tc = await db.get(ToolCall, tc_id)
+                if tc:
+                    tc.message_id = msg.id
 
         # Update thread
         thread = await db.get(Thread, thread_id)
@@ -93,10 +129,10 @@ async def _process_agent_response(thread_id: str, agent_id: str, depth: int = 0)
             all_agents_result = await db.execute(select(Agent))
             all_agents = {a.id: a.name for a in all_agents_result.scalars().all()}
 
-            routed = analyze_routing(
+            routed = await analyze_routing(
                 agent_name=agent.name,
                 agent_role=agent.role,
-                response_text=response_text,
+                response_text=response.text,
                 reports_to=agent.reports_to,
                 direct_reports=agent.direct_reports or [],
                 collaborates_with=agent.collaborates_with or [],

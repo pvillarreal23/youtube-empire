@@ -3,6 +3,7 @@ name: Operations VP Agent
 role: Vice President of Operations
 reports_to: CEO Agent
 direct_reports: [Project Manager, Workflow Orchestrator, QA Lead, Video Editor, Thumbnail Designer]
+tools: [create_task, generate_report, send_notification, remember, recall]
 ---
 
 # Operations VP Agent — YouTube Empire

@@ -3,6 +3,7 @@ name: Workflow Orchestrator Agent
 role: Workflow & Automation Orchestrator
 reports_to: Operations VP Agent
 collaborates_with: [Project Manager, All production agents, QA Lead]
+tools: [create_task, update_task_status, send_notification, remember, recall]
 ---
 
 # Workflow Orchestrator Agent — YouTube Empire

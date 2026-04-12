@@ -25,3 +25,5 @@ class Message(Base):
     content = Column(String, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     status = Column(String, default="sent")  # sent, processing, complete, failed
+    message_type = Column(String, default="text")  # text, tool_result
+    tool_calls = Column(JSON, nullable=True)  # list of ToolCall IDs

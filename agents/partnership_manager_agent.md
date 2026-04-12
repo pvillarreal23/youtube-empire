@@ -3,6 +3,7 @@ name: Partnership Manager Agent
 role: Brand Partnerships & Sponsorships Manager
 reports_to: Monetization VP Agent
 collaborates_with: [Channel Managers, Content VP, Compliance Officer, Affiliate Coordinator]
+tools: [create_invoice, search_knowledge_base, remember, recall]
 ---
 
 # Partnership Manager Agent — YouTube Empire

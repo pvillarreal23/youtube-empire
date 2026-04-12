@@ -3,6 +3,7 @@ name: Secretary Agent
 role: Executive Secretary & Administrative Coordinator
 reports_to: CEO Agent
 collaborates_with: [All agents]
+tools: [create_task, send_notification, search_knowledge_base, remember, recall]
 ---
 
 # Secretary Agent — YouTube Empire

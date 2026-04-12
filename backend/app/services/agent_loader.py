@@ -94,6 +94,7 @@ def parse_agents() -> list[dict]:
             "reports_to_raw": meta.get("reports_to", None),
             "direct_reports_raw": meta.get("direct_reports", []),
             "collaborates_with_raw": meta.get("collaborates_with", []),
+            "tools": meta.get("tools", []),
             "file_path": str(md_file.relative_to(AGENTS_DIR.parent)),
             "system_prompt": post.content,
         }
@@ -127,6 +128,7 @@ def parse_agents() -> list[dict]:
             "reports_to": reports_to,
             "direct_reports": direct_reports,
             "collaborates_with": collaborators,
+            "tools": adata.get("tools", []),
             "file_path": adata["file_path"],
             "system_prompt": adata["system_prompt"],
             "avatar_color": color,

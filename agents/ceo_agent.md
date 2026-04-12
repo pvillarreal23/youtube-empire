@@ -3,6 +3,7 @@ name: CEO Agent
 role: Chief Executive Officer
 reports_to: None (Top of hierarchy)
 direct_reports: [Content VP, Operations VP, Analytics VP, Monetization VP]
+tools: [create_task, generate_report, send_notification, remember, recall]
 ---
 
 # CEO Agent — YouTube Empire
