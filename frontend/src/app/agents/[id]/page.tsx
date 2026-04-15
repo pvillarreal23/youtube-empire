@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, AgentDetail, AgentSummary, SandboxTask } from "@/lib/api";
@@ -21,7 +21,9 @@ export default function AgentProfilePage() {
   const [sandboxTask, setSandboxTask] = useState("");
   const [sandboxTasks, setSandboxTasks] = useState<SandboxTask[]>([]);
   const [dispatching, setDispatching] = useState(false);
+  const [dispatchError, setDispatchError] = useState<string | null>(null);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
+  const [showSetup, setShowSetup] = useState(false);
 
   useEffect(() => {
     if (!agentId) return;
@@ -38,26 +40,42 @@ export default function AgentProfilePage() {
     });
   }, [agentId]);
 
+  // Auto-poll active tasks every 5 seconds
+  const pollActiveTasks = useCallback(async () => {
+    const active = sandboxTasks.filter(
+      (t) => t.status === "pending" || t.status === "running"
+    );
+    if (active.length === 0) return;
+    const updates = await Promise.all(
+      active.map((t) => api.getSandboxTask(t.id).catch(() => t))
+    );
+    setSandboxTasks((prev: SandboxTask[]) => {
+      const updated = new Map(updates.map((u) => [u.id, u]));
+      return prev.map((t: SandboxTask) => updated.get(t.id) || t);
+    });
+  }, [sandboxTasks]);
+
+  useEffect(() => {
+    const hasActive = sandboxTasks.some(
+      (t) => t.status === "pending" || t.status === "running"
+    );
+    if (!hasActive) return;
+    const interval = setInterval(pollActiveTasks, 5000);
+    return () => clearInterval(interval);
+  }, [sandboxTasks, pollActiveTasks]);
+
   const handleDispatch = async () => {
     if (!sandboxTask.trim() || dispatching) return;
     setDispatching(true);
+    setDispatchError(null);
     try {
       const task = await api.dispatchToSandbox({ agent_id: agentId, task: sandboxTask });
       setSandboxTasks((prev: SandboxTask[]) => [task, ...prev]);
       setSandboxTask("");
     } catch {
-      // Error will show in task status
+      setDispatchError("Failed to dispatch — check that your API key is set in .env and the backend is running.");
     } finally {
       setDispatching(false);
-    }
-  };
-
-  const refreshTask = async (taskId: string) => {
-    try {
-      const updated = await api.getSandboxTask(taskId);
-      setSandboxTasks((prev: SandboxTask[]) => prev.map((t: SandboxTask) => (t.id === taskId ? updated : t)));
-    } catch {
-      // ignore
     }
   };
 
@@ -169,16 +187,46 @@ export default function AgentProfilePage() {
 
         {/* Sandbox dispatch */}
         <div className="p-4 rounded-lg bg-[#1e293b] border border-[#334155]">
-          <h3 className="text-xs font-semibold text-[#64748b] uppercase mb-3">
-            Sandbox Task
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-semibold text-[#64748b] uppercase">
+              Sandbox Task
+            </h3>
+            <button
+              onClick={() => setShowSetup(!showSetup)}
+              className="text-[10px] text-[#8b5cf6] hover:text-[#a78bfa] transition-colors"
+            >
+              {showSetup ? "Hide setup guide" : "Setup guide"}
+            </button>
+          </div>
+
+          {/* Collapsible setup guide */}
+          {showSetup && (
+            <div className="mb-4 p-3 rounded-lg bg-[#0f172a] border border-[#1e293b] text-xs text-[#94a3b8] space-y-2">
+              <p className="font-semibold text-white">One-time setup</p>
+              <ol className="list-decimal list-inside space-y-1">
+                <li>Go to <span className="text-[#8b5cf6]">console.anthropic.com</span></li>
+                <li>Navigate to <span className="text-white">Settings &rarr; API Keys &rarr; Create Key</span></li>
+                <li>Copy the key (starts with <code className="text-[#10b981]">sk-ant-...</code>)</li>
+                <li>Add it to your <code className="text-[#10b981]">.env</code> file:
+                  <code className="block mt-1 p-1.5 rounded bg-[#1e293b] text-[#f59e0b]">ANTHROPIC_API_KEY=sk-ant-...</code>
+                </li>
+                <li>Restart the backend server</li>
+              </ol>
+              <p className="pt-1 border-t border-[#1e293b]">
+                <span className="font-semibold text-white">What this does:</span> Dispatches {agent.name} to
+                {" "}Anthropic&apos;s cloud sandbox where it runs autonomously with bash, file access, and web
+                search. Great for research, trend analysis, report writing, and content generation.
+              </p>
+            </div>
+          )}
+
           <p className="text-xs text-[#64748b] mb-3">
             Dispatch {agent.name} to an autonomous cloud sandbox for long-running tasks like
             research, analysis, or content generation.
           </p>
           <textarea
             value={sandboxTask}
-            onChange={(e) => setSandboxTask(e.target.value)}
+            onChange={(e) => { setSandboxTask(e.target.value); setDispatchError(null); }}
             placeholder={`e.g. "Research the top 10 trending AI topics this week and write a summary report..."`}
             className="w-full p-3 rounded-lg bg-[#0f172a] border border-[#334155] text-sm text-white placeholder-[#475569] resize-none focus:outline-none focus:border-[#8b5cf6]"
             rows={3}
@@ -191,6 +239,11 @@ export default function AgentProfilePage() {
             {dispatching ? "Dispatching..." : "Dispatch to Sandbox"}
           </button>
 
+          {/* Error display */}
+          {dispatchError && (
+            <p className="mt-2 text-xs text-[#ef4444]">{dispatchError}</p>
+          )}
+
           {/* Previous sandbox tasks */}
           {sandboxTasks.length > 0 && (
             <div className="mt-4 space-y-2">
@@ -201,10 +254,7 @@ export default function AgentProfilePage() {
                 <div
                   key={t.id}
                   className="p-3 rounded bg-[#0f172a] border border-[#1e293b] cursor-pointer hover:border-[#334155] transition-colors"
-                  onClick={() => {
-                    setExpandedTask(expandedTask === t.id ? null : t.id);
-                    if (t.status === "running" || t.status === "pending") refreshTask(t.id);
-                  }}
+                  onClick={() => setExpandedTask(expandedTask === t.id ? null : t.id)}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-[#94a3b8] truncate flex-1">
@@ -227,6 +277,11 @@ export default function AgentProfilePage() {
                     <pre className="mt-2 text-xs text-[#94a3b8] whitespace-pre-wrap font-sans leading-relaxed border-t border-[#1e293b] pt-2">
                       {t.result}
                     </pre>
+                  )}
+                  {expandedTask === t.id && t.status === "failed" && t.result && (
+                    <p className="mt-2 text-xs text-[#ef4444] border-t border-[#1e293b] pt-2">
+                      Error: {t.result}
+                    </p>
                   )}
                 </div>
               ))}
